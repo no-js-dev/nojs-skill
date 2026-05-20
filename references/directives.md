@@ -1583,7 +1583,78 @@ Adds an incremental delay between each item in a loop animation.
 
 ### `transition`
 
-Apply CSS transition classes for route/conditional changes. Follows a convention similar to Vue's transition system.
+Applies transitions when elements enter/leave the DOM. Behavior depends on context:
+
+#### On `route-view` (View Transition API)
+
+When used on a `route-view` outlet, `transition` uses the **View Transition API** (`document.startViewTransition()`) to animate route changes. This is the default behavior (enabled via `router.viewTransition: true`).
+
+**Syntax:** `<main route-view transition="preset">`
+
+**Built-in presets:**
+
+| Preset | Description |
+|--------|-------------|
+| `slide` | Directional slide -- detects forward/backward navigation automatically |
+| `fade` | Cross-fade between old and new content |
+| `scale` | Scale down old content, scale up new content |
+| `none` | Disables transition animation for this outlet |
+
+```html
+<!-- Recommended: slide with automatic direction detection -->
+<main route-view transition="slide"></main>
+
+<!-- Cross-fade between routes -->
+<main route-view transition="fade"></main>
+
+<!-- Scale transition -->
+<main route-view transition="scale"></main>
+```
+
+**How it works:**
+1. No.JS sets `view-transition-name: route-content` on the outlet element
+2. The DOM swap is wrapped in `document.startViewTransition({ update, types })`
+3. Direction types (`forward` or `backward`) are passed via `types` for the `slide` preset
+4. CSS animations target `::view-transition-old(route-content)` and `::view-transition-new(route-content)`
+5. `:active-view-transition-type(slide)`, `:active-view-transition-type(forward)`, etc. scope CSS rules to specific presets and directions
+
+**Custom CSS:**
+
+```css
+/* Custom fade with longer duration */
+::view-transition-old(route-content) {
+  animation: fade-out 0.5s ease-out;
+}
+::view-transition-new(route-content) {
+  animation: fade-in 0.5s ease-in;
+}
+
+/* Direction-aware slide */
+:active-view-transition-type(forward) {
+  &::view-transition-old(route-content) {
+    animation: slide-out-left 0.3s ease;
+  }
+  &::view-transition-new(route-content) {
+    animation: slide-in-right 0.3s ease;
+  }
+}
+:active-view-transition-type(backward) {
+  &::view-transition-old(route-content) {
+    animation: slide-out-right 0.3s ease;
+  }
+  &::view-transition-new(route-content) {
+    animation: slide-in-left 0.3s ease;
+  }
+}
+```
+
+**Accessibility:** Built-in presets respect `prefers-reduced-motion` via CSS media queries -- animations are disabled for users who prefer reduced motion.
+
+**Opt-out:** Set `router: { viewTransition: false }` in `NoJS.config()` to fall back to legacy class-based transitions on `route-view`.
+
+#### On regular elements (class-based transitions)
+
+When used on non-router elements (e.g., with `if`, `show`), `transition` uses the **legacy class-based** system. This follows a convention similar to Vue's transition system.
 
 **Syntax:** `<element if="condition" transition="name">`
 
@@ -1610,6 +1681,8 @@ No.JS adds/removes these classes during the transition:
   opacity: 0;
 }
 ```
+
+> **Note:** Class-based transitions on `route-view` are deprecated. Use the View Transition API (default) instead.
 
 ### Built-in Animation Names
 

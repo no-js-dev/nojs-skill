@@ -32,7 +32,8 @@ NoJS.config({
     templates: 'pages',
     ext: '.tpl',
     focusBehavior: 'none',
-    suppressHashWarning: false
+    suppressHashWarning: false,
+    viewTransition: true
   },
   i18n: {
     defaultLocale: 'en',
@@ -84,6 +85,7 @@ NoJS.config({
 | `ext` | string | `".tpl"` | File extension for auto-resolved route templates |
 | `focusBehavior` | string | `"none"` | Accessibility focus management after navigation. `"auto"` moves focus to `[autofocus]` → `[tabindex="-1"]` → `h1` → outlet |
 | `suppressHashWarning` | boolean | `false` | Silence the console warning emitted when `useHash: true` is set |
+| `viewTransition` | boolean | `true` | Enable/disable the View Transition API for route changes. When `true` (default), `transition` on `route-view` uses `document.startViewTransition()` with built-in presets (`slide`, `fade`, `scale`, `none`). When `false`, falls back to legacy class-based transitions |
 
 #### i18n options
 

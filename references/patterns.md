@@ -961,7 +961,142 @@ Complete, copy-paste-ready templates and patterns for building applications with
 
 ---
 
-## 3. Best Practices
+## 3. Route Transition Patterns
+
+### Basic Route Transition (View Transition API)
+
+The recommended way to add transitions between routes. Just add `transition` to the `route-view` outlet:
+
+```html
+<main route-view transition="slide"></main>
+```
+
+No additional CSS or configuration needed -- built-in presets handle everything.
+
+### Custom View Transition CSS
+
+Override the built-in presets with custom animations using `::view-transition-*` pseudo-elements:
+
+```css
+/* Custom cross-fade with blur effect */
+::view-transition-old(route-content) {
+  animation: blur-fade-out 0.4s ease-out;
+}
+::view-transition-new(route-content) {
+  animation: blur-fade-in 0.4s ease-in;
+}
+
+@keyframes blur-fade-out {
+  from { opacity: 1; filter: blur(0); }
+  to { opacity: 0; filter: blur(4px); }
+}
+@keyframes blur-fade-in {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: blur(0); }
+}
+```
+
+### Direction-Aware Slide Transition
+
+The `slide` preset automatically handles direction. To customize the directional behavior:
+
+```css
+:active-view-transition-type(forward) {
+  &::view-transition-old(route-content) {
+    animation: slide-out-left 0.3s ease;
+  }
+  &::view-transition-new(route-content) {
+    animation: slide-in-right 0.3s ease;
+  }
+}
+:active-view-transition-type(backward) {
+  &::view-transition-old(route-content) {
+    animation: slide-out-right 0.3s ease;
+  }
+  &::view-transition-new(route-content) {
+    animation: slide-in-left 0.3s ease;
+  }
+}
+
+@keyframes slide-out-left {
+  to { transform: translateX(-100%); opacity: 0; }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+}
+@keyframes slide-out-right {
+  to { transform: translateX(100%); opacity: 0; }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); opacity: 0; }
+}
+```
+
+### Full SPA with Route Transitions
+
+```html
+<script src="https://cdn.no-js.dev/"></script>
+
+<nav>
+  <a route="/" route-active="active">Home</a>
+  <a route="/about" route-active="active">About</a>
+  <a route="/contact" route-active="active">Contact</a>
+</nav>
+
+<main route-view transition="slide"></main>
+
+<template route="/">
+  <h1>Home</h1>
+  <p>Welcome to our site.</p>
+</template>
+
+<template route="/about">
+  <h1>About</h1>
+  <p>Learn more about us.</p>
+</template>
+
+<template route="/contact">
+  <h1>Contact</h1>
+  <p>Get in touch.</p>
+</template>
+```
+
+### Disabling Transitions for Specific Outlets
+
+Use `transition="none"` on outlets that should not animate:
+
+```html
+<main route-view transition="slide"></main>
+<aside route-view="sidebar" transition="none"></aside>
+```
+
+### Opting Out of View Transition API
+
+Fall back to legacy class-based transitions:
+
+```html
+<script>
+  NoJS.config({
+    router: { viewTransition: false }
+  });
+</script>
+
+<!-- Now transition="fade" uses class-based {name}-enter / {name}-leave -->
+<main route-view transition="fade"></main>
+```
+
+```css
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+```
+
+---
+
+## 4. Best Practices
 
 ### State Scoping: Local vs Global
 
@@ -1361,7 +1496,7 @@ Login + JWT interceptors + dashboard + validation -- all integrated:
 
 ---
 
-## 8. SSG / Pre-Rendering Pattern
+## 5. SSG / Pre-Rendering Pattern
 
 No.JS reads its initial state from the `state=` attribute. Pre-populating it server-side means the browser displays content instantly — no fetch required, fully indexed by Googlebot.
 
@@ -1409,7 +1544,7 @@ const stateJson = JSON.stringify(product)
 
 ---
 
-## 9. Resource Hints
+## 6. Resource Hints
 
 No.JS automatically injects resource hints into `<head>` for performance:
 
@@ -1437,7 +1572,7 @@ The build-time script injects the same hints into static HTML before the browser
 
 ---
 
-## 10. CLS Prevention with `skeleton=`
+## 7. CLS Prevention with `skeleton=`
 
 The `skeleton=` attribute keeps a pre-rendered placeholder visible while a request is in flight, preventing Cumulative Layout Shift (CLS). Unlike `loading=` (which clones a template via JS), the skeleton is already in the DOM — no layout shift.
 

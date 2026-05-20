@@ -71,9 +71,9 @@ Data lives in Proxy-backed reactive contexts that inherit from parent elements (
 
 **Forms** - `<form validate>` with `$form` context (`valid`, `dirty`, `submitting`, `errors`, `firstError`, `reset()`). Field rules: `validate="required,email,min:5"`. Per-field state: `$form.fields.email.valid`. Triggers: `validate-on="blur"`. Conditional: `validate-if="expr"`. Auto-disables submit buttons when `$form.submitting`. Custom: `NoJS.validator('name', fn)`.
 
-**Routing** - `<a route="/path">`, `<template route="/users/:id">`, `<main route-view>`. Named outlets: `outlet="sidebar"`. Context: `$route.params`, `$route.query`, `$route.path`, `$route.matched`. Guards: `guard="expr"`. File-based: `route-view src="pages/"`. Catch-all: `route="*"`. Programmatic: `NoJS.router.push()`, `.replace()`, `.back()`, `.forward()` (return Promises). **Accessibility:** `focusBehavior: 'auto'` in router config moves focus after navigation (`[autofocus]` → `[tabindex="-1"]` → `h1` → outlet). **Hash mode warning:** enabling `useHash: true` logs a console warning about SEO impact; silence with `suppressHashWarning: true`. **Route head attributes** on `<template route>`: `page-title="expr"`, `page-description="expr"`, `page-canonical="expr"`, `page-jsonld='{"@type":…}'` — update `<head>` on every navigation; expressions can use `$route` and `$store`.
+**Routing** - `<a route="/path">`, `<template route="/users/:id">`, `<main route-view>`. Named outlets: `outlet="sidebar"`. Context: `$route.params`, `$route.query`, `$route.path`, `$route.matched`. Guards: `guard="expr"`. File-based: `route-view src="pages/"`. Catch-all: `route="*"`. Programmatic: `NoJS.router.push()`, `.replace()`, `.back()`, `.forward()` (return Promises). **View Transitions:** `<main route-view transition="slide">` uses the View Transition API with built-in presets (`slide`, `fade`, `scale`, `none`). Enabled by default (`router.viewTransition: true`). **Accessibility:** `focusBehavior: 'auto'` in router config moves focus after navigation (`[autofocus]` → `[tabindex="-1"]` → `h1` → outlet). **Hash mode warning:** enabling `useHash: true` logs a console warning about SEO impact; silence with `suppressHashWarning: true`. **Route head attributes** on `<template route>`: `page-title="expr"`, `page-description="expr"`, `page-canonical="expr"`, `page-jsonld='{"@type":…}'` — update `<head>` on every navigation; expressions can use `$route` and `$store`.
 
-**Animations** - `animate="fadeIn"`, `transition="slide"`, `animate-stagger="50"`. Built-in: fadeIn, fadeOut, fadeInUp, slideInLeft, zoomIn, bounceIn, etc.
+**Animations** - `animate="fadeIn"`, `transition="slide"`, `animate-stagger="50"`. Built-in: fadeIn, fadeOut, fadeInUp, slideInLeft, zoomIn, bounceIn, etc. **Route transitions use the View Transition API** by default: `<main route-view transition="slide">` wraps DOM swaps in `document.startViewTransition()` with built-in presets (`slide`, `fade`, `scale`, `none`). The `slide` preset detects forward/backward direction automatically. Custom CSS via `::view-transition-old(route-content)` / `::view-transition-new(route-content)` and `:active-view-transition-type()`. Respects `prefers-reduced-motion`. Disable with `router: { viewTransition: false }` to fall back to legacy class-based transitions. The `transition` attribute on non-router elements (e.g., `if`, `show`) still uses class-based `{name}-enter` / `{name}-leave` transitions.
 
 **i18n** - `t="key"`, `t-name="expr"`, `t-html` (render translation as sanitized HTML), `i18n-ns="namespace"`, pluralization `"one item | {count} items"`. Namespace mode: `loadPath: '/locales/{locale}/{ns}.json'`. Formatting filters: `currency`, `date`, `datetime`, `relative`, `number`, `percent`. Context: `$i18n.locale`.
 
@@ -106,7 +106,7 @@ Expressions support JavaScript-like syntax against the reactive context:
 ### 5. Use the public API when needed
 
 ```javascript
-NoJS.config({ baseApiUrl, headers, timeout, retries, router, i18n, stores, exprCacheSize, dangerouslyDisableSanitize, maxEventListeners, devtools })
+NoJS.config({ baseApiUrl, headers, timeout, retries, router, i18n, stores, exprCacheSize, dangerouslyDisableSanitize, maxEventListeners, devtools })  // router.viewTransition: true (default) enables View Transition API
 NoJS.init(root?)           // Auto-called by CDN; manual for ESM/CJS. Returns a Promise
 NoJS.use(plugin, options?) // Register a plugin ({ name, install, init?, dispose? })
 NoJS.global(name, value)   // Register reactive global ($name in expressions)
@@ -186,6 +186,7 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 - [references/filters.md](references/filters.md) - All 32 built-in filters with syntax
 - [references/api.md](references/api.md) - Full JavaScript API reference
 - [references/plugins.md](references/plugins.md) - Plugin system: lifecycle, globals, interceptors, sentinels, security
+- [references/routing.md](references/routing.md) - Routing reference: View Transition API, presets, direction detection, custom CSS
 - [references/patterns.md](references/patterns.md) - Common patterns, scaffolds, and best practices
 - [references/validation.md](references/validation.md) - Template validation rules and common mistakes
 - [references/cli.md](references/cli.md) - NoJS CLI: init, dev, prebuild, validate, plugin commands
