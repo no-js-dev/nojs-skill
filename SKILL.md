@@ -2,7 +2,7 @@
 name: nojs
 metadata:
   version: 1.11.0
-description: Expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Use this skill whenever the user mentions No.JS, NoJS, "no javascript framework", HTML-first framework, or is writing HTML with reactive attributes like bind, state, get, each, on:click, model, route, store, computed, watch, if/else, show/hide, foreach, validate, animate, drag, drop, t (i18n), class-*, style-*, or bind-*. Also use when the user asks about declarative HTML frameworks, zero-JS frameworks, or wants to build a web app without writing JavaScript. Even if the user doesn't mention No.JS by name, activate this skill when you see HTML attributes that match No.JS directive patterns.
+description: Expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Use this skill whenever the user mentions No.JS, NoJS, "no javascript framework", HTML-first framework, or is writing HTML with reactive attributes like bind, state, get, foreach, each, for, on:click, model, route, store, computed, watch, if/else, show/hide, validate, animate, drag, drop, t (i18n), class-*, style-*, or bind-*. Also use when the user asks about declarative HTML frameworks, zero-JS frameworks, or wants to build a web app without writing JavaScript. Even if the user doesn't mention No.JS by name, activate this skill when you see HTML attributes that match No.JS directive patterns.
 ---
 
 # NoJS-Skill
@@ -28,7 +28,7 @@ No `app.mount()`, no `createApp()`, no build step. It just works.
 Use this skill when:
 
 - The user mentions **No.JS**, **NoJS**, or the **HTML-first reactive framework**
-- The user is writing HTML with No.JS directive attributes (`bind`, `state`, `get`, `each`, `on:click`, `model`, `route`, `store`, `foreach`, `validate`, `animate`, `drag`, `drop`, `t`, `class-*`, `style-*`, `bind-*`)
+- The user is writing HTML with No.JS directive attributes (`bind`, `state`, `get`, `foreach`, `each`, `for`, `on:click`, `model`, `route`, `store`, `validate`, `animate`, `drag`, `drop`, `t`, `class-*`, `style-*`, `bind-*`)
 - The user asks about **declarative HTML frameworks** or wants to build a **web app without writing JavaScript**
 - The user needs to **scaffold**, **validate**, or **debug** No.JS templates
 - You see HTML attributes that match No.JS directive patterns, even without explicit mention
@@ -45,7 +45,7 @@ No.JS works by walking the DOM on `DOMContentLoaded`, matching HTML attributes t
 | 1 | `get`, `post`, `put`, `patch`, `delete`, `error-boundary`, `i18n-ns`, `page-title`, `page-description`, `page-canonical`, `page-jsonld` | Fetch data, error/i18n setup, head management |
 | 2 | `computed`, `watch` | Derive values and observe changes |
 | 5 | `ref` | Element references |
-| 10 | `if`, `else-if`, `else`, `switch`, `each`, `foreach`, `use`, `drag-list` | Structural (add/remove DOM) |
+| 10 | `if`, `else-if`, `else`, `switch`, `foreach`, `each`, `for`, `use`, `drag-list` | Structural (add/remove DOM) |
 | 15 | `drag`, `drop` | Drag and drop setup |
 | 16 | `drag-multiple` | Multi-select drag |
 | 20 | `bind`, `bind-*`, `bind-html`, `model`, `class-*`, `style-*`, `on:*`, `show`, `hide`, `t`, `call`, `trigger`, `page-title`, `page-description`, `page-canonical`, `page-jsonld` | Rendering, events, i18n, actions, head management |
@@ -63,7 +63,7 @@ Data lives in Proxy-backed reactive contexts that inherit from parent elements (
 
 **Conditionals** - `if`/`then`/`else`, `else-if`, `show`/`hide` (CSS toggle), `switch`/`case`/`default`.
 
-**Loops** - `each="item in items"`, `foreach="item" from="items"` (with `filter`, `sort`, `limit`, `offset`, `key`). Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`.
+**Loops** - `foreach="item in items"` is the primary loop directive. `each` and `for` are aliases (same handler, identical behavior). All three support `filter`, `sort`, `limit`, `offset`, `key`, `else`, `template`, `index`, `animate-*`. When no `template` attribute is present, the element's inline children serve as the repeating template. Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`.
 
 **Events** - `on:click="expr"` with modifiers `.prevent`, `.stop`, `.once`, `.self`, `.debounce.300`, `.throttle.100`. Key mods: `.enter`, `.escape`, `.tab`, `.space`, `.delete`, `.backspace`, `.up`, `.down`, `.left`, `.right`, `.ctrl`, `.alt`, `.shift`, `.meta`. Lifecycle: `on:init`, `on:mounted`, `on:updated`, `on:unmounted`. Vars: `$event`, `$el`.
 
@@ -148,7 +148,7 @@ See [references/plugins.md](references/plugins.md) for the complete plugin syste
 ### 7. Follow these rules when generating No.JS code
 
 1. **Always set `as` on fetch directives** - `get="/users" as="users"` not just `get="/users"`
-2. **Use `each` for simple lists, `foreach` for complex** - foreach adds filter/sort/limit/key
+2. **Use `foreach` for all loops** (`each` and `for` are aliases -- all three share the same handler and support filter/sort/limit/key)
 3. **Use `show`/`hide` for frequent toggles, `if` for rare** - show is CSS-only, if recreates DOM
 4. **Use templates for reuse** - `<template id="name">` + `then="name"` or `use="name"`
 5. **Scope state close to usage** - Put `state` on the nearest common ancestor
@@ -162,7 +162,7 @@ See [references/plugins.md](references/plugins.md) for the complete plugin syste
 
 ### 8. Validate templates for common mistakes
 
-Check for: directive typos (`bnd`→`bind`, `on-click`→`on:click`), missing `as` on `get`, `each` without `in`, `foreach` without `from`, `model` on non-form elements, unsanitized `bind-html`. See [references/validation.md](references/validation.md) for the full checklist.
+Check for: directive typos (`bnd`→`bind`, `on-click`→`on:click`), missing `as` on `get`, `foreach`/`each`/`for` without `in`, `model` on non-form elements, unsanitized `bind-html`. See [references/validation.md](references/validation.md) for the full checklist.
 
 ### 9. Use the NoJS CLI for development tooling
 
@@ -174,7 +174,7 @@ The NoJS CLI (`@erickxavier/nojs-cli`) provides project scaffolding, a dev serve
 
 **Prebuild** — `nojs prebuild` runs 6 HTML optimization plugins: `inject-resource-hints` (preload/preconnect for fetch URLs), `inject-head-attrs` (title, description, canonical, JSON-LD), `inject-speculation-rules` (Speculation Rules API from routes), `inject-og-twitter` (Open Graph + Twitter Card meta), `generate-sitemap` (sitemap.xml from routes), `optimize-images` (lazy loading, LCP preload, fetchpriority). Configurable via `nojs-prebuild.config.js`.
 
-**Validate** — `nojs validate *.html` checks 10 rules: missing `as` on fetch, `each` without `in`, `foreach` without `from`, `model` on non-form elements, `bind-html` warning, routes without `route-view`, empty event handlers, loops without `key`, duplicate store names, `validate` outside `<form>`. Use `--format json` for CI.
+**Validate** — `nojs validate *.html` checks 10 rules: missing `as` on fetch, `foreach`/`each`/`for` without `in`, `model` on non-form elements, `bind-html` warning, routes without `route-view`, empty event handlers, loops without `key`, duplicate store names, `validate` outside `<form>`. Use `--format json` for CI.
 
 **Plugins** — `nojs plugin search|install|update|remove|list` manages plugins from CDN (official, with SRI integrity) or npm (community). Config stored in `nojs.config.json`.
 

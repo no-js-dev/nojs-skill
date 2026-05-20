@@ -21,6 +21,8 @@ The validator catches frequent misspellings and suggests the correct directive. 
 | `hid` | `hide` | Truncated |
 | `ech` | `each` | Missing leading vowel |
 | `forech` | `foreach` | Missing letter |
+| `fo` | `for` | Truncated |
+| `fro` | `for` | Transposed letters |
 | `modle` | `model` | Transposed letters |
 | `stat` | `state` | Truncated |
 | `stor` | `store` | Truncated |
@@ -38,35 +40,27 @@ The validator catches frequent misspellings and suggests the correct directive. 
 
 ## 2. Syntax Rules
 
-### `each` requires "in"
+### `foreach`/`each`/`for` requires "in"
 
-The `each` directive uses the format `"item in items"`. Omitting the `in` keyword is a validation error.
+The `foreach`, `each`, and `for` directives all use the format `"item in items"`. Omitting the `in` keyword is a validation error. (`each` and `for` are aliases for `foreach` -- all three share the same handler.)
 
 ```html
 <!-- CORRECT -->
-<div each="user in users">...</div>
-<li each="item in filteredList">...</li>
+<li foreach="item in menuItems" key="item.id">
+  <span bind="item.label"></span>
+</li>
+<li each="user in users" key="user.id">
+  <span bind="user.name"></span>
+</li>
+<li for="task in tasks" key="task.id">
+  <span bind="task.title"></span>
+</li>
 
 <!-- WRONG - missing "in" keyword -->
-<div each="users">...</div>
-<div each="user, users">...</div>
+<li foreach="menuItems">...</li>
+<li each="users">...</li>
+<li for="task, tasks">...</li>
 <div each="user of users">...</div>
-```
-
-### `foreach` requires `from`
-
-The `foreach` directive names the loop variable; the source array is specified separately with the `from` attribute. Using `foreach` without `from` is a validation error.
-
-```html
-<!-- CORRECT -->
-<li foreach="item" from="menuItems" key="item.id">
-  <span bind="item.label"></span>
-</li>
-
-<!-- WRONG - missing "from" -->
-<li foreach="item">
-  <span bind="item.label"></span>
-</li>
 ```
 
 ### `model` only on form inputs
@@ -237,8 +231,7 @@ Use this checklist when reviewing No.JS templates:
 
 ### Directives & Syntax
 - [ ] All event bindings use colon syntax (`on:click`, not `on-click`)
-- [ ] `each` values contain the `in` keyword (`"item in items"`)
-- [ ] `foreach` is always paired with a `from` attribute
+- [ ] `foreach`/`each`/`for` values contain the `in` keyword (`"item in items"`)
 - [ ] `model` is only used on `<input>`, `<select>`, or `<textarea>`
 - [ ] No misspelled directive names (see typo table above)
 

@@ -276,7 +276,8 @@ nojs validate [glob] [options]
 |------|--------------|
 | `fetch-missing-as` | `get`, `post`, `put`, `patch`, `delete` without `as` attribute |
 | `each-missing-in` | `each="..."` without the `in` keyword |
-| `foreach-missing-from` | `foreach="..."` without `from` attribute |
+| `foreach-missing-in` | `foreach="..."` without the `in` keyword |
+| `for-missing-in` | `for="..."` without the `in` keyword |
 | `validate-outside-form` | `validate="..."` outside a `<form validate>` |
 | `event-empty-handler` | `on:*` attribute with empty value |
 
@@ -287,7 +288,7 @@ nojs validate [glob] [options]
 | `model-non-form-element` | `model` on non-input/select/textarea elements |
 | `bind-html-warning` | Any use of `bind-html` (reminder to trust content) |
 | `route-without-route-view` | `<template route>` exists but no `route-view` element |
-| `loop-missing-key` | `each` or `foreach` without `key` attribute |
+| `loop-missing-key` | `foreach`, `each`, or `for` without `key` attribute |
 | `duplicate-store-name` | Multiple `store="name"` with the same name |
 
 ### Output Formats

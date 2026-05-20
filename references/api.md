@@ -840,12 +840,12 @@ These variables are available in No.JS expressions depending on the context:
 
 | Variable   | Where              | Description                              |
 |------------|--------------------|------------------------------------------|
-| `$index`   | `each`, `foreach`  | Zero-based index of the current item     |
-| `$count`   | `each`, `foreach`  | Total number of items in the loop        |
-| `$first`   | `each`, `foreach`  | `true` if first item                     |
-| `$last`    | `each`, `foreach`  | `true` if last item                      |
-| `$even`    | `each`, `foreach`  | `true` if index is even                  |
-| `$odd`     | `each`, `foreach`  | `true` if index is odd                   |
+| `$index`   | `foreach`, `each`, `for` | Zero-based index of the current item     |
+| `$count`   | `foreach`, `each`, `for` | Total number of items in the loop        |
+| `$first`   | `foreach`, `each`, `for` | `true` if first item                     |
+| `$last`    | `foreach`, `each`, `for` | `true` if last item                      |
+| `$even`    | `foreach`, `each`, `for` | `true` if index is even                  |
+| `$odd`     | `foreach`, `each`, `for` | `true` if index is odd                   |
 
 ### Forms
 

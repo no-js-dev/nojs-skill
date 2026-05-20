@@ -12,7 +12,7 @@ Most directive values accept JavaScript expressions evaluated against the curren
 - [State Management](#state-management) -- state, store, computed, watch, persist, persist-key, persist-fields
 - [Rendering and Binding](#rendering-and-binding) -- bind, bind-html, bind-\*, model
 - [Conditionals](#conditionals) -- if, else-if, else, then, show, hide, switch, case, default
-- [Loops](#loops) -- each, foreach, from, template, index, key, filter, sort, limit, offset, loop variables
+- [Loops](#loops) -- foreach, each, for, template, index, key, filter, sort, limit, offset, loop variables
 - [Events](#events) -- on:\*, trigger, modifiers, lifecycle hooks
 - [Styling](#styling) -- class-\*, class-map, class-list, style-\*, style-map
 - [Forms and Validation](#forms-and-validation) -- validate, error-boundary, $form context, validators
@@ -619,42 +619,21 @@ Default case inside a `switch` block. Renders when no `case` matches.
 
 List rendering with iteration, filtering, sorting, and pagination.
 
-### `each`
-
-Simple loop -- iterates over an array.
-
-**Syntax:** `<element each="item in items">`
-
-Can use inline content or reference a template.
-
-```html
-<!-- Inline -->
-<ul>
-  <li each="todo in todos" bind="todo.text"></li>
-</ul>
-
-<!-- With template -->
-<div each="post in posts" template="postCard"></div>
-<template id="postCard">
-  <article>
-    <h2 bind="post.title"></h2>
-    <span bind="'#' + $index"></span>
-  </article>
-</template>
-```
+`foreach` is the **primary** iteration directive. `each` and `for` are **aliases** -- all three share the same handler and support identical features.
 
 ### `foreach`
 
-Extended loop with filtering, sorting, pagination, and custom variable names.
+Iterate over an array with full support for filtering, sorting, pagination, and custom variable names.
 
-**Syntax:** `<element foreach="item" from="items">`
+**Syntax:** `<element foreach="item in items">`
+
+The `in` keyword separates the loop variable from the source array expression.
 
 **Attributes:**
 
 | Attribute | Description |
 |-----------|-------------|
-| `foreach` | Variable name for current item |
-| `from` | Source array expression |
+| `foreach` | `"variable in arrayExpression"` |
 | `index` | Variable name for the index (default: `$index`) |
 | `key` | Unique key expression for DOM diffing |
 | `else` | Template ID to render when array is empty |
@@ -664,10 +643,17 @@ Extended loop with filtering, sorting, pagination, and custom variable names.
 | `limit` | Maximum number of items to render |
 | `offset` | Number of items to skip |
 
+**Inline children as template** -- when no `template` attribute is present, the element's children serve as the repeating template:
+
 ```html
+<!-- Inline children (most common) -->
 <ul>
-  <li foreach="item"
-      from="menuItems"
+  <li foreach="todo in todos" bind="todo.text"></li>
+</ul>
+
+<!-- Inline children with multiple child elements -->
+<ul>
+  <li foreach="item in menuItems"
       index="idx"
       key="item.id"
       filter="item.active"
@@ -678,27 +664,62 @@ Extended loop with filtering, sorting, pagination, and custom variable names.
     <span bind="idx + 1"></span> - <span bind="item.label"></span>
   </li>
 </ul>
+
+<!-- With template reference -->
+<div foreach="post in posts" template="postCard"></div>
+<template id="postCard">
+  <article>
+    <h2 bind="post.title"></h2>
+    <span bind="'#' + $index"></span>
+  </article>
+</template>
 ```
 
-### `from`
+### `each`
 
-Source array for a `foreach` loop.
+Alias for `foreach`. Identical handler, identical behavior.
 
-**Syntax:** `<element foreach="item" from="arrayExpression">`
+**Syntax:** `<element each="item in items">`
+
+```html
+<ul>
+  <li each="user in users" key="user.id">
+    <span bind="user.name"></span>
+  </li>
+</ul>
+```
+
+All `foreach` attributes (`filter`, `sort`, `limit`, `offset`, `key`, `else`, `template`, `index`, `animate-*`) work on `each`.
+
+### `for`
+
+Alias for `foreach`. Identical handler, identical behavior.
+
+**Syntax:** `<element for="item in items">`
+
+```html
+<ul>
+  <li for="task in tasks" key="task.id" filter="!task.done">
+    <span bind="task.title"></span>
+  </li>
+</ul>
+```
+
+All `foreach` attributes (`filter`, `sort`, `limit`, `offset`, `key`, `else`, `template`, `index`, `animate-*`) work on `for`.
 
 ### `template`
 
 Template ID to clone for each iteration.
 
-**Syntax:** `<element each="item in items" template="templateId">`
+**Syntax:** `<element foreach="item in items" template="templateId">`
 
-Works with both `each` and `foreach`.
+Works with `foreach`, `each`, and `for`.
 
 ### `index`
 
-Custom variable name for the current index in `foreach`.
+Custom variable name for the current index.
 
-**Syntax:** `<element foreach="item" from="items" index="i">`
+**Syntax:** `<element foreach="item in items" index="i">`
 
 Default loop index variable is `$index`.
 
@@ -706,37 +727,37 @@ Default loop index variable is `$index`.
 
 Unique key for efficient list diffing.
 
-**Syntax:** `<element each="item in items" key="item.id">`
+**Syntax:** `<element foreach="item in items" key="item.id">`
 
 Enables stable DOM identity across re-renders. Use a unique property like `id`.
 
 ### `filter`
 
-Filter expression for `foreach` -- only render matching items.
+Filter expression -- only render matching items.
 
-**Syntax:** `<element foreach="item" from="items" filter="item.active">`
+**Syntax:** `<element foreach="item in items" filter="item.active">`
 
 ### `sort`
 
-Sort property for `foreach`. Prefix with `-` for descending order.
+Sort property. Prefix with `-` for descending order.
 
-**Syntax:** `<element foreach="item" from="items" sort="item.name">` or `sort="-item.date">`
+**Syntax:** `<element foreach="item in items" sort="item.name">` or `sort="-item.date">`
 
 ### `limit`
 
-Maximum number of items to render in `foreach`.
+Maximum number of items to render.
 
-**Syntax:** `<element foreach="item" from="items" limit="10">`
+**Syntax:** `<element foreach="item in items" limit="10">`
 
 ### `offset`
 
-Number of items to skip in `foreach`.
+Number of items to skip.
 
-**Syntax:** `<element foreach="item" from="items" offset="5">`
+**Syntax:** `<element foreach="item in items" offset="5">`
 
 ### Loop Context Variables
 
-Inside any loop (`each` or `foreach`), these variables are automatically available:
+Inside any loop (`foreach`, `each`, or `for`), these variables are automatically available:
 
 | Variable | Description |
 |----------|-------------|

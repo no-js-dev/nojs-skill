@@ -895,7 +895,7 @@ Complete, copy-paste-ready templates and patterns for building applications with
         </tr>
       </thead>
       <tbody>
-        <tr foreach="user" from="users"
+        <tr foreach="user in users"
             key="user.id"
             sort="user[sortField]"
             filter="true">
@@ -912,7 +912,7 @@ Complete, copy-paste-ready templates and patterns for building applications with
 **Alternate with `foreach` sort direction:**
 
 ```html
-<li foreach="user" from="users"
+<li foreach="user in users"
     sort="sortDir === 'desc' ? '-' + sortField : sortField"
     key="user.id">
   <span bind="user[sortField]"></span>
@@ -1043,7 +1043,7 @@ Each `.tpl` file is a self-contained piece of HTML. No.JS fetches and caches the
 | Use `lazy="ondemand"` on heavy route templates | Templates are only fetched the first time the user navigates there |
 | Use `template` attribute on loops instead of inline content | Named templates are cloned more efficiently and are reusable |
 | Keep expressions simple | Complex logic in attribute values is hard to read; use `computed` for derived state |
-| Use `foreach` with `limit`/`offset` for large lists | Renders only a subset; combine with pagination for virtual-scroll-like behavior |
+| Use `foreach`/`each`/`for` with `limit`/`offset` for large lists | Renders only a subset; combine with pagination for virtual-scroll-like behavior |
 
 ---
 
