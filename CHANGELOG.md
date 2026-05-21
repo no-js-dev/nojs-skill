@@ -5,7 +5,7 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.12.0](https://github.com/ErickXavier/nojs-skill/compare/v1.11.1...v1.12.0) — 2026-05-21
+## [1.11.1](https://github.com/ErickXavier/nojs-skill/compare/v1.11.0...v1.11.1) — 2026-05-21
 
 ### Added
 
@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SKILL.md description rewritten to 3rd person (Anthropic skill guidelines)
 - api.md expanded with interceptor security, cache config, plugin freeze behavior
 - filters.md: fixed `fromNow` description, documented `nl2br` HTML-encoding
+- README and CONTRIBUTING updated to reflect new project structure
 
 ### Removed
 
@@ -32,18 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `references/routing.md` (absorbed into `references/directives/routing.md`)
 - Misleading SSG/pre-rendering pattern from patterns.md (NoJS is client-side only)
 - Duplicate sections (Head Management 2x, Miscellaneous 2x, redundant error-boundary)
+- NoJS-MCP references from README, CONTRIBUTING, and validation docs
 
 ### Fixed
 
 - `persist-key` documented as required (was incorrectly described as optional)
 - 12 directive discrepancies found by dev/QA verification against source
 - All priority numbers, attribute lists, and modifier lists verified against source
-
-## [1.11.1](https://github.com/ErickXavier/nojs-skill/compare/v1.11.0...v1.11.1) — 2026-05-20
-
-### Changed
-
-- Removed NoJS-MCP references from README, CONTRIBUTING, and validation docs
 
 ## [1.11.0](https://github.com/ErickXavier/nojs-skill/compare/v1.10.1...v1.11.0) — 2026-03-26
 
