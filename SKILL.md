@@ -1,7 +1,7 @@
 ---
 name: nojs
 metadata:
-  version: 1.11.1
+  version: 1.12.0
 description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user mentions No.JS, NoJS, "no javascript framework", HTML-first framework, or is writing HTML with reactive attributes like bind, state, get, foreach, each, for, on:click, model, route, store, computed, watch, if/else, show/hide, validate, animate, drag, drop, t (i18n), class-*, style-*, or bind-*. Also relevant when the user asks about declarative HTML frameworks, zero-JS frameworks, or wants to build a web app without writing JavaScript. Applies whenever HTML attributes match No.JS directive patterns, even without explicit mention of the framework.
 ---
 
