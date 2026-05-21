@@ -85,7 +85,7 @@ Inside any `on:*` handler:
 |------|------|
 | `on:init` | Directive first processed |
 | `on:mounted` | Element inserted into visible DOM |
-| `on:updated` | Any DOM mutation in subtree (child/attribute/text changes) |
+| `on:updated` | Any DOM mutation in subtree -- fires on **all** MutationObserver events (childList, attributes, characterData) within the element, not just data-driven updates |
 | `on:unmounted` | Element removed from DOM |
 | `on:error` | Any error in this element's subtree |
 
@@ -99,7 +99,7 @@ Inside any `on:*` handler:
 
 ### `trigger`
 
-Emit a custom event from the element.
+Emit a custom event from the element. The `trigger` directive always attaches a **click** listener -- when the element is clicked, it dispatches a `CustomEvent` with the given name and optional detail data. This applies to all element types, including form elements.
 
 **Syntax:** `<element trigger="event-name" trigger-data="expression">`
 

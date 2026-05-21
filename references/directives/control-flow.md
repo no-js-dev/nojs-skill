@@ -58,9 +58,16 @@ Conditionally render element. Removes from DOM when condition is false; re-creat
 
 Chained conditional following an `if`.
 
-**Syntax:** `<element else-if="condition">`
+**Syntax:** `<element else-if="condition">` or `<element else-if="condition" then="templateId">`
 
 Must follow an element with `if` or another `else-if`.
+
+**Attributes:**
+
+| Attribute | Description |
+|-----------|-------------|
+| `else-if` | Condition expression |
+| `then` | Template ID to render when this condition is true |
 
 ```html
 <div if="status === 'loading'" then="loadingTpl"></div>
@@ -74,6 +81,13 @@ Must follow an element with `if` or another `else-if`.
 Fallback block after `if` or `else-if`. Can reference a template ID or contain inline content.
 
 **Syntax:** `<element else>` or `<element else="templateId">`
+
+**Attributes:**
+
+| Attribute | Description |
+|-----------|-------------|
+| `else` | Optional template ID for empty list fallback (on loops) |
+| `then` | Template ID to render as fallback content |
 
 ### `then`
 
@@ -91,10 +105,26 @@ Toggle element visibility via CSS `display`. Element stays in DOM.
 
 Better than `if` for frequently toggled content because it preserves element state.
 
+**Attributes:**
+
+| Attribute | Description |
+|-----------|-------------|
+| `show` | Condition expression |
+| `animate-enter` | CSS class applied when element becomes visible |
+| `animate-leave` | CSS class applied when element is hidden |
+| `animate` | Shorthand for `animate-enter` (used when entering) |
+| `transition` | CSS transition class applied on both enter and leave |
+| `animate-duration` | Duration in ms to wait before removing animation classes |
+
 ```html
 <div show="user.isLoggedIn">Welcome!</div>
 <button show="!editing" on:click="editing = true">Edit</button>
 <button show="editing" on:click="editing = false">Save</button>
+
+<!-- With animations -->
+<div show="isVisible" animate-enter="fadeIn" animate-leave="fadeOut" animate-duration="300">
+  Animated content
+</div>
 ```
 
 ### `hide`
@@ -103,8 +133,24 @@ Inverse of `show` -- hides element when condition is true.
 
 **Syntax:** `<element hide="condition">`
 
+**Attributes:**
+
+| Attribute | Description |
+|-----------|-------------|
+| `hide` | Condition expression (hides when truthy) |
+| `animate-enter` | CSS class applied when element becomes visible (condition turns false) |
+| `animate-leave` | CSS class applied when element is hidden (condition turns true) |
+| `animate` | Shorthand for `animate-enter` |
+| `transition` | CSS transition class applied on both enter and leave |
+| `animate-duration` | Duration in ms to wait before removing animation classes |
+
 ```html
 <div hide="user.isLoggedIn">Please log in.</div>
+
+<!-- With transition -->
+<div hide="collapsed" transition="slide" animate-duration="200">
+  Collapsible content
+</div>
 ```
 
 ### `if` vs `show`
@@ -135,9 +181,16 @@ Contains `case` and `default` children.
 
 Case match inside a `switch` block.
 
-**Syntax:** `<element case="'value'">`
+**Syntax:** `<element case="'value'">` or `<element case="'value'" then="templateId">`
 
 Supports multi-value matching with comma separation.
+
+**Attributes:**
+
+| Attribute | Description |
+|-----------|-------------|
+| `case` | Value expression to match against the `switch` expression |
+| `then` | Template ID to render when this case matches |
 
 ```html
 <!-- Single value -->
@@ -151,7 +204,14 @@ Supports multi-value matching with comma separation.
 
 Default case inside a `switch` block. Renders when no `case` matches.
 
-**Syntax:** `<element default>`
+**Syntax:** `<element default>` or `<element default then="templateId">`
+
+**Attributes:**
+
+| Attribute | Description |
+|-----------|-------------|
+| `default` | Marks this child as the default case |
+| `then` | Template ID to render as default content |
 
 ```html
 <div switch="order.status">
@@ -177,6 +237,8 @@ Iterate over an array with full support for filtering, sorting, pagination, and 
 
 The `in` keyword separates the loop variable from the source array expression.
 
+> **Deprecated:** The legacy syntax `<element foreach="item" from="list">` still works but logs a deprecation warning. Use the `item in list` syntax instead.
+
 **Attributes:**
 
 | Attribute | Description |
@@ -190,6 +252,11 @@ The `in` keyword separates the loop variable from the source array expression.
 | `sort` | Property path to sort by (prefix with `-` for descending) |
 | `limit` | Maximum number of items to render |
 | `offset` | Number of items to skip |
+| `animate-enter` | CSS class for entering items |
+| `animate-leave` | CSS class for leaving items |
+| `animate` | Shorthand for `animate-enter` |
+| `animate-stagger` | Delay in ms between each item's animation |
+| `animate-duration` | Duration in ms for enter/leave animations |
 
 **Inline children as template** -- when no `template` attribute is present, the element's children serve as the repeating template:
 
@@ -269,7 +336,7 @@ Custom variable name for the current index.
 
 **Syntax:** `<element foreach="item in items" index="i">`
 
-Default loop index variable is `$index`.
+Default loop index variable is `$index`. When a custom `index` name is set (e.g. `index="i"`), **both** the custom name (`i`) and `$index` are available inside the loop body.
 
 ### `key`
 

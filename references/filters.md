@@ -35,7 +35,7 @@ No.JS includes 32 built-in filters for transforming values in bind expressions u
   - [date](#date) — Format date strings
   - [datetime](#datetime) — Format date with time
   - [relative](#relative) — Relative time description
-  - [fromNow](#fromnow) — Time elapsed since date
+  - [fromNow](#fromnow) — Time remaining until a future date (or relative for past dates)
 - [Utility Filters](#utility-filters) — General-purpose utility filters
   - [default](#default) — Fallback value for nullish data
   - [json](#json) — Pretty-print as JSON
@@ -169,7 +169,7 @@ Convert a string to a URL-friendly slug.
 
 ### nl2br
 
-Convert newline characters to `<br>` tags.
+Convert newline characters to `<br>` tags. Before converting newlines, the filter HTML-encodes `&`, `<`, and `>` to prevent XSS when used with `bind-html`.
 
 | | |
 |---|---|
@@ -179,6 +179,7 @@ Convert newline characters to `<br>` tags.
 ```html
 <span bind-html="message | nl2br"></span>
 <!-- "line 1\nline 2" -> "line 1<br>line 2" -->
+<!-- "<script>alert(1)</script>\nSafe" -> "&lt;script&gt;alert(1)&lt;/script&gt;<br>Safe" -->
 ```
 
 ### encodeUri

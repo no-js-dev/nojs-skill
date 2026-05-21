@@ -7,7 +7,7 @@ Client-side SPA routing with params, guards, nested routes, file-based routing, 
 - [route](#route) -- define a route or navigation link
 - [route-view](#route-view) -- route outlet for matched template
 - [File-Based Routing](#file-based-routing) -- automatic route resolution from folder structure
-- [route-active](#route-active) -- CSS class for active route links
+- [route-active / route-active-exact](#route-active-and-route-active-exact) -- CSS class for active route links (prefix vs exact match)
 - [guard](#guard) -- route guard with redirect
 - [lazy](#lazy) -- control when route templates are fetched
 - [$route Context](#route-context) -- path, params, query, hash, matched
@@ -91,6 +91,9 @@ Route outlet that renders the matched route template.
 | `route-index` | `"index"` | Filename for the root route `/` |
 | `ext` | `".tpl"` | File extension (fallback: `".html"`) |
 | `i18n-ns` | -- | When present, auto-derives i18n namespace from filename |
+| `transition` | -- | View Transition API preset (see [View Transition API](#view-transition-api)) |
+
+**Relative `src` resolution:** When `src` starts with `./`, it resolves against the parent template's folder (via `__srcBase`). This allows nested outlets to use paths relative to their enclosing layout template.
 
 ```html
 <!-- Standard outlet -->
@@ -123,17 +126,27 @@ pages/
 
 Explicit `<template route="...">` declarations always take priority, so you can mix both approaches.
 
-### `route-active`
+**Hierarchical layout resolution:** For multi-segment paths (e.g. `/settings/profile`), the router probes for a layout template matching the first segment (`settings.tpl`) before falling back to the flat path (`settings/profile.tpl`). If the first-segment layout exists, it is rendered and its remaining segments (`profile`) are resolved into nested `route-view` outlets inside the layout. If the first-segment file does not exist, the router falls back to the flat concatenated path.
+
+### `route-active` and `route-active-exact`
 
 CSS class added to active route links.
 
-**Syntax:** `<a route="/path" route-active="active-class">`
+**Syntax:** `<a route="/path" route-active="active-class">` or `<a route="/path" route-active-exact="active-class">`
+
+**`route-active`** uses **prefix matching**: the class is applied when the current path starts with the link's route path. Exception: `/` only matches exactly `/` to avoid matching every route.
+
+**`route-active-exact`** uses **exact path matching**: the class is applied only when the current path equals the link's route path exactly.
 
 ```html
-<a route="/" route-active="active">Home</a>
+<!-- Prefix match: active on /about, /about/team, /about/team/john -->
 <a route="/about" route-active="active">About</a>
-<!-- Exact match only (won't match /users/123) -->
+
+<!-- Exact match only: active on /users but NOT /users/123 -->
 <a route="/users" route-active-exact="active">Users</a>
+
+<!-- Root route always uses exact match internally -->
+<a route="/" route-active="active">Home</a>
 ```
 
 ### `guard`
@@ -169,6 +182,20 @@ Control when route templates are fetched.
 <template route="/critical" src="./critical.tpl" lazy="priority"></template>
 ```
 
+**`lazy` on navigation links:** In file-based routing, the `lazy` attribute can also be placed on `<a route>` links to control prefetch priority for that route's template:
+
+```html
+<!-- Prefetch with high priority after init -->
+<a route="/dashboard" lazy="priority">Dashboard</a>
+
+<!-- Only fetch when user navigates -->
+<a route="/reports" lazy="ondemand">Reports</a>
+```
+
+The router collects all `[route]` links, determines the most aggressive `lazy` level per path, and prefetches accordingly. `priority` routes load first; remaining routes load in the background; `ondemand` routes are skipped until navigated.
+
+**Layout-aware prefetch:** When prefetching multi-segment routes, the router checks if the first-segment layout is already cached. If so, it skips re-fetching the layout and only prefetches the child template.
+
 ### `$route` Context
 
 | Property | Description |
@@ -187,7 +214,13 @@ Control when route templates are fetched.
 <button on:click="$router.replace('/new-path')">Replace</button>
 ```
 
+`$router.replace()` replaces the current history entry without setting the navigation direction to `"forward"`. This preserves the current direction state, which affects View Transition direction detection (e.g. guard redirects do not trigger a forward slide).
+
+**`$router.destroy()`** -- Tears down the router by removing all global event listeners (`click`, `popstate`/`hashchange`) and clearing route listeners. Useful for cleanup in tests or when unmounting a No.JS application.
+
 ### Nested Routes
+
+Nesting depth is unlimited -- outlets rendered by a layout can themselves contain `route-view` outlets, which are resolved recursively for further path segments.
 
 ```html
 <template route="/settings">
@@ -200,6 +233,13 @@ Control when route templates are fetched.
 <template route="/settings/profile">
   <h2>Profile Settings</h2>
 </template>
+```
+
+**`route-index` auto-loading:** A `route-view` with a `route-index` attribute automatically loads the named template when the outlet is empty after navigation. This is useful for default child routes:
+
+```html
+<!-- After navigating to /settings, loads settings/overview.tpl into the nested outlet -->
+<div route-view src="./settings/" route-index="overview"></div>
 ```
 
 ### Named Outlets
@@ -234,7 +274,9 @@ If omitted, the template renders in the default (unnamed) `route-view`.
 
 ### Anchor Links
 
-When using hash mode (`useHash: true`), anchor links with `#` are handled automatically with smooth scrolling. Active anchor links receive the `.active` class.
+Anchor links with `#` are handled automatically with smooth scrolling in **both** hash mode and history mode. When a plain `<a href="#id">` link is clicked, No.JS intercepts the click, scrolls the target element into view with `{ behavior: "smooth" }`, and updates the URL hash without triggering a route re-render. Active anchor links receive the `.active` class.
+
+**Hash-only navigation skips re-render:** If the path is the same and only the `#hash` changes, the router updates `$route.hash`, scrolls to the anchor, and notifies listeners -- but does **not** re-render the route templates.
 
 ```html
 <a route="#features">Features</a>
@@ -410,7 +452,9 @@ No.JS uses the [View Transition API](https://developer.mozilla.org/en-US/docs/We
 2. **Navigation trigger** -- When the router navigates, the DOM swap (removing old content, inserting new content) is wrapped inside `document.startViewTransition({ update, types })`.
 3. **Direction detection** -- The router tracks navigation direction (forward vs backward) and passes it as a type to `startViewTransition({ types: ['slide', 'forward'] })`. This enables direction-aware CSS animations.
 4. **CSS animations** -- Built-in preset CSS targets `::view-transition-old(route-content)` and `::view-transition-new(route-content)` pseudo-elements with scoping via `:active-view-transition-type()`.
-5. **Fallback** -- If the View Transition API is not supported by the browser, the DOM swap happens instantly without animation.
+5. **Default timing** -- Built-in presets use `animation-duration: 0.3s` and `animation-timing-function: ease` on both `::view-transition-old` and `::view-transition-new` pseudo-elements.
+6. **Overflow clipping** -- `::view-transition-group(route-content)` has `overflow: hidden` to prevent content from leaking outside the outlet during transitions.
+7. **Fallback** -- If the View Transition API is not supported by the browser, the DOM swap happens instantly without animation.
 
 ### Built-in Presets
 

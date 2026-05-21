@@ -12,6 +12,7 @@ Built-in form validation with `$form` context. Priority 30 (validate), Priority 
 - [$form.fields -- Per-Field State](#formfields----per-field-state) -- individual field state
 - [Validation Triggers (validate-on)](#validation-triggers-validate-on) -- control when feedback appears
 - [Conditional Validation (validate-if)](#conditional-validation-validate-if) -- skip validation by condition
+- [Submit Behavior](#submit-behavior) -- marks all fields touched, $form.submitting lifecycle
 - [Auto-Disable Submit Buttons](#auto-disable-submit-buttons) -- automatic submit button handling
 - [Custom Validators](#custom-validators) -- NoJS.validator() registration
 - [error-boundary](#error-boundary) -- render fallback template on error
@@ -29,6 +30,14 @@ Enable validation on a form or field.
 **Syntax:** `<form validate>` (on form) or `<input validate="rule1|rule2|rule3:arg">` (on field)
 
 Rules are separated by `|` (pipe) and arguments by `:` (colon). Native HTML5 attributes (`required`, `minlength`, `maxlength`, `type="email"`, `type="url"`, `min`, `max`, `pattern`) work automatically.
+
+Use the built-in `custom:` rule prefix to invoke a named validator registered with `NoJS.validator()`:
+
+```html
+<input validate="required|custom:strongPassword" />
+```
+
+The `custom:validatorName` syntax calls the validator function registered under that name, passing the current value and all form values. The validator should return `true` for valid, or an error message string for invalid.
 
 ```html
 <form validate state="{ email: '', password: '' }">
@@ -55,13 +64,22 @@ Use `error-{rule}` attributes for specific rules, or `error` for a generic fallb
 
 ### Error Templates
 
-Point an `error` attribute to a `<template>` using a `#` prefix:
+The `error` and `error-{rule}` attributes use a `#` prefix to distinguish between template references and plain message strings:
+
+- **With `#` prefix** (e.g. `error="#emailError"`) -- treated as a template selector, clones and renders the `<template>` with that ID
+- **Without `#` prefix** (e.g. `error="This field is invalid"`) -- treated as a plain error message string
+
+The same rule applies to per-rule attributes like `error-required="#tpl"` vs `error-required="Email is required"`.
 
 ```html
+<!-- Template reference -->
 <input type="email" name="email" required error="#emailError" />
 <template id="emailError">
   <span class="field-error" bind="$error"></span>
 </template>
+
+<!-- Plain message -->
+<input type="email" name="email" required error="Please fix this field" />
 ```
 
 Inside the template, `$error` contains the error message and `$rule` contains the failing rule name.
@@ -130,6 +148,12 @@ Skip validation for a field based on a condition:
 ```
 
 When `validate-if` is false, the field is treated as valid and excluded from `$form.errors`.
+
+### Submit Behavior
+
+On form submit, No.JS automatically marks **all named fields as touched**, so any validation errors display immediately even if the user never interacted with a field. `$form.touched` is also set to `true`.
+
+`$form.submitting` is set to `true` during submit and resets to `false` after a `requestAnimationFrame` cycle, providing a one-frame flag for submission state.
 
 ### Auto-Disable Submit Buttons
 

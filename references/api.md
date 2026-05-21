@@ -6,7 +6,7 @@ The `NoJS` object is the single entry point to the framework's JavaScript API. W
 
 - [NoJS.config(options)](#nojsconfigoptions) — Global framework configuration
 - [NoJS.init(root?)](#nojsinitroot) — Initialize or re-initialize the framework
-- [NoJS.directive(name, handler)](#nojsdirectivename-handler) — Register custom directives
+- [NoJS.directive(name, handler)](#nojsdirectivename-handler) — Register custom directives (priority, wildcards, utilities)
 - [NoJS.filter(name, fn)](#nojsfiltername-fn) — Register custom pipe filters
 - [NoJS.validator(name, fn)](#nojsvalidatorname-fn) — Register custom form validators
 - [NoJS.i18n(options)](#nojsi18noptions) — Configure internationalization
@@ -101,10 +101,11 @@ NoJS.config({
 | `retryDelay` | number | `1000` | Delay between retries in milliseconds |
 | `credentials` | string | `"same-origin"` | Fetch credentials mode (`same-origin`, `include`, `omit`) |
 | `csrf` | object\|null | `null` | CSRF token configuration (`{ token, header }`) |
-| `cache` | object | `{ strategy: "none", ttl: 300000 }` | HTTP cache settings. `strategy`: `"none"`, `"memory"`, etc. |
+| `cache` | object | `{ strategy: "none", ttl: 300000 }` | HTTP cache settings. `strategy`: `"none"`, `"memory"`, `"local"`, `"session"`. The in-memory cache holds a maximum of **200 entries** with LRU eviction |
 | `templates` | object | `{ cache: true }` | Template loading settings |
 | `sanitize` | boolean | `true` | Sanitize HTML in `bind-html` |
 | `dangerouslyDisableSanitize` | boolean | `false` | Explicit opt-out of HTML sanitization (use with caution) |
+| `sanitizeHtml` | function\|null | `null` | Custom sanitizer function (e.g., DOMPurify's `sanitize`) to replace the built-in DOMParser-based sanitizer for `bind-html` |
 | `exprCacheSize` | number | `500` | Maximum expression cache entries; uses LRU eviction |
 | `maxEventListeners` | number | `100` | Maximum event listeners per element |
 | `devtools` | boolean | `false` | Enable browser devtools panel |
@@ -191,6 +192,8 @@ NoJS.init(document.getElementById('app'));
 
 **Lifecycle**: `init()` is idempotent -- calling it more than once is a no-op. The CDN entry point calls `NoJS.init()` automatically on `DOMContentLoaded`. For ESM/CJS consumers, call it manually after configuration. Returns a `Promise` that resolves when initialization is complete (including plugin `init()` hooks).
 
+**`NoJS._initialized`** (getter/setter): Returns `true` after `init()` has been called. Setting it to `false` resets initialization state, allowing `init()` to be called again (used primarily in tests).
+
 **Initialization sequence**:
 1. Load external locale files (blocking, if `i18n.loadPath` is set)
 2. Process inline template includes (`<template include>`)
@@ -267,6 +270,26 @@ NoJS.directive('log-click', {
 <input autofocus>
 <button log-click="user.name">Log Name</button>
 ```
+
+### Default priority
+
+When `priority` is omitted from a handler, it defaults to **50**.
+
+### Wildcard patterns
+
+Custom directives can use wildcard patterns to match attribute prefixes. The built-in patterns are `class-*`, `on:*`, `style-*`, and `bind-*`. Plugins can register additional patterns (e.g., `my-*`) to match `my-foo`, `my-bar`, etc.
+
+### Custom directive utilities
+
+The following internal utilities are available for custom directives (imported from framework internals or accessible on the `NoJS` object):
+
+| Utility | Description |
+|---------|-------------|
+| `_onDispose(fn)` | Register a cleanup callback on the element currently being processed. Called automatically when the element is removed from the DOM. Use for intervals, observers, window listeners |
+| `_watchExpr(expr, ctx, fn)` | Watch an expression for changes. Automatically subscribes to `$store` watchers if the expression references `$store`. Cleanup is registered via `_onDispose` |
+| `_disposeTree(root)` | Dispose all directives on a DOM subtree (root + descendants). Clears watchers, listeners, and disposers, and sets `__declared = false` |
+| `_disposeChildren(parent)` | Like `_disposeTree` but only disposes descendants, not the parent itself |
+| `el.__declared = false` | Force an element to be re-processed by `processTree()` on its next pass. Useful after dynamically changing directive attributes |
 
 ---
 
@@ -455,7 +478,7 @@ Register a plugin with the framework. Plugins extend NoJS with new directives, f
 {
   name: 'my-plugin',          // Required. Unique plugin name
   version: '1.0.0',           // Optional. Semver string
-  capabilities: ['auth'],     // Optional. Logged in debug mode
+  capabilities: ['auth'],     // Optional. Informational only -- logged in debug mode, not enforced
   install(NoJS, options) {    // Required. Called immediately on use()
     // Register directives, filters, interceptors, globals, etc.
   },
@@ -467,6 +490,8 @@ Register a plugin with the framework. Plugins extend NoJS with new directives, f
   }
 }
 ```
+
+**Directive freeze**: After core directives are registered, `_freezeDirectives()` is called. Plugins cannot override core directive names (e.g., `bind`, `state`, `if`). They can only register new, non-conflicting names.
 
 ### Function shorthand
 
@@ -677,7 +702,25 @@ When interceptors are registered inside a plugin's `install()`, they are automat
 
 Each interceptor has a 5-second execution timeout. If an interceptor exceeds this limit, it is skipped and a warning is logged.
 
-Multiple interceptors of the same type run in registration order.
+### Recursion depth guard
+
+Interceptors are protected by a maximum recursion depth of **1**. If an interceptor triggers another fetch that would re-enter the interceptor chain, the nested call skips all interceptors to prevent infinite loops.
+
+### Untrusted interceptor response
+
+Untrusted (non-`trusted`) response interceptors receive a **frozen shell** object instead of the real `Response`. The shell exposes only: `status`, `ok`, `statusText`, `headers` (with sensitive response headers removed), and `url` (with sensitive query params redacted). This prevents untrusted plugins from accessing cookies, tokens, or raw response bodies through interceptors.
+
+### Sensitive header redaction
+
+**Request headers redacted** from untrusted interceptors: `authorization`, `x-api-key`, `x-auth-token`, `cookie`, `proxy-authorization`, `set-cookie`, `x-csrf-token`, plus any header matching `/^x-(auth|api)-/i`.
+
+**Response headers redacted**: `set-cookie`, `x-csrf-token`, `x-auth-token`, `www-authenticate`, `proxy-authenticate`.
+
+**URL query param redaction**: Parameters matching `token|key|secret|auth|password|credential` (case-insensitive) are replaced with `[REDACTED]` for untrusted interceptors.
+
+### Retry behavior
+
+Multiple interceptors of the same type run in registration order. Requests that fail with an `AbortError` (including cancellations via `NoJS.CANCEL`) are **never retried**, regardless of the `retries` configuration.
 
 ---
 
@@ -832,12 +875,20 @@ NoJS.baseApiUrl = 'https://staging-api.example.com';
 ```
 
 ```html
-<!-- Also settable via the base attribute on body -->
+<!-- Set via the base attribute on any ancestor element (not just body) -->
 <body base="https://api.example.com">
   <div get="/users" as="users">...</div>
   <!-- Fetches https://api.example.com/users -->
+
+  <!-- Nested base overrides for subtrees -->
+  <section base="https://other-api.example.com">
+    <div get="/items" as="items">...</div>
+    <!-- Fetches https://other-api.example.com/items -->
+  </section>
 </body>
 ```
+
+URL resolution walks up the ancestor chain until it finds an element with a `base` attribute, or falls back to `NoJS.baseApiUrl`.
 
 ---
 

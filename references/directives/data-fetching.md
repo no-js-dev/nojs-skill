@@ -22,6 +22,10 @@ Declarative HTTP requests via HTML attributes. Priority 1.
   - [refresh](#refresh) -- auto-refresh interval for polling
   - [retry](#retry) -- retry count on failure
   - [retry-delay](#retry-delay) -- delay between retries
+  - [Programmatic Refresh](#programmatic-refresh) -- re-trigger fetch via el.refresh()
+  - [Template var Priority](#template-var-priority) -- success/error template variable naming
+  - [Trigger Behavior](#trigger-behavior) -- how each directive triggers its request
+  - [SwitchMap / Abort Behavior](#switchmap--abort-behavior) -- rapid calls abort in-flight requests
 
 ---
 
@@ -73,7 +77,9 @@ Fetch data via HTTP GET request.
 | `skeleton` | string | ID (without `#`) of an existing DOM element to hide while loading and show again on response. Use for CLS prevention — element starts visible in HTML and No.JS hides it during the request. |
 | `retry` | number | Number of retry attempts on failure. Default: value from `NoJS.config({ retries })` |
 | `retry-delay` | number | Delay in ms between retries. Default: `1000` |
-| `var` | string | Variable name for response data in success/error templates. Overrides the template's own `var` attribute |
+| `var` | string | Variable name for response data in success/error templates. Default fallback described in [Template var Priority](#template-var-priority) |
+
+> **Programmatic refresh:** Every HTTP element exposes a `.refresh()` method. Use `$refs.myEl.refresh()` to re-trigger the fetch programmatically. See [Programmatic Refresh](#programmatic-refresh).
 
 ```html
 <div get="/users"
@@ -89,7 +95,7 @@ Fetch data via HTTP GET request.
 </div>
 ```
 
-**Reactive URLs** -- URLs referencing state variables re-fetch automatically when values change:
+**Reactive URLs** -- URLs referencing state variables re-fetch automatically when values change. If the resolved URL is identical to the previous one, the re-fetch is skipped.
 
 ```html
 <div state="{ page: 1, search: '' }">
@@ -106,6 +112,8 @@ Submit data via HTTP POST request.
 
 **Syntax:** `<element post="/endpoint" body="{expression}">`
 
+**Trigger:** On a `<form>`, intercepts the `submit` event. On any other element, attaches a `click` listener. When the host element is a `<form>`, fields are auto-serialized via `FormData` (overrides `body` if both are present).
+
 ```html
 <form post="/login" body="{ email, password }" as="result"
       success="#loginSuccess" error="#loginError" loading="#loginLoading">
@@ -113,6 +121,9 @@ Submit data via HTTP POST request.
   <input model="password" type="password">
   <button>Login</button>
 </form>
+
+<!-- Non-form: triggers on click -->
+<button post="/api/action" body="{ id: item.id }">Do it</button>
 ```
 
 ### `put`
@@ -121,10 +132,15 @@ Update data via HTTP PUT request (full replacement).
 
 **Syntax:** `<element put="/endpoint" body="{expression}">`
 
+**Trigger:** On a `<form>`, intercepts the `submit` event and auto-serializes fields via `FormData` (same as `post`). On any other element, attaches a `click` listener.
+
 ```html
 <form put="/users/{user.id}" body='{"name": "{user.name}", "role": "{selectedRole}"}'>
   ...
 </form>
+
+<!-- Non-form: triggers on click -->
+<button put="/users/{user.id}" body="{ role: 'admin' }">Promote</button>
 ```
 
 ### `patch`
@@ -133,11 +149,15 @@ Partial update via HTTP PATCH request.
 
 **Syntax:** `<element patch="/endpoint" body="{expression}">`
 
+**Trigger:** On a `<form>`, intercepts the `submit` event and auto-serializes fields via `FormData` (same as `post`). On any other element, attaches a `click` listener.
+
 ### `delete`
 
 Delete data via HTTP DELETE request.
 
 **Syntax:** `<element delete="/endpoint">`
+
+**Trigger:** On a `<form>`, intercepts the `submit` event. On any other element (typical), attaches a `click` listener.
 
 ```html
 <button delete="/users/{user.id}"
@@ -151,9 +171,9 @@ Delete data via HTTP DELETE request.
 
 | Attribute | Description |
 |-----------|-------------|
-| `body` | Request body (JSON string with `{variable}` interpolation). For forms, auto-serializes fields |
-| `success` | Template ID to render on success. Receives response as `var` |
-| `error` | Template ID to render on error. Receives error as `var` |
+| `body` | Request body (JSON string with `{variable}` interpolation). For `<form>` elements on **any** method (POST, PUT, PATCH, DELETE), fields are auto-serialized via `FormData` and override `body` |
+| `success` | Template ID to render on success. Variable name resolved via [Template var Priority](#template-var-priority) |
+| `error` | Template ID to render on error. Variable name resolved via [Template var Priority](#template-var-priority) |
 | `loading` | Template ID to show during request |
 | `confirm` | Show browser `confirm()` dialog before sending |
 | `redirect` | URL to navigate to on success (SPA route) |
@@ -162,7 +182,7 @@ Delete data via HTTP DELETE request.
 | `cached` | Cache responses (memory/local/session) |
 | `retry` | Number of retry attempts on failure. Default: value from `NoJS.config({ retries })` |
 | `retry-delay` | Delay in ms between retries. Default: `1000` |
-| `var` | Variable name for response data in success/error templates |
+| `var` | Variable name for response data in success/error templates. See [Template var Priority](#template-var-priority) |
 
 **Request lifecycle:** `[idle] -> [loading] -> [success | error]`
 
@@ -182,11 +202,11 @@ Default value is `"data"`. The response data becomes available in the context un
 
 ### `body`
 
-Request body for POST/PUT/PATCH requests.
+Request body for POST/PUT/PATCH/DELETE requests.
 
 **Syntax:** `<element post="/api" body="{ key: value }">`
 
-Accepts a JSON string with `{variable}` interpolation. For `<form>` elements, fields are auto-serialized if `body` is not specified.
+Accepts a JSON string with `{variable}` interpolation. For `<form>` elements on any method, fields are always auto-serialized via `FormData` (overrides `body`).
 
 ### `headers`
 
@@ -278,3 +298,56 @@ Default: `1000` ms (or value from `NoJS.config({ retryDelay })`).
   <span bind="data.value"></span>
 </div>
 ```
+
+### Programmatic Refresh
+
+Every HTTP element exposes a `.refresh()` method on the DOM element. Use it to re-trigger the fetch programmatically via `$refs`:
+
+```html
+<div get="/notifications" as="notes" ref="notifPanel">
+  <span bind="notes.length"></span>
+</div>
+<button on:click="$refs.notifPanel.refresh()">Reload</button>
+```
+
+The method is available on all directives (`get`, `post`, `put`, `patch`, `delete`). It is cleaned up automatically when the element is disposed.
+
+### Template var Priority
+
+The variable name exposed inside `success` and `error` templates follows a priority chain:
+
+**Success template:**
+1. The `<template>` element's own `var` attribute (highest priority)
+2. The directive element's `var` attribute
+3. Falls back to `"result"`
+
+**Error template:**
+1. The `<template>` element's own `var` attribute (highest priority)
+2. Falls back to `"err"`
+
+```html
+<!-- Template's own var wins: data is exposed as "user" -->
+<template id="ok" var="user">
+  <p bind="user.name"></p>
+</template>
+
+<div post="/login" body="{ email }" success="#ok">...</div>
+```
+
+### Trigger Behavior
+
+| Directive | `<form>` element | Any other element |
+|-----------|-----------------|-------------------|
+| `get` | Fetches on mount | Fetches on mount |
+| `post` | Intercepts `submit` | Attaches `click` listener |
+| `put` | Intercepts `submit` | Attaches `click` listener |
+| `patch` | Intercepts `submit` | Attaches `click` listener |
+| `delete` | Intercepts `submit` | Attaches `click` listener |
+
+For `<form>` elements, the `submit` event is prevented (`e.preventDefault()`) and the request fires instead.
+
+### SwitchMap / Abort Behavior
+
+When a new request is triggered while a previous one is still in flight, the in-flight request is aborted (switchMap pattern). This prevents race conditions from rapid interactions -- only the latest request's response is rendered.
+
+Aborted requests fail silently (the `AbortError` is caught and ignored, no error template is shown).

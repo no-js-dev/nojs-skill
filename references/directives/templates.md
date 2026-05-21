@@ -175,6 +175,12 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
 </button>
 ```
 
+**Loading state disables button:** While the loading template is displayed, the button/element is set to `disabled = true`. It is re-enabled after the response returns.
+
+**Sensitive header warning:** If inline `headers` contain credentials (e.g. `Authorization`, `X-Auth-*`, `X-Api-*`), a console warning is emitted advising the use of `NoJS.config({ headers })` or an interceptor instead of exposing credentials in HTML source.
+
+**Success template target:** The success template is **appended** to `el.closest("[route-view]") || el.parentElement` -- it does NOT replace the button content. The response data is available inside the success template under the variable declared by `var` on the template (defaults to `"result"`).
+
 **Request lifecycle:** `click -> [confirm?] -> [loading] -> [success | error]`
 
 **Events emitted:** `fetch:success` (`{ url, data }`) and `fetch:error` (`{ url, error }`) on the document.

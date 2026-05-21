@@ -108,13 +108,21 @@ React to value changes by executing an expression.
 
 **Syntax:** `<element watch="property" on:change="handler">`
 
-Executes the `on:change` handler whenever the watched property changes.
+Executes the `on:change` handler whenever the watched property changes. The handler receives two special variables: `$old` (previous value) and `$new` (current value).
 
 ```html
 <div state="{ search: '' }"
      watch="search"
-     on:change="console.log('Search changed:', search)">
+     on:change="console.log('Changed from', $old, 'to', $new)">
   <input model="search" />
+</div>
+```
+
+```html
+<div state="{ count: 0 }"
+     watch="count"
+     on:change="$new > 10 ? alert('Limit reached!') : null">
+  <button on:click="count++">+1</button>
 </div>
 ```
 
@@ -139,7 +147,7 @@ Persist state to localStorage or sessionStorage across page reloads.
 
 ### `persist-key`
 
-Custom storage key for persisted state. Defaults to an auto-generated key if omitted.
+**Required** storage key for persisted state. If omitted, persistence is skipped and a warning is logged.
 
 **Syntax:** `<element state="{...}" persist="localStorage" persist-key="my-key">`
 
@@ -159,6 +167,8 @@ When specified, only the listed fields are saved to and restored from storage. A
   <!-- Only theme and sidebar are persisted; tempData always starts as null -->
 </div>
 ```
+
+> **Sensitive key warning:** State keys whose names contain `token`, `password`, `secret`, `key`, `auth`, `credential`, or `session` trigger a console warning when persisted, suggesting the use of `persist-fields` to exclude them.
 
 ### `persist-schema`
 
@@ -226,6 +236,8 @@ Set innerHTML (sanitized) from an expression.
 
 Renders the expression result as HTML. Sanitized by default (DOMPurify-compatible) to prevent XSS.
 
+> **Debug mode:** When `NoJS.config({ debug: true })` or `devtools` is enabled, dynamic expressions (non-literal strings) trigger a console warning reminding you to ensure the value is trusted.
+
 ```html
 <div bind-html="article.content"></div>
 <div bind-html="`<em>${user.bio}</em>`"></div>
@@ -239,12 +251,22 @@ Bind any HTML attribute to an expression.
 
 Works with any attribute: `src`, `href`, `alt`, `title`, `disabled`, `checked`, `data-*`, etc.
 
+**Two-way `bind-value`:** On `<input>`, `<textarea>`, and `<select>`, `bind-value` is **two-way** -- it also attaches an `input` event listener that writes the element's value back to the expression. For `type="number"` inputs, the value is coerced to `Number`.
+
+**Boolean attributes:** The following attributes receive special boolean handling -- truthy values set the attribute (empty string), falsy values remove it, and the corresponding DOM property is also toggled:
+`disabled`, `readonly`, `checked`, `selected`, `hidden`, `required`
+
+**URL sanitization:** For URL-bearing attributes (`href`, `src`, `action`, `formaction`, `poster`, `data`), `javascript:` and `vbscript:` URIs are blocked (replaced with `#`). Non-image `data:` URIs are also blocked; `data:image/svg+xml` URIs are sanitized by stripping scripts and event handlers.
+
 ```html
 <img bind-src="user.avatarUrl" bind-alt="user.name + ' avatar'" />
 <a bind-href="'/users/' + user.id">Profile</a>
 <button bind-disabled="!form.isValid">Submit</button>
 <input type="checkbox" bind-checked="user.isActive" />
 <div bind-data-id="user.id" bind-data-role="user.role"></div>
+
+<!-- Two-way bind-value -->
+<input bind-value="username" />
 ```
 
 ### `model`
@@ -253,12 +275,21 @@ Two-way binding for input elements.
 
 **Syntax:** `<input model="property">`
 
-Creates automatic two-way data binding between a form input and a state property. Works with text inputs, number inputs, checkboxes, selects, and textareas.
+Creates automatic two-way data binding between a form input and a state property. Works with text inputs, number inputs, range inputs, checkboxes, radio buttons, selects, and textareas.
+
+| Input type | Value coercion | Event |
+|------------|---------------|-------|
+| `text`, `textarea` | String | `input` |
+| `number`, `range` | `Number()` | `input` |
+| `checkbox` | Boolean (`el.checked`) | `change` |
+| `radio` | String (`el.value`) | `change` |
+| `select` | String | `change` |
 
 ```html
-<div state="{ name: '', age: 0, agreed: false, role: 'user' }">
+<div state="{ name: '', age: 0, agreed: false, role: 'user', volume: 50 }">
   <input type="text" model="name" />
   <input type="number" model="age" />
+  <input type="range" model="volume" min="0" max="100" />
   <input type="checkbox" model="agreed" />
   <select model="role">
     <option value="admin">Admin</option>
@@ -282,11 +313,16 @@ Toggle a CSS class based on a condition.
 
 **Syntax:** `<element class-className="condition">`
 
+> **i18n reactivity:** Expressions referencing `$i18n` or `NoJS.locale` also re-evaluate on locale changes.
+
 ```html
 <div class-active="isActive"
      class-disabled="!isEnabled"
      class-highlighted="score > 90">
 </div>
+
+<!-- Re-evaluates when locale changes -->
+<div class-rtl="$i18n.dir === 'rtl'"></div>
 ```
 
 ### `class-map`
@@ -295,8 +331,13 @@ Apply multiple CSS classes from an object expression.
 
 **Syntax:** `<element class-map="{ className: condition }">`
 
+Keys can be **space-separated** class names -- all classes in the key are toggled together:
+
 ```html
 <div class-map="{ active: isActive, 'text-bold': isBold, error: hasError }"></div>
+
+<!-- Space-separated keys: toggle multiple Tailwind classes at once -->
+<div class-map="{ 'bg-sky-500 text-white font-bold': isSelected }"></div>
 ```
 
 ### `class-list`

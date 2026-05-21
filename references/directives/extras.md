@@ -19,6 +19,8 @@ Animations, internationalization, drag and drop, head management, and related ut
   - [drag-multiple](#drag-multiple) -- lasso/multi-select
   - [Implicit Drop Variables](#implicit-drop-variables) -- $drag, $dragType, $dropIndex, etc.
   - [Automatic CSS Classes](#automatic-css-classes) -- built-in DnD classes
+  - [Custom DOM Events](#custom-dom-events) -- drag-start, drag-end, drag-enter, drag-leave, drag-over
+  - [Multi-Drag Ghost](#multi-drag-ghost-stacked-cards) -- stacked-card visual for multi-select
   - [Accessibility](#accessibility) -- ARIA attributes and keyboard support
 - [Internationalization](#internationalization) -- translation directives (t: priority 20, i18n-ns: priority 1)
   - [t](#t) -- translate element content
@@ -385,6 +387,33 @@ Available inside `drop` expressions:
 | `.nojs-selected` | On multi-selected items |
 | `.nojs-drop-settle` | Brief settle animation on drop |
 | `.nojs-drag-list-empty` | On a `drag-list` when it has no items |
+
+### Custom DOM Events
+
+Drag elements and drop zones dispatch custom DOM events that can be listened to with standard `addEventListener` or No.JS `on:event-name`:
+
+| Event | Dispatched on | Bubbles | `detail` properties |
+|-------|---------------|---------|---------------------|
+| `drag-start` | Drag element | Yes | `{ item, index, el }` |
+| `drag-end` | Drag element | Yes | `{ item, index, dropped }` (`dropped` is `true` if the item was successfully dropped) |
+| `drag-enter` | Drop zone | No | `{ item, type }` |
+| `drag-leave` | Drop zone | No | `{ item }` |
+| `drag-over` | Drop zone (sortable only) | No | `{ item, index }` (throttled, fires during sortable reorder) |
+
+```html
+<div drag="task" on:drag-start="console.log('started', $event.detail.item)"
+     on:drag-end="console.log('ended', $event.detail.dropped)">
+  Drag me
+</div>
+
+<div drop="items.push($drag)" on:drag-enter="console.log('entered', $event.detail.type)">
+  Drop here
+</div>
+```
+
+### Multi-Drag Ghost (Stacked Cards)
+
+When dragging multiple selected items (`drag-multiple`), the drag ghost displays a stacked-card visual: up to 3 layered card shadows with a count badge showing the total number of selected items. The top card clones the dragged element's content; back cards use a matching background and border.
 
 ### Accessibility
 

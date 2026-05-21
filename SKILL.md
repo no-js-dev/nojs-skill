@@ -90,9 +90,19 @@ Expressions support JavaScript-like syntax against the reactive context:
 - Property access: `user.name`, `items[0]`, `user?.address?.city`
 - Arithmetic, comparisons, ternary, template literals
 - Pipes (filters): `name | uppercase`, `price | currency:'USD'`
-- Assignments: `count++`, `name = 'John'`
+- Assignments: `count = 'John'`, `count += 1`, `count -= 1`, `total *= 2`, `total /= 2`, `remaining %= 3`
+- Increment/decrement: `count++`, `count--`, `++count`, `--count`
+- Multi-statement: semicolon-separated statements in event handlers: `on:click="count++; name = 'updated'; validate()"`
 - Function calls: `items.push(newItem)`
+- **Statement write-back**: In event handlers (`on:*`, `watch`), mutated context variables are automatically written back to the owning context in the scope chain after execution. New variables created during execution are persisted to the context via `$set`
+- **Caching**: Expression and statement ASTs are cached using LRU eviction (configurable via `exprCacheSize`, default 500)
 - The evaluator uses an allow-list approach: `_SAFE_GLOBALS` for JS built-ins and `_BROWSER_GLOBALS` for curated browser APIs. `fetch`, `XMLHttpRequest`, `localStorage`, `sessionStorage`, `WebSocket`, and `indexedDB` are NOT on the allow-list. Spread operations filter `_FORBIDDEN_PROPS` (`__proto__`, `constructor`, `prototype`)
+- **Security proxies**: `window`, `document`, `location`, `history`, and `navigator` are wrapped in security proxies that block sensitive sub-properties:
+  - **window**: blocks `fetch`, `XMLHttpRequest`, `localStorage`, `sessionStorage`, `WebSocket`, `indexedDB`, `eval`, `Function`, `importScripts`, `open`, `postMessage`
+  - **document**: blocks `cookie`, `domain`, `write`, `writeln`, `execCommand`
+  - **location**: read-only wrapper exposing `href`, `pathname`, `search`, `hash`, `origin`, `hostname`, `port`, `protocol`, `host`. Navigation methods (`assign`, `replace`, `reload`) are no-ops
+  - **history**: read-only wrapper exposing `length`, `state`, `scrollRestoration`. Navigation methods (`pushState`, `replaceState`, `back`, `forward`, `go`) are no-ops
+  - **navigator**: blocks `sendBeacon` and `credentials`
 
 ### 4. Apply filters via pipe syntax
 
@@ -205,7 +215,7 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 3. Use translations: `<h1 t="greeting"></h1>` with interpolation `t-name="user.name"`
 4. For HTML content: add `t-html` attribute
 5. Switch locale: `NoJS.locale = 'pt'` or bind to a select with `model`
-6. For namespaces: `loadPath: '/locales/{locale}/{ns}.json'` and `i18n-ns="namespace"` on containers
+6. For namespaces: `loadPath: '/locales/{locale}/{ns}.json'` and `i18n-ns="namespace"` on containers. When the locale is switched, all previously loaded namespaces (including route-loaded ones) are automatically re-fetched for the new locale
 7. Pluralization: `"one item | {count} items"` in locale files
 8. Formatting filters: `bind="price | currency:'USD'"`, `bind="date | date:'short'"`
 

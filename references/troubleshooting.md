@@ -41,6 +41,8 @@ Common issues, their causes, and fixes when developing with the No.JS framework.
   - [No eval or new Function](#no-eval-or-new-function)
   - [Inline Event Handlers](#inline-event-handlers)
   - [External Template Loading and connect-src](#external-template-loading-and-connect-src)
+  - [Built-in Sanitizer Blocked Tags](#built-in-sanitizer-blocked-tags)
+  - [SVG Data URI Deep-Sanitization](#svg-data-uri-deep-sanitization)
 - [5. Router Configuration Pitfalls](#5-router-configuration-pitfalls) — Missing route-view, guard expressions, nested route setup
   - [Missing route-view Element](#missing-route-view-element)
   - [Guard Without Redirect](#guard-without-redirect)
@@ -69,10 +71,12 @@ Common issues, their causes, and fixes when developing with the No.JS framework.
   - [Template Loads But Content Not Visible](#template-loads-but-content-not-visible)
   - [Relative Paths Not Resolving](#relative-paths-not-resolving)
   - [Template Loading Order Issues](#template-loading-order-issues)
+  - [Template HTML Cache](#template-html-cache)
 - [10. Store Conflicts](#10-store-conflicts) — Duplicate store names, NoJS.notify() for external mutations
   - [Duplicate Store Declarations](#duplicate-store-declarations)
   - [External JS Mutations Not Reflected](#external-js-mutations-not-reflected)
   - [Store Data Not Available in Expressions](#store-data-not-available-in-expressions)
+  - [Store Watcher Auto-Cleanup](#store-watcher-auto-cleanup)
 
 ---
 
@@ -604,6 +608,47 @@ The previous `csp` config option has been removed. If you see the warning `csp c
 Content-Security-Policy: connect-src 'self' https://templates.example.com;
 ```
 
+### Built-in Sanitizer Blocked Tags
+
+The built-in HTML sanitizer (used by `bind-html`) strips the following tags entirely from the output. If content containing these tags does not render as expected, this is the cause:
+
+| Blocked Tag | Reason |
+|-------------|--------|
+| `script` | JavaScript execution |
+| `style` | CSS injection / data exfiltration |
+| `iframe` | Arbitrary content embedding |
+| `object` | Plugin-based code execution |
+| `embed` | Plugin-based code execution |
+| `base` | URL hijacking of all relative links |
+| `form` | Phishing / credential harvesting |
+| `meta` | Redirect injection / CSP override |
+| `link` | External resource loading / CSS injection |
+| `noscript` | Content injection in non-JS contexts |
+
+The sanitizer also removes any attribute whose name starts with `on` (inline event handlers), any `href`, `src`, `action`, `xlink:href`, `formaction`, `poster`, or `data` attribute containing `javascript:` or `vbscript:` schemes, and any `data:` URI on URL attributes that is not `data:image/*`.
+
+To bypass the sanitizer for trusted content, use `dangerouslyDisableSanitize: true` in config or provide a custom sanitizer via `sanitizeHtml`:
+
+```js
+// Custom sanitizer (e.g., DOMPurify)
+NoJS.config({ sanitizeHtml: html => DOMPurify.sanitize(html) });
+```
+
+### SVG Data URI Deep-Sanitization
+
+**Problem:** An inline SVG loaded via `data:image/svg+xml` in a `bind-html` attribute is modified or replaced with `#`.
+
+**Cause:** The built-in sanitizer performs deep sanitization on `data:image/svg+xml` URIs. Both base64-encoded and URL-encoded forms are decoded, parsed with `DOMParser`, and cleaned:
+
+1. All `<script>` elements inside the SVG are removed
+2. All `on*` event-handler attributes are stripped
+3. Any `href` or `xlink:href` with a `javascript:` scheme is removed
+4. If the SVG fails to parse, it is replaced with an empty `<svg></svg>`
+
+The cleaned SVG is then re-encoded back into the same format (base64 or URL-encoded). If the entire URI is malformed, it is replaced with `#`.
+
+**Fix:** This is security-by-design. If your SVG content is trusted and must remain unmodified, either disable sanitization for that specific use case or ensure your SVGs do not contain event handlers or script elements.
+
 ---
 
 ## 5. Router Configuration Pitfalls
@@ -1064,6 +1109,28 @@ Templates with `lazy="ondemand"` are excluded from all phases and only load when
 <template route="/settings" src="pages/settings.tpl" lazy="ondemand"></template>
 ```
 
+### Template HTML Cache
+
+**Problem:** A template file was updated on the server but the browser still shows the old content, even after a page reload.
+
+**Cause:** Loaded `.tpl` files are cached in an in-memory `Map` keyed by their fully resolved URL. Once a template URL has been fetched, subsequent loads (including route navigations back to the same page) return the cached HTML string without hitting the network. Additionally, route templates pre-warm the cache for their nested sub-templates during Phase 1 loading, so sub-templates may also be cached before they are ever directly requested.
+
+The cache is controlled by `_config.templates.cache` (default: `true`). It persists for the entire lifetime of the page (i.e., until a full browser refresh or `NoJS.dispose()`).
+
+**Fix:**
+
+1. **During development**, disable template caching:
+   ```js
+   NoJS.config({ templates: { cache: false } });
+   ```
+
+2. **In production**, use cache-busting query strings or versioned filenames:
+   ```html
+   <template src="components/header.tpl?v=2"></template>
+   ```
+
+3. **Programmatically**, there is no public API to clear the template cache. A full page reload with cache disabled is the simplest approach during development.
+
 ---
 
 ## 10. Store Conflicts
@@ -1132,3 +1199,27 @@ Or in JavaScript:
 NoJS.config({ stores: { cart: { items: [] } } });
 NoJS.init();
 ```
+
+### Store Watcher Auto-Cleanup
+
+**Problem:** A store watcher (e.g., an expression that references `$store`) stops firing after the element that created it is removed from the DOM.
+
+**Cause:** Store watchers are automatically cleaned up when the owning element is no longer connected to the DOM. This is implemented via a `MutationObserver` that monitors the element's parent for `childList` changes. When `el.isConnected` becomes `false`, the watcher is deleted from the `_storeWatchers` set and the observer disconnects itself:
+
+```js
+// From globals.js — _watchExpr():
+const ro = new MutationObserver(() => {
+  if (!el.isConnected) {
+    _storeWatchers.delete(fn);
+    unwatch();
+    ro.disconnect();
+  }
+});
+ro.observe(el.parentElement, { childList: true, subtree: false });
+```
+
+Additionally, during `_notifyStoreWatchers()`, any watcher whose `_el` is no longer connected is removed from the set before invocation.
+
+**Fix:** This is intentional behavior to prevent memory leaks. If you need a watcher to persist beyond the element's lifecycle, use `NoJS.on()` to subscribe to framework events instead, and manage unsubscription manually.
+
+If a watcher stops firing unexpectedly, check whether the element is being removed and re-added to the DOM (e.g., by a parent `if`/`foreach` directive). Each time the element is recreated, directives are re-processed and new watchers are registered.
