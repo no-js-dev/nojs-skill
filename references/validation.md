@@ -2,6 +2,32 @@
 
 Rules, common mistakes, and a checklist for validating No.JS templates. Based on the NoJS validation rules.
 
+## Contents
+
+- [1. Common Mistakes -- Directive Typos](#1-common-mistakes----directive-typos) — Frequently misspelled directives
+- [2. Syntax Rules](#2-syntax-rules) — Correct directive syntax requirements
+  - [`foreach`/`each`/`for` requires "in"](#foreacheachfor-requires-in) — Iteration syntax rules
+  - [`model` only on form inputs](#model-only-on-form-inputs) — Valid model targets
+- [3. Event Modifier Validation](#3-event-modifier-validation) — Valid and invalid event modifiers
+  - [Valid Modifiers](#valid-modifiers) — Supported event modifier list
+  - [Invalid Modifiers](#invalid-modifiers-produce-warnings) — Modifiers that trigger warnings
+- [4. Deprecation Warnings](#4-deprecation-warnings) — Deprecated features and alternatives
+  - [Router `mode` is deprecated](#router-mode-is-deprecated) — Migration from mode attribute
+- [5. Security](#5-security) — Template security considerations
+  - [`bind-html` sanitization warning](#bind-html-sanitization-warning) — XSS risk with raw HTML binding
+  - [Expression evaluator security](#expression-evaluator-security) — Safe expression evaluation
+  - [CSRF protection](#csrf-protection) — Cross-site request forgery setup
+- [6. Quick Validation Checklist](#6-quick-validation-checklist) — Categorized checklist for reviews
+  - [Directives & Syntax](#directives--syntax) — Directive usage checks
+  - [Events](#events) — Event handler checks
+  - [Security](#security) — Security verification items
+  - [State & Data](#state--data) — State management checks
+  - [Loops](#loops) — Iteration directive checks
+  - [Routing](#routing) — Router configuration checks
+  - [Templates](#templates) — Template usage checks
+  - [Forms](#forms) — Form validation checks
+  - [Performance](#performance) — Performance optimization checks
+
 ---
 
 ## 1. Common Mistakes -- Directive Typos

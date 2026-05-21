@@ -2,6 +2,49 @@
 
 No.JS includes 32 built-in filters for transforming values in bind expressions using pipe syntax.
 
+## Contents
+
+- [Pipe Syntax](#pipe-syntax) — How to apply filters with `|` in expressions
+- [Text Filters](#text-filters) — String transformation filters
+  - [uppercase](#uppercase) — Convert text to upper case
+  - [lowercase](#lowercase) — Convert text to lower case
+  - [capitalize](#capitalize) — Capitalize first letter of each word
+  - [truncate](#truncate) — Shorten text to a max length
+  - [trim](#trim) — Remove leading/trailing whitespace
+  - [stripHtml](#striphtml) — Remove HTML tags from strings
+  - [slugify](#slugify) — Convert text to URL-safe slugs
+  - [nl2br](#nl2br) — Convert newlines to `<br>` tags
+  - [encodeUri](#encodeuri) — Percent-encode URI components
+- [Number Filters](#number-filters) — Numeric formatting filters
+  - [number](#number) — Format numbers with locale support
+  - [currency](#currency) — Format as currency values
+  - [percent](#percent) — Format as percentage
+  - [filesize](#filesize) — Human-readable file sizes
+  - [ordinal](#ordinal) — Add ordinal suffix (1st, 2nd, etc.)
+- [Array Filters](#array-filters) — Collection manipulation filters
+  - [count](#count) — Return array length
+  - [first](#first) — Get first element
+  - [last](#last) — Get last element
+  - [join](#join) — Join elements with separator
+  - [reverse](#reverse) — Reverse array order
+  - [unique](#unique) — Remove duplicate values
+  - [pluck](#pluck) — Extract property from objects
+  - [sortBy](#sortby) — Sort by object property
+  - [where](#where) — Filter by property value
+- [Date Filters](#date-filters) — Date and time formatting
+  - [date](#date) — Format date strings
+  - [datetime](#datetime) — Format date with time
+  - [relative](#relative) — Relative time description
+  - [fromNow](#fromnow) — Time remaining until a future date (or relative for past dates)
+- [Utility Filters](#utility-filters) — General-purpose utility filters
+  - [default](#default) — Fallback value for nullish data
+  - [json](#json) — Pretty-print as JSON
+  - [debug](#debug) — Console-log and pass through
+  - [keys](#keys) — Get object keys as array
+  - [values](#values) — Get object values as array
+- [Custom Filters](#custom-filters) — How to register your own filters
+- [Chaining Patterns](#chaining-patterns) — Combining multiple filters in sequence
+
 ## Pipe Syntax
 
 Filters are applied with `|` inside expressions:
@@ -126,7 +169,7 @@ Convert a string to a URL-friendly slug.
 
 ### nl2br
 
-Convert newline characters to `<br>` tags.
+Convert newline characters to `<br>` tags. Before converting newlines, the filter HTML-encodes `&`, `<`, and `>` to prevent XSS when used with `bind-html`.
 
 | | |
 |---|---|
@@ -136,6 +179,7 @@ Convert newline characters to `<br>` tags.
 ```html
 <span bind-html="message | nl2br"></span>
 <!-- "line 1\nline 2" -> "line 1<br>line 2" -->
+<!-- "<script>alert(1)</script>\nSafe" -> "&lt;script&gt;alert(1)&lt;/script&gt;<br>Safe" -->
 ```
 
 ### encodeUri

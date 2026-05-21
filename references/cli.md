@@ -2,6 +2,30 @@
 
 The official command-line tool for the No.JS framework. Scaffold projects, optimize HTML for production, run a dev server with live reload, validate templates, and manage plugins.
 
+## Contents
+
+- [Install](#install) — How to install the CLI globally
+- [Commands Overview](#commands-overview) — Summary table of all CLI commands
+- [`nojs init`](#nojs-init) — Scaffold a new No.JS project
+  - [Interactive Wizard](#interactive-wizard) — Guided project setup prompts
+  - [Generated Files](#generated-files) — Files created by init
+- [`nojs dev`](#nojs-dev) — Start local dev server with live reload
+  - [Features](#features) — Dev server capabilities
+  - [Reload Script](#reload-script) — Auto-injected reload mechanism
+- [`nojs prebuild`](#nojs-prebuild) — Optimize HTML for production
+  - [Configuration](#configuration) — Prebuild config options
+  - [Plugins](#plugins) — Built-in prebuild plugins
+- [`nojs validate`](#nojs-validate) — Lint and validate No.JS templates
+  - [Rules](#rules) — Validation rule list
+  - [Output Formats](#output-formats) — JSON, text, and CI output
+  - [Exit Codes](#exit-codes) — Process exit code meanings
+- [`nojs plugin`](#nojs-plugin) — Manage framework plugins
+  - [Actions](#actions) — Add, remove, list, and info
+  - [Plugin Config in `nojs.config.json`](#plugin-config-in-nojsconfigjson) — Plugin configuration format
+  - [SRI (Subresource Integrity)](#sri-subresource-integrity) — Integrity hash verification
+- [`nojs.config.json`](#nojsconfigjson) — Project configuration file format
+- [Typical Workflow](#typical-workflow) — Recommended dev-to-deploy flow
+
 ## Install
 
 ```bash

@@ -2,6 +2,52 @@
 
 Complete, copy-paste-ready templates and patterns for building applications with No.JS.
 
+## Contents
+
+- [1. Component Scaffolds](#1-component-scaffolds) — Ready-to-use templates for common UI components
+  - [Login / Registration Form](#login--registration-form-with-validation) — Form with built-in validation
+  - [Data List with Search and Pagination](#data-list-with-search-and-pagination) — Searchable paginated list
+  - [Detail View with Route Params](#detail-view-with-route-params) — Route-driven detail display
+  - [Card Component with Expand/Collapse](#card-component-with-expandcollapse) — Togglable card UI
+  - [Modal Dialog](#modal-dialog) — Overlay dialog pattern
+  - [Navigation Bar with Routing](#navigation-bar-with-routing) — Route-aware navbar
+  - [Dashboard with Multiple Stores](#dashboard-with-multiple-stores) — Multi-store dashboard layout
+  - [CRUD Interface](#crud-interface-list--create--edit--delete) — Full create/read/update/delete pattern
+  - [File Upload Form](#file-upload-form) — File upload handling
+  - [Infinite Scroll List](#infinite-scroll-list) — Lazy-loading list pattern
+- [2. Common Patterns](#2-common-patterns) — Reusable interaction and data patterns
+  - [Authentication Flow](#authentication-flow-login-store-token-protected-routes) — Login, token storage, route guards
+  - [Shopping Cart](#shopping-cart-global-store-addremove-total) — Global store cart with totals
+  - [Theme Switcher](#theme-switcher-darklight-mode-via-store) — Dark/light mode toggling
+  - [Search with Debounce](#search-with-debounce) — Debounced search input
+  - [Master-Detail Layout](#master-detail-layout) — List-to-detail navigation
+  - [Tabs Component](#tabs-component) — Tabbed content switcher
+  - [Accordion](#accordion) — Collapsible content sections
+  - [Toast Notifications](#toast-notifications) — Notification toast system
+  - [Sortable Table with Headers](#sortable-table-with-headers) — Column-sortable data table
+  - [Pagination Component](#pagination-component) — Page navigation controls
+- [3. Route Transition Patterns](#3-route-transition-patterns) — View Transition API integration
+  - [Basic Route Transition](#basic-route-transition-view-transition-api) — Simple view transition setup
+  - [Custom View Transition CSS](#custom-view-transition-css) — Styling route transitions
+  - [Direction-Aware Slide Transition](#direction-aware-slide-transition) — Directional slide animations
+  - [Full SPA with Route Transitions](#full-spa-with-route-transitions) — Complete SPA transition example
+  - [Disabling Transitions](#disabling-transitions-for-specific-outlets) — Opt out per outlet
+  - [Opting Out of View Transition API](#opting-out-of-view-transition-api) — Disable globally
+- [4. Best Practices](#4-best-practices) — Guidelines for production-quality apps
+  - [State Scoping: Local vs Global](#state-scoping-local-vs-global) — When to use each scope
+  - [Template Organization for Large Apps](#template-organization-for-large-apps) — File structure recommendations
+  - [Performance Tips](#performance-tips) — Optimization strategies
+  - [Form Validation Patterns](#form-validation-patterns) — Validation best practices
+  - [Error Handling Strategies](#error-handling-strategies) — Graceful error management
+  - [Live Search with Debounced GET](#live-search-with-debounced-get) — Fetch-based search pattern
+  - [Live Polling Dashboard](#live-polling-dashboard) — Auto-refreshing data display
+  - [Request + Response Interceptors](#request--response-interceptors-jwt-auth) — JWT auth interceptor setup
+  - [`into` -- Write Fetch Response to a Global Store](#into----write-fetch-response-to-a-global-store) — Store fetch results globally
+  - [Full SPA Example](#full-spa-example) — Complete single-page application
+- [5. SSG / Pre-Rendering Pattern](#5-ssg--pre-rendering-pattern) — Static site generation approach
+- [6. Resource Hints](#6-resource-hints) — Preload, prefetch, and preconnect
+- [7. CLS Prevention with `skeleton=`](#7-cls-prevention-with-skeleton) — Prevent content layout shift
+
 ---
 
 ## 1. Component Scaffolds
