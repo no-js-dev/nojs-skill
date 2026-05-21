@@ -23,6 +23,17 @@ No.JS is an HTML-first reactive framework with zero dependencies that replaces J
 
 No `app.mount()`, no `createApp()`, no build step. It just works.
 
+## Project context
+
+Project configuration:
+`cat nojs.config.json 2>/dev/null || echo 'No nojs.config.json found'`
+
+HTML files in the project:
+`find . -name '*.html' -maxdepth 2 -not -path '*/node_modules/*' | head -10`
+
+Files using NoJS:
+`grep -l 'cdn.no-js.dev\|@erickxavier/no-js' package.json *.html 2>/dev/null | head -5`
+
 ## When to use
 
 This skill applies when:
