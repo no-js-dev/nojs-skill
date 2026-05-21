@@ -31,12 +31,22 @@ Copy `SKILL.md` and the `references/` directory into your skills directory.
 
 | File | Purpose |
 | --- | --- |
-| `SKILL.md` | Main skill file — framework overview, directive priorities, expression syntax, API, rules |
-| `references/directives.md` | Complete directive reference with all attributes and examples |
+| `SKILL.md` | Main skill file — framework overview, directive priorities, expression syntax, decision tree, workflow checklists |
+| `references/directives/data-fetching.md` | GET/POST/PUT/PATCH/DELETE directives |
+| `references/directives/state-and-binding.md` | state, store, computed, watch, bind, model, class-*, style-* |
+| `references/directives/control-flow.md` | if/else, switch, foreach/each/for, show/hide |
+| `references/directives/events.md` | on:* events, modifiers, lifecycle hooks |
+| `references/directives/routing.md` | route, route-view, View Transitions, file-based routing |
+| `references/directives/forms.md` | validate, $form, error handling |
+| `references/directives/templates.md` | template, use, slot, include, lazy, call |
+| `references/directives/extras.md` | animations, i18n, DnD, refs, head management, error-boundary |
 | `references/filters.md` | All 32 built-in filters with syntax and arguments |
-| `references/api.md` | Full JavaScript API reference |
+| `references/api.md` | Full JavaScript API, config, interceptors, plugin system, custom directive utilities |
 | `references/patterns.md` | Common patterns, scaffolds, and best practices |
 | `references/validation.md` | Template validation rules and common mistakes |
+| `references/troubleshooting.md` | Common issues, console warnings, debugging guide |
+| `references/devtools.md` | DevTools API, event protocol, inspector |
+| `references/cli.md` | CLI commands, prebuild plugins |
 
 ## Activation
 
