@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "nojs-skill",
+  "description": "Expert-level knowledge of the No.JS HTML-first reactive framework for Claude Code",
+  "owner": {
+    "name": "Erick Xavier",
+    "email": "erick.xavier@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "nojs",
+      "displayName": "No.JS",
+      "source": "./",
+      "description": "Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes.",
+      "author": {
+        "name": "Erick Xavier"
+      },
+      "homepage": "https://no-js.dev/",
+      "repository": "https://github.com/ErickXavier/nojs-skill",
+      "license": "MIT",
+      "keywords": ["nojs", "html-first", "reactive", "framework", "no-javascript", "declarative"],
+      "category": "development"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "nojs",
+  "description": "Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes.",
+  "version": "1.12.0",
+  "author": {
+    "name": "Erick Xavier"
+  }
+}

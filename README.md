@@ -17,7 +17,14 @@ When installed, this skill automatically activates whenever you work with No.JS 
 
 ## Installation
 
-### Claude Code
+### Claude Code (Marketplace)
+
+```bash
+/plugin marketplace add ErickXavier/nojs-skill
+/plugin install nojs@nojs-skill
+```
+
+### Claude Code (Skill)
 
 ```bash
 claude skill install github:ErickXavier/nojs-skill
@@ -25,28 +32,28 @@ claude skill install github:ErickXavier/nojs-skill
 
 ### Manual
 
-Copy `SKILL.md` and the `references/` directory into your skills directory.
+Copy `nojs/SKILL.md` and the `nojs/references/` directory into your skills directory.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
-| `SKILL.md` | Main skill file — framework overview, directive priorities, expression syntax, decision tree, workflow checklists |
-| `references/directives/data-fetching.md` | GET/POST/PUT/PATCH/DELETE directives |
-| `references/directives/state-and-binding.md` | state, store, computed, watch, bind, model, class-*, style-* |
-| `references/directives/control-flow.md` | if/else, switch, foreach/each/for, show/hide |
-| `references/directives/events.md` | on:* events, modifiers, lifecycle hooks |
-| `references/directives/routing.md` | route, route-view, View Transitions, file-based routing |
-| `references/directives/forms.md` | validate, $form, error handling |
-| `references/directives/templates.md` | template, use, slot, include, lazy, call |
-| `references/directives/extras.md` | animations, i18n, DnD, refs, head management, error-boundary |
-| `references/filters.md` | All 32 built-in filters with syntax and arguments |
-| `references/api.md` | Full JavaScript API, config, interceptors, plugin system, custom directive utilities |
-| `references/patterns.md` | Common patterns, scaffolds, and best practices |
-| `references/validation.md` | Template validation rules and common mistakes |
-| `references/troubleshooting.md` | Common issues, console warnings, debugging guide |
-| `references/devtools.md` | DevTools API, event protocol, inspector |
-| `references/cli.md` | CLI commands, prebuild plugins |
+| `nojs/SKILL.md` | Main skill file — framework overview, directive priorities, expression syntax, decision tree, workflow checklists |
+| `nojs/references/directives/data-fetching.md` | GET/POST/PUT/PATCH/DELETE directives |
+| `nojs/references/directives/state-and-binding.md` | state, store, computed, watch, bind, model, class-*, style-* |
+| `nojs/references/directives/control-flow.md` | if/else, switch, foreach/each/for, show/hide |
+| `nojs/references/directives/events.md` | on:* events, modifiers, lifecycle hooks |
+| `nojs/references/directives/routing.md` | route, route-view, View Transitions, file-based routing |
+| `nojs/references/directives/forms.md` | validate, $form, error handling |
+| `nojs/references/directives/templates.md` | template, use, slot, include, lazy, call |
+| `nojs/references/directives/extras.md` | animations, i18n, DnD, refs, head management, error-boundary |
+| `nojs/references/filters.md` | All 32 built-in filters with syntax and arguments |
+| `nojs/references/api.md` | Full JavaScript API, config, interceptors, plugin system, custom directive utilities |
+| `nojs/references/patterns.md` | Common patterns, scaffolds, and best practices |
+| `nojs/references/validation.md` | Template validation rules and common mistakes |
+| `nojs/references/troubleshooting.md` | Common issues, console warnings, debugging guide |
+| `nojs/references/devtools.md` | DevTools API, event protocol, inspector |
+| `nojs/references/cli.md` | CLI commands, prebuild plugins |
 
 ## Activation
 
