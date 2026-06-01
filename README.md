@@ -68,6 +68,7 @@ The skill activates when it detects:
 | Project | Description |
 | --- | --- |
 | [No.JS](https://github.com/ErickXavier/no-js) | Core framework (zero dependencies) |
+| [NoJS Elements](https://github.com/ErickXavier/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
 | [NoJS LSP](https://github.com/ErickXavier/nojs-lsp) | VS Code extension — completions, diagnostics, hover docs |
 | [NoJS CLI](https://github.com/ErickXavier/nojs-cli) | Command-line tool for scaffolding and managing No.JS projects |
 | **NoJS Skill** | This project — AI skill for Claude Code |

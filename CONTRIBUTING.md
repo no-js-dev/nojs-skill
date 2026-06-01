@@ -17,6 +17,7 @@ The NoJS Skill is part of the No.JS ecosystem:
 | Repository | Purpose |
 | --- | --- |
 | [no-js](https://github.com/ErickXavier/no-js) | Core framework (source of truth) |
+| [nojs-elements](https://github.com/ErickXavier/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
 | [nojs-lsp](https://github.com/ErickXavier/nojs-lsp) | VS Code language server extension |
 | [nojs-skill](https://github.com/ErickXavier/nojs-skill) | AI skill for Claude Code and others |
 

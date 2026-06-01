@@ -256,6 +256,7 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 - **CDN**: https://cdn.no-js.dev/
 - **npm**: `npm install @erickxavier/no-js`
 - **GitHub**: https://github.com/ErickXavier/no-js
+- **Elements**: `npm install @erickxavier/nojs-elements` (UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate`; new in v1.13.0)
 - **CLI**: `npm install -g @erickxavier/nojs-cli` (scaffold, dev server, prebuild, validate, plugins)
 - **VS Code Extension**: NoJS LSP (completions, diagnostics, hover docs for 43+ directives)
 - **Full docs**: https://no-js.dev/llms-full.txt
