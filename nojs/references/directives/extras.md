@@ -205,6 +205,8 @@ No.JS ships with these CSS animations: `fadeIn`, `fadeOut`, `fadeInUp`, `fadeInD
 
 ## Drag and Drop
 
+> **Note:** As of v1.13.0, the `drag`, `drop`, `drag-list`, and `drag-multiple` directives have moved to `@erickxavier/nojs-elements`. Install the Elements plugin and call `NoJS.use(NoJSElements)` to enable them.
+
 Declarative drag-and-drop system with sortable lists and multi-select.
 
 ### `drag`

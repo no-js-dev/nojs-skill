@@ -21,6 +21,8 @@ Built-in form validation with `$form` context. Priority 30 (validate), Priority 
 
 ## Forms and Validation
 
+> **Note:** As of v1.13.0, the `validate` directive has moved to `@erickxavier/nojs-elements`. Install the Elements plugin and call `NoJS.use(NoJSElements)` to enable it. The `error-boundary` directive and `NoJS.validator()` remain in core.
+
 Built-in form validation with `$form` context. No.JS automatically detects native HTML5 validation attributes. The `validate` attribute is needed only for framework-specific validators.
 
 ### `validate`

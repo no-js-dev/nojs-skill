@@ -1,7 +1,7 @@
 ---
 name: nojs
 metadata:
-  version: 1.12.0
+  version: 1.13.0
 description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user mentions No.JS, NoJS, "no javascript framework", HTML-first framework, or is writing HTML with reactive attributes like bind, state, get, foreach, each, for, on:click, model, route, store, computed, watch, if/else, show/hide, validate, animate, drag, drop, t (i18n), class-*, style-*, or bind-*. Also relevant when the user asks about declarative HTML frameworks, zero-JS frameworks, or wants to build a web app without writing JavaScript. Applies whenever HTML attributes match No.JS directive patterns, even without explicit mention of the framework.
 ---
 
@@ -56,11 +56,13 @@ No.JS works by walking the DOM on `DOMContentLoaded`, matching HTML attributes t
 | 1 | `get`, `post`, `put`, `patch`, `delete`, `error-boundary`, `i18n-ns`, `page-title`, `page-description`, `page-canonical`, `page-jsonld` | Fetch data, error/i18n setup, head management |
 | 2 | `computed`, `watch` | Derive values and observe changes |
 | 5 | `ref` | Element references |
-| 10 | `if`, `else-if`, `else`, `switch`, `foreach`, `each`, `for`, `use`, `drag-list` | Structural (add/remove DOM) |
-| 15 | `drag`, `drop` | Drag and drop setup |
-| 16 | `drag-multiple` | Multi-select drag |
+| 10 | `if`, `else-if`, `else`, `switch`, `foreach`, `each`, `for`, `use`, `drag-list`* | Structural (add/remove DOM) |
+| 15 | `drag`*, `drop`* | Drag and drop setup |
+| 16 | `drag-multiple`* | Multi-select drag |
 | 20 | `bind`, `bind-*`, `bind-html`, `model`, `class-*`, `style-*`, `on:*`, `show`, `hide`, `t`, `call`, `trigger` | Rendering, events, i18n, actions |
-| 30 | `validate` | Form validation side effects |
+| 30 | `validate`* | Form validation side effects |
+
+> \* As of v1.13.0, `drag`, `drop`, `drag-list`, `drag-multiple`, and `validate` require the `@erickxavier/nojs-elements` plugin. Install it and call `NoJS.use(NoJSElements)` to enable them. The `error-boundary` directive and `NoJS.validator()` remain in core.
 
 Data lives in Proxy-backed reactive contexts that inherit from parent elements (like lexical scoping). When data changes, every bound element updates automatically.
 
@@ -78,11 +80,11 @@ Directives are organized into eight categories. Each summary below provides enou
 
 **Routing** -- `<a route>`, `<template route>`, `<main route-view>`. View Transition API with presets (`slide`, `fade`, `scale`, `none`). Guards, named outlets, `$route` context, file-based routing, head attributes. See [references/directives/routing.md](references/directives/routing.md).
 
-**Forms** -- `<form validate>` with `$form` context. Field rules: `validate="required,email,min:5"`. Triggers: `validate-on`. Conditional: `validate-if`. Custom validators via `NoJS.validator()`. See [references/directives/forms.md](references/directives/forms.md).
+**Forms** -- `<form validate>` with `$form` context (requires Elements plugin since v1.13.0). Field rules: `validate="required,email,min:5"`. Triggers: `validate-on`. Conditional: `validate-if`. Custom validators via `NoJS.validator()` (remains in core). See [references/directives/forms.md](references/directives/forms.md).
 
 **Templates** -- `<template id>` + `use`, `<slot>`, `<template src>` (remote loading), `include`, lazy loading (`lazy`, `lazy="priority"`, `lazy="ondemand"`). See [references/directives/templates.md](references/directives/templates.md).
 
-**Extras** -- Animations (`animate`, `transition`, `animate-stagger`), i18n (`t`, `i18n-ns`, pluralization), DnD (`drag`, `drop`, `drag-list`, `drag-multiple`), head management (`page-title`, `page-description`, `page-canonical`, `page-jsonld`), refs (`ref`, `call`, `trigger`), styling (`class-*`, `style-*`), error boundaries. See [references/directives/extras.md](references/directives/extras.md).
+**Extras** -- Animations (`animate`, `transition`, `animate-stagger`), i18n (`t`, `i18n-ns`, pluralization), DnD (`drag`, `drop`, `drag-list`, `drag-multiple` -- requires Elements plugin since v1.13.0), head management (`page-title`, `page-description`, `page-canonical`, `page-jsonld`), refs (`ref`, `call`, `trigger`), styling (`class-*`, `style-*`), error boundaries. See [references/directives/extras.md](references/directives/extras.md).
 
 ### 3. Use the expression syntax correctly
 
@@ -221,6 +223,8 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 
 ### Add form validation
 
+> Prerequisite: the `validate` directive requires the `@erickxavier/nojs-elements` plugin. Install it and call `NoJS.use(NoJSElements)` to enable it.
+
 1. Add `validate` attribute to the `<form>` element
 2. Add validation rules to inputs: `<input model="email" validate="required,email">`
 3. Display errors: `<span if="$form.fields.email.errors.length" bind="$form.fields.email.errors[0]"></span>`
@@ -233,6 +237,8 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 10. See [references/directives/forms.md](references/directives/forms.md) and [references/validation.md](references/validation.md)
 
 ### Create a CRUD interface
+
+> Prerequisite: the `validate` directive used below requires the `@erickxavier/nojs-elements` plugin. Install it and call `NoJS.use(NoJSElements)` to enable it.
 
 1. Set `base` URL on a container: `<div base="https://api.example.com">`
 2. **List**: `<div get="/items" as="items"><div foreach="item in items" key="item.id">...</div></div>`
