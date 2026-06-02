@@ -1,5 +1,7 @@
 # NoJS Skill
 
+[![jsDelivr hits](https://data.jsdelivr.com/v1/package/gh/erickxavier/nojs-skill/badge)](https://www.jsdelivr.com/package/gh/erickxavier/nojs-skill)
+
 AI skill that gives [Claude Code](https://claude.com/claude-code) and compatible AI tools expert-level knowledge of the **[No.JS](https://no-js.dev)** framework — the HTML-first reactive framework for building dynamic web applications using only HTML attributes.
 
 ## What it does
