@@ -55,7 +55,6 @@ Copy `nojs/SKILL.md` and the `nojs/references/` directory into your skills direc
 | `nojs/references/validation.md` | Template validation rules and common mistakes |
 | `nojs/references/troubleshooting.md` | Common issues, console warnings, debugging guide |
 | `nojs/references/devtools.md` | DevTools API, event protocol, inspector |
-| `nojs/references/cli.md` | CLI commands, prebuild plugins |
 
 ## Activation
 
@@ -72,7 +71,6 @@ The skill activates when it detects:
 | [No.JS](https://github.com/ErickXavier/no-js) | Core framework (zero dependencies) |
 | [NoJS Elements](https://github.com/ErickXavier/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
 | [NoJS LSP](https://github.com/ErickXavier/nojs-lsp) | VS Code extension — completions, diagnostics, hover docs |
-| [NoJS CLI](https://github.com/ErickXavier/nojs-cli) | Command-line tool for scaffolding and managing No.JS projects |
 | **NoJS Skill** | This project — AI skill for Claude Code |
 
 ## Version

@@ -155,18 +155,6 @@ See [references/api.md](references/api.md) for the complete API reference. See [
 
 Check for: directive typos (`bnd` -> `bind`, `on-click` -> `on:click`), missing `as` on `get`, `foreach`/`each`/`for` without `in`, `model` on non-form elements, unsanitized `bind-html`. See [references/validation.md](references/validation.md) for the full checklist.
 
-### 8. Use the NoJS CLI for development tooling
-
-The NoJS CLI (`@erickxavier/nojs-cli`) provides project scaffolding, a dev server, HTML optimization, template validation, and plugin management.
-
-- **Scaffold** -- `nojs init my-app` (interactive wizard) or `nojs init my-app --routing --i18n -y` (non-interactive)
-- **Dev server** -- `nojs dev` with SSE live reload, SPA fallback, path traversal protection
-- **Prebuild** -- `nojs prebuild` runs 6 HTML optimization plugins (resource hints, head attrs, speculation rules, OG/Twitter, sitemap, image optimization)
-- **Validate** -- `nojs validate *.html` checks 10 rules; `--format json` for CI
-- **Plugins** -- `nojs plugin search|install|update|remove|list` manages plugins from CDN or npm
-
-See [references/cli.md](references/cli.md) for the complete CLI reference with all options, config schemas, and examples.
-
 ## Decision tree: which reference file to consult
 
 | Need | Reference file |
@@ -184,7 +172,6 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 | Plugin system (lifecycle, globals, interceptors, sentinels) | [references/plugins.md](references/plugins.md) |
 | Common patterns and scaffolds | [references/patterns.md](references/patterns.md) |
 | Template validation rules and common mistakes | [references/validation.md](references/validation.md) |
-| CLI commands (`init`, `dev`, `prebuild`, `validate`, `plugin`) | [references/cli.md](references/cli.md) |
 | Debugging issues, console warnings, common mistakes | [references/troubleshooting.md](references/troubleshooting.md) |
 
 ## Workflow checklists
@@ -197,7 +184,6 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 4. Add fetch directives with `get="/endpoint" as="data"` and display with `bind`
 5. Add interactivity with `on:click`, `model`, `show`/`if`
 6. Optionally configure with `NoJS.config({ ... })` in a `<script>` tag before the CDN script
-7. Or use the CLI: `nojs init my-app --routing --i18n -y && cd my-app && nojs dev`
 
 ### Add client-side routing
 
@@ -257,6 +243,5 @@ See [references/cli.md](references/cli.md) for the complete CLI reference with a
 - **npm**: `npm install @erickxavier/no-js`
 - **GitHub**: https://github.com/ErickXavier/no-js
 - **Elements**: `npm install @erickxavier/nojs-elements` (UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate`; new in v1.13.0)
-- **CLI**: `npm install -g @erickxavier/nojs-cli` (scaffold, dev server, prebuild, validate, plugins)
 - **VS Code Extension**: NoJS LSP (completions, diagnostics, hover docs for 43+ directives)
 - **Full docs**: https://no-js.dev/llms-full.txt
