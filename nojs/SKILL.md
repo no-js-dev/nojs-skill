@@ -70,7 +70,7 @@ Data lives in Proxy-backed reactive contexts that inherit from parent elements (
 
 Directives are organized into eight categories. Each summary below provides enough context to decide when to consult the full reference.
 
-**Data Fetching** -- `get`, `post`, `put`, `patch`, `delete` with `as`, `loading`, `error`, `empty`, `success`, `refresh`, `cached`, `skeleton`, `debounce`, `headers`, `params`. URLs support interpolation (`/users/{userId}`). Automatic resource hints for static URLs. See [references/directives/data-fetching.md](references/directives/data-fetching.md).
+**Data Fetching** -- `get`, `post`, `put`, `patch`, `delete` with `as`, `loading`, `error`, `empty`, `success`, `refresh`, `cached`, `skeleton`, `debounce`, `headers`, `params`, `get-trigger`, `get-insert`, `get-page`, `get-cursor`, `get-cursor-field`, `get-threshold`. URLs support interpolation (`/users/{userId}`). Pagination via `get-trigger="scroll"` + `get-insert="append"` + `get-page` or `get-cursor`. See [references/directives/data-fetching.md](references/directives/data-fetching.md).
 
 **State and Binding** -- `state` (local), `store` (global via `$store`), `computed`, `watch`, `persist`/`persist-key`/`persist-fields`. Binding: `bind` (text), `bind-html` (sanitized), `bind-*` (attributes), `model` (two-way). See [references/directives/state-and-binding.md](references/directives/state-and-binding.md).
 
@@ -159,7 +159,7 @@ Check for: directive typos (`bnd` -> `bind`, `on-click` -> `on:click`), missing 
 
 | Need | Reference file |
 |------|---------------|
-| Directive syntax for `get`, `post`, `put`, `patch`, `delete`, `as`, `loading`, `error`, `cached`, `skeleton` | [references/directives/data-fetching.md](references/directives/data-fetching.md) |
+| Directive syntax for `get`, `post`, `put`, `patch`, `delete`, `as`, `loading`, `error`, `cached`, `skeleton`, `get-trigger`, `get-insert`, `get-page`, `get-cursor`, `get-threshold` | [references/directives/data-fetching.md](references/directives/data-fetching.md) |
 | Directive syntax for `state`, `store`, `computed`, `watch`, `bind`, `model`, `persist` | [references/directives/state-and-binding.md](references/directives/state-and-binding.md) |
 | Directive syntax for `if`, `else`, `show`, `hide`, `switch`, `foreach`, `each`, `for` | [references/directives/control-flow.md](references/directives/control-flow.md) |
 | Directive syntax for `on:*`, event modifiers, lifecycle hooks | [references/directives/events.md](references/directives/events.md) |
@@ -233,8 +233,11 @@ Check for: directive typos (`bnd` -> `bind`, `on-click` -> `on:click`), missing 
 5. **Update**: `<form validate on:submit.prevent="put('/items/' + item.id, { name: item.name })">...</form>`
 6. **Delete**: `<button on:click="delete('/items/' + item.id)">Delete</button>`
 7. **Refresh**: Add `refresh="30"` on the list `get` to poll, or re-fetch on mutations with reactive URL interpolation
-8. **Loading states**: Use `loading`, `error`, `empty` attributes on fetch containers
-9. See [references/directives/data-fetching.md](references/directives/data-fetching.md) and [references/patterns.md](references/patterns.md)
+8. **Infinite Scroll**: `<div get="/items?page={page}" get-trigger="scroll" get-insert="append" get-page="1" as="items"><div foreach="item in items" key="item.id">...</div></div>`
+9. **Load More**: Same as infinite scroll but `get-trigger="button"` + optional `get-trigger-label="Show More"`
+10. **Cursor Pagination**: `<div get="/feed?cursor={cursor}" get-trigger="scroll" get-insert="append" get-cursor as="posts">...</div>`
+11. **Loading states**: Use `loading`, `error`, `empty` attributes on fetch containers
+12. See [references/directives/data-fetching.md](references/directives/data-fetching.md) and [references/patterns.md](references/patterns.md)
 
 ## Ecosystem
 
