@@ -25,6 +25,7 @@ Declarative HTTP requests via HTML attributes. Priority 1.
   - [Programmatic Refresh](#programmatic-refresh) -- re-trigger fetch via el.refresh()
   - [Template var Priority](#template-var-priority) -- success/error template variable naming
   - [Trigger Behavior](#trigger-behavior) -- how each directive triggers its request
+  - [Pagination & Fetch Triggers](#pagination--fetch-triggers) -- get-trigger, get-insert, get-page, get-cursor, get-threshold
   - [SwitchMap / Abort Behavior](#switchmap--abort-behavior) -- rapid calls abort in-flight requests
 
 ---
@@ -345,6 +346,150 @@ The variable name exposed inside `success` and `error` templates follows a prior
 | `delete` | Intercepts `submit` | Attaches `click` listener |
 
 For `<form>` elements, the `submit` event is prevented (`e.preventDefault()`) and the request fires instead.
+
+### Pagination & Fetch Triggers
+
+Extend the `get` directive with declarative pagination and fetch trigger control. These attributes compose together — `get-trigger` controls WHEN to fetch, `get-insert` controls WHERE to place content.
+
+#### `get-trigger`
+
+Controls when the GET request fires.
+
+**Syntax:** `<element get="/url" get-trigger="scroll|button|visible|hover|none">`
+
+| Value | Behavior |
+|-------|----------|
+| (absent) | Fetches immediately on mount (default `get` behavior) |
+| `visible` | Fetches when element enters viewport via IntersectionObserver |
+| `hover` | Fetches on first `mouseenter` event |
+| `none` | Suppresses auto-fetch; use `.refresh()` to trigger manually |
+| `scroll` | Infinite scroll — fetches next page when sentinel enters viewport. Requires `get-insert` |
+| `button` | Renders a "Load More" button. Requires `get-insert` |
+
+```html
+<!-- Lazy load on scroll into view -->
+<div get="/api/stats" get-trigger="visible" as="stats">
+  <p bind="stats.total"></p>
+</div>
+
+<!-- Prefetch on hover -->
+<div get="/api/preview/{id}" get-trigger="hover" as="preview">
+  <p bind="preview.summary"></p>
+</div>
+
+<!-- Manual trigger only -->
+<div get="/api/data" get-trigger="none" as="data" ref="dataEl">
+  <p bind="data.value"></p>
+</div>
+<button on:click="$refs.dataEl.refresh()">Load Data</button>
+```
+
+#### `get-trigger-label`
+
+Custom label for the auto-generated "Load More" button when `get-trigger="button"`.
+
+**Syntax:** `<element get="/url" get-trigger="button" get-trigger-label="Show More">`
+
+Default: `"Load More"`.
+
+#### `get-insert`
+
+Controls how fetched content is inserted into the container.
+
+**Syntax:** `<element get="/url" get-insert="append|prepend">`
+
+| Value | Behavior |
+|-------|----------|
+| (absent) | Replaces all content (default `get` behavior) |
+| `append` | Inserts new content after existing content |
+| `prepend` | Inserts new content before existing content (preserves scroll position) |
+
+When `get-insert` is set, fetched data accumulates in the context as an array. Each response's items are concatenated onto the existing array.
+
+#### `get-page`
+
+Offset-based pagination. Sets the initial page number and auto-increments on each fetch.
+
+**Syntax:** `<element get="/url?page={page}" get-page="1">`
+
+The `{page}` token in the URL resolves to the current page value. The page number is exposed as `page` in the element's context for use in expressions.
+
+```html
+<!-- Infinite scroll with page-based pagination -->
+<div get="/api/items?page={page}"
+     get-trigger="scroll"
+     get-insert="append"
+     get-page="1"
+     as="items">
+  <div each="item in items">
+    <h3 bind="item.title"></h3>
+  </div>
+</div>
+```
+
+**End-of-data:** When the server returns an empty response body or an empty array, pagination stops automatically.
+
+#### `get-cursor`
+
+Cursor-based pagination. Mutually exclusive with `get-page`.
+
+**Syntax:** `<element get="/url?cursor={cursor}" get-cursor>`
+
+The cursor value is extracted from each response and used in the next request. The `{cursor}` token in the URL resolves to the current cursor. Initially empty string (first request has no cursor).
+
+**Cursor extraction order:**
+1. Custom field via `get-cursor-field` (supports dot notation)
+2. Response header `X-Cursor`
+3. Auto-detect from common JSON field names: `nextCursor`, `next_cursor`, `cursor`, `nextPageToken`, `next_page_token`, `pageToken`, `after`, `endCursor`, `end_cursor`
+
+**End-of-data:** When no cursor is found in the response, pagination stops.
+
+#### `get-cursor-field`
+
+Dot-notation path to the cursor value in the JSON response.
+
+**Syntax:** `<element get="/url" get-cursor get-cursor-field="meta.pagination.next">`
+
+Used when the cursor is in a nested field. Supports standard dot notation (e.g., `meta.nextCursor`, `pagination.cursor`).
+
+```html
+<!-- Cursor pagination with custom field -->
+<div get="/api/feed?after={cursor}"
+     get-trigger="scroll"
+     get-insert="append"
+     get-cursor
+     get-cursor-field="paging.cursors.after"
+     as="posts">
+  <div each="post in posts">
+    <p bind="post.content"></p>
+  </div>
+</div>
+```
+
+#### `get-threshold`
+
+IntersectionObserver `rootMargin` for `scroll` and `visible` triggers.
+
+**Syntax:** `<element get="/url" get-trigger="visible" get-threshold="200px">`
+
+Controls how early the trigger fires. Default: `200px` for `scroll`, `0px` for `visible`.
+
+```html
+<!-- Start loading 500px before element enters viewport -->
+<div get="/api/heavy-data"
+     get-trigger="visible"
+     get-threshold="500px"
+     as="data">
+  ...
+</div>
+```
+
+#### Composition Rules
+
+- `get-trigger="scroll"` and `get-trigger="button"` **require** `get-insert` (append or prepend). Without it, a warning is issued and they fall back to simpler behavior.
+- `get-cursor` and `get-page` are **mutually exclusive**. If both are present, cursor wins with a warning.
+- `scroll`/`button` triggers are **mutually exclusive with `refresh`**. If `refresh` is also set, it's ignored with a warning.
+- `get-trigger="none"` suppresses the initial auto-fetch. Use `.refresh()` via `$refs` to trigger manually.
 
 ### SwitchMap / Abort Behavior
 
