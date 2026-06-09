@@ -28,6 +28,7 @@ Conditional rendering, visibility control, and list iteration.
   - [offset](#offset) -- items to skip
   - [Loop Context Variables](#loop-context-variables) -- $index, $count, $first, $last, $even, $odd
   - [Nested Loops](#nested-loops) -- parent scope access
+  - [Empty-List Fallback (else)](#empty-list-fallback-else) -- companion attribute and sibling element patterns
 
 ---
 
@@ -78,7 +79,7 @@ Must follow an element with `if` or another `else-if`.
 
 ### `else`
 
-Fallback block after `if` or `else-if`. Can reference a template ID or contain inline content.
+Fallback block after `if`, `else-if`, **or a loop element**. Can reference a template ID or contain inline content.
 
 **Syntax:** `<element else>` or `<element else="templateId">`
 
@@ -88,6 +89,24 @@ Fallback block after `if` or `else-if`. Can reference a template ID or contain i
 |-----------|-------------|
 | `else` | Optional template ID for empty list fallback (on loops) |
 | `then` | Template ID to render as fallback content |
+
+**Usage with conditionals:** follows an `if` or `else-if` element as the fallback branch.
+
+**Usage with loops (two patterns):**
+
+1. **Companion attribute** -- `else="templateId"` on the loop element itself. References a `<template>` to show when the array is empty, null, or undefined:
+   ```html
+   <li each="item in items" else="emptyTpl">...</li>
+   <template id="emptyTpl"><li>No items found.</li></template>
+   ```
+
+2. **Sibling element** -- a separate element with `else` placed immediately after the loop element. Shows inline content when the array is empty, null, or undefined. Reactively hides when items exist:
+   ```html
+   <li each="item in items" bind="item.name"></li>
+   <li else>No items found.</li>
+   ```
+
+Both patterns are reactive: the else content appears/disappears as the array changes.
 
 ### `then`
 
@@ -229,13 +248,15 @@ List rendering with iteration, filtering, sorting, and pagination.
 
 `foreach` is the **primary** iteration directive. `each` and `for` are **aliases** -- all three share the same handler and support identical features.
 
+Loops use a **self-repeating pattern**: the element with the loop directive IS the repeating template. At runtime, the original element is removed from the DOM and replaced by comment markers (`<!--foreach-->` / `<!--/foreach-->`). Clones are inserted between the markers as siblings.
+
 ### `foreach`
 
 Iterate over an array with full support for filtering, sorting, pagination, and custom variable names.
 
 **Syntax:** `<element foreach="item in items">`
 
-The `in` keyword separates the loop variable from the source array expression.
+The `in` keyword separates the loop variable from the source array expression. The element itself is the template that gets cloned for each item.
 
 > **Deprecated:** The legacy syntax `<element foreach="item" from="list">` still works but logs a deprecation warning. Use the `item in list` syntax instead.
 
@@ -246,7 +267,7 @@ The `in` keyword separates the loop variable from the source array expression.
 | `foreach` | `"variable in arrayExpression"` |
 | `index` | Variable name for the index (default: `$index`) |
 | `key` | Unique key expression for DOM diffing |
-| `else` | Template ID to render when array is empty |
+| `else` | Template ID to render when array is empty (companion attribute) |
 | `template` | Template ID to clone for each iteration |
 | `filter` | Expression to filter items |
 | `sort` | Property path to sort by (prefix with `-` for descending) |
@@ -258,15 +279,15 @@ The `in` keyword separates the loop variable from the source array expression.
 | `animate-stagger` | Delay in ms between each item's animation |
 | `animate-duration` | Duration in ms for enter/leave animations |
 
-**Inline children as template** -- when no `template` attribute is present, the element's children serve as the repeating template:
+The element with `foreach` IS the repeating template -- its children are part of each clone:
 
 ```html
-<!-- Inline children (most common) -->
+<!-- Self-repeating: the <li> is cloned for each todo -->
 <ul>
   <li foreach="todo in todos" bind="todo.text"></li>
 </ul>
 
-<!-- Inline children with multiple child elements -->
+<!-- With companion attributes -->
 <ul>
   <li foreach="item in menuItems"
       index="idx"
@@ -275,9 +296,15 @@ The `in` keyword separates the loop variable from the source array expression.
       sort="item.order"
       limit="10"
       offset="0"
-      else="#noItems">
+      else="noItems">
     <span bind="idx + 1"></span> - <span bind="item.label"></span>
   </li>
+</ul>
+
+<!-- With sibling else for empty-list fallback -->
+<ul>
+  <li foreach="item in menuItems" key="item.id" bind="item.label"></li>
+  <li else>No menu items available.</li>
 </ul>
 
 <!-- With template reference -->
@@ -292,7 +319,7 @@ The `in` keyword separates the loop variable from the source array expression.
 
 ### `each`
 
-Alias for `foreach`. Identical handler, identical behavior.
+Alias for `foreach`. Identical handler, identical behavior. Self-repeating pattern -- the element with `each` is cloned for each item.
 
 **Syntax:** `<element each="item in items">`
 
@@ -301,6 +328,7 @@ Alias for `foreach`. Identical handler, identical behavior.
   <li each="user in users" key="user.id">
     <span bind="user.name"></span>
   </li>
+  <li else>No users found.</li>
 </ul>
 ```
 
@@ -308,7 +336,7 @@ All `foreach` attributes (`filter`, `sort`, `limit`, `offset`, `key`, `else`, `t
 
 ### `for`
 
-Alias for `foreach`. Identical handler, identical behavior.
+Alias for `foreach`. Identical handler, identical behavior. Self-repeating pattern -- the element with `for` is cloned for each item.
 
 **Syntax:** `<element for="item in items">`
 
@@ -317,6 +345,7 @@ Alias for `foreach`. Identical handler, identical behavior.
   <li for="task in tasks" key="task.id" filter="!task.done">
     <span bind="task.title"></span>
   </li>
+  <li else>No pending tasks.</li>
 </ul>
 ```
 
@@ -324,7 +353,7 @@ All `foreach` attributes (`filter`, `sort`, `limit`, `offset`, `key`, `else`, `t
 
 ### `template`
 
-Template ID to clone for each iteration.
+Template ID to clone for each iteration. When set, the referenced `<template>` content is used instead of the element's own children.
 
 **Syntax:** `<element foreach="item in items" template="templateId">`
 
@@ -372,7 +401,7 @@ Number of items to skip.
 
 ### Loop Context Variables
 
-Inside any loop (`foreach`, `each`, or `for`), these variables are automatically available:
+Inside any loop (`foreach`, `each`, or `for`), these variables are automatically available in the cloned elements:
 
 | Variable | Description |
 |----------|-------------|
@@ -384,23 +413,58 @@ Inside any loop (`foreach`, `each`, or `for`), these variables are automatically
 | `$odd` | `true` if index is odd |
 
 ```html
-<div each="item in items">
-  <div class-first="$first" class-last="$last" class-striped="$odd">
-    <span bind="($index + 1) + ' of ' + $count"></span>
-    <span bind="item.name"></span>
-  </div>
+<div each="item in items"
+     class-first="$first" class-last="$last" class-striped="$odd">
+  <span bind="($index + 1) + ' of ' + $count"></span>
+  <span bind="item.name"></span>
 </div>
 ```
 
 ### Nested Loops
 
-Child loops can access parent scope variables:
+Child loops can access parent scope variables. Each loop element is self-repeating -- the inner loop produces sibling clones inside each outer clone:
 
 ```html
 <div each="category in categories">
   <h3 bind="category.name"></h3>
-  <div each="product in category.products">
-    <p><span bind="category.name"></span>: <span bind="product.name"></span></p>
-  </div>
+  <p each="product in category.products">
+    <span bind="category.name"></span>: <span bind="product.name"></span>
+  </p>
+  <p else>No products in this category.</p>
 </div>
+```
+
+### Empty-List Fallback (else)
+
+When a loop's source array is empty, null, or undefined, an `else` fallback is displayed. There are two patterns:
+
+**1. Companion attribute** -- `else="templateId"` on the loop element references a `<template>` for the fallback:
+
+```html
+<li each="item in items" key="item.id" else="noItemsTpl" bind="item.name"></li>
+<template id="noItemsTpl">
+  <li class="empty-state">No items match your criteria.</li>
+</template>
+```
+
+**2. Sibling element** -- a separate element with `else` placed immediately after the loop element provides inline fallback content:
+
+```html
+<ul get="/api/users" as="users">
+  <li each="user in users" key="user.id" bind="user.name"></li>
+  <li else>No users found.</li>
+</ul>
+```
+
+Both patterns are **reactive**: when items are added to an empty array, the else content is automatically removed and the loop clones appear. When all items are removed, the else content reappears.
+
+**Combined with data fetching:**
+
+```html
+<ul get="/api/tasks" as="tasks">
+  <li each="task in tasks" key="task.id">
+    <span bind="task.title"></span>
+  </li>
+  <li else>You have no tasks yet. Create one to get started.</li>
+</ul>
 ```

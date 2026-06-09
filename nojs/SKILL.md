@@ -12,12 +12,13 @@ No.JS is an HTML-first reactive framework with zero dependencies that replaces J
 ```html
 <script src="https://cdn.no-js.dev/"></script>
 <body base="https://jsonplaceholder.typicode.com">
-  <div get="/users" as="users">
-    <div each="user in users">
+  <ul get="/users" as="users">
+    <li each="user in users">
       <h2 bind="user.name"></h2>
       <p bind="user.email"></p>
-    </div>
-  </div>
+    </li>
+    <li else>No users found.</li>
+  </ul>
 </body>
 ```
 
@@ -74,7 +75,7 @@ Directives are organized into eight categories. Each summary below provides enou
 
 **State and Binding** -- `state` (local), `store` (global via `$store`), `computed`, `watch`, `persist`/`persist-key`/`persist-fields`. Binding: `bind` (text), `bind-html` (sanitized), `bind-*` (attributes), `model` (two-way). See [references/directives/state-and-binding.md](references/directives/state-and-binding.md).
 
-**Control Flow** -- `if`/`else-if`/`else`, `show`/`hide` (CSS toggle), `switch`/`case`/`default`. Loops: `foreach`/`each`/`for` (aliases, same handler) with `filter`, `sort`, `limit`, `offset`, `key`. Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`. See [references/directives/control-flow.md](references/directives/control-flow.md).
+**Control Flow** -- `if`/`else-if`/`else`, `show`/`hide` (CSS toggle), `switch`/`case`/`default`. Loops: `foreach`/`each`/`for` (aliases, same handler) -- self-repeating pattern where the element with the directive IS the repeating template (removed from DOM, clones inserted as siblings between comment markers). Companion attributes: `filter`, `sort`, `limit`, `offset`, `key`, `template`, `index`, `else`. Empty-list fallback via companion `else="templateId"` attribute or sibling `<el else>` element. Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`. See [references/directives/control-flow.md](references/directives/control-flow.md).
 
 **Events** -- `on:click="expr"` with modifiers (`.prevent`, `.stop`, `.once`, `.debounce.300`, `.throttle.100`). Key mods, lifecycle hooks (`on:init`, `on:mounted`, `on:updated`, `on:unmounted`, `on:error`). Vars: `$event`, `$el`. See [references/directives/events.md](references/directives/events.md).
 
@@ -139,17 +140,18 @@ See [references/api.md](references/api.md) for the complete API reference. See [
 ### 6. Follow these rules when generating No.JS code
 
 1. **Always set `as` on fetch directives** -- `get="/users" as="users"` not just `get="/users"`
-2. **Use `foreach` for all loops** (`each` and `for` are aliases -- all three share the same handler and support filter/sort/limit/key)
+2. **Use `foreach` for all loops** (`each` and `for` are aliases -- all three share the same handler and support filter/sort/limit/key). The directive goes on the element that IS the repeating template (self-repeating pattern), not on a container
 3. **Use `show`/`hide` for frequent toggles, `if` for rare** -- show is CSS-only, if recreates DOM
 4. **Use templates for reuse** -- `<template id="name">` + `then="name"` or `use="name"`
 5. **Scope state close to usage** -- put `state` on the nearest common ancestor
 6. **Use `$store` for cross-component data** -- auth, theme, cart, notifications
 7. **Add `key` on loops** -- `each="item in items" key="item.id"` for efficient updates
-8. **Use filters for display** -- `bind="price | currency"` not inline formatting
-9. **Events use colon syntax** -- `on:click` not `onclick` or `on-click`
-10. **Validate forms declaratively** -- `<form validate>` + `validate="required,email"` on inputs
-11. **Use plugins for reusable extensions** -- `NoJS.use({ name, install })` for auth, analytics, etc.
-12. **Namespace plugin globals** -- `NoJS.global('myPlugin', {...})` not `NoJS.global('data', {...})`
+8. **Use sibling `else` for empty lists** -- `<li each="item in items"></li><li else>No items</li>` for inline empty-state content (companion `else="templateId"` still works for template references)
+9. **Use filters for display** -- `bind="price | currency"` not inline formatting
+10. **Events use colon syntax** -- `on:click` not `onclick` or `on-click`
+11. **Validate forms declaratively** -- `<form validate>` + `validate="required,email"` on inputs
+12. **Use plugins for reusable extensions** -- `NoJS.use({ name, install })` for auth, analytics, etc.
+13. **Namespace plugin globals** -- `NoJS.global('myPlugin', {...})` not `NoJS.global('data', {...})`
 
 ### 7. Validate templates for common mistakes
 
@@ -227,13 +229,13 @@ Check for: directive typos (`bnd` -> `bind`, `on-click` -> `on:click`), missing 
 > Prerequisite: the `validate` directive used below requires the `@erickxavier/nojs-elements` plugin. Install it and call `NoJS.use(NoJSElements)` to enable it.
 
 1. Set `base` URL on a container: `<div base="https://api.example.com">`
-2. **List**: `<div get="/items" as="items"><div foreach="item in items" key="item.id">...</div></div>`
+2. **List**: `<div get="/items" as="items"><div foreach="item in items" key="item.id">...</div><div else>No items found.</div></div>`
 3. **Create**: `<form validate on:submit.prevent="post('/items', { name, description }); name=''; description=''"><input model="name" validate="required">...</form>`
 4. **Read**: Use routing for detail view: `<template route="/items/:id"><div get="/items/{$route.params.id}" as="item"><h1 bind="item.name"></h1></div></template>`
 5. **Update**: `<form validate on:submit.prevent="put('/items/' + item.id, { name: item.name })">...</form>`
 6. **Delete**: `<button on:click="delete('/items/' + item.id)">Delete</button>`
 7. **Refresh**: Add `refresh="30"` on the list `get` to poll, or re-fetch on mutations with reactive URL interpolation
-8. **Infinite Scroll**: `<div get="/items?page={page}" get-trigger="scroll" get-insert="append" get-page="1" as="items"><div foreach="item in items" key="item.id">...</div></div>`
+8. **Infinite Scroll**: `<div get="/items?page={page}" get-trigger="scroll" get-insert="append" get-page="1" as="items"><div foreach="item in items" key="item.id">...</div><div else>No items yet.</div></div>`
 9. **Load More**: Same as infinite scroll but `get-trigger="button"` + optional `get-trigger-label="Show More"`
 10. **Cursor Pagination**: `<div get="/feed?cursor={cursor}" get-trigger="scroll" get-insert="append" get-cursor as="posts">...</div>`
 11. **Loading states**: Use `loading`, `error`, `empty` attributes on fetch containers

@@ -300,14 +300,16 @@ NoJS.config({ sanitizeHtml: html => DOMPurify.sanitize(html) });
 
 **Cause:** Using the old `foreach="item" from="list"` syntax.
 
-**Fix:** Use the unified `in` syntax:
+**Fix:** Use the unified `in` syntax with the self-repeating pattern (the directive goes on the element that repeats, not a container):
 
 ```html
 <!-- Old (deprecated) -->
 <ul foreach="user" from="users"><li bind="user.name"></li></ul>
 
-<!-- New -->
-<ul foreach="user in users"><li bind="user.name"></li></ul>
+<!-- New (self-repeating pattern) -->
+<ul>
+  <li foreach="user in users" bind="user.name"></li>
+</ul>
 ```
 
 ### Security Warning for bind-html
@@ -556,16 +558,16 @@ matched.sort((a, b) => a.priority - b.priority);
 
 **Cause:** Both `if` and `foreach` have priority 10. When priorities are equal, directives execute in the order they appear in the element's attribute list, which is not guaranteed by HTML spec.
 
-**Fix:** Nest them on separate elements:
+**Fix:** Nest them on separate elements. With the self-repeating pattern, the `if` goes on a wrapper and the loop goes on the repeating element:
 
 ```html
 <!-- Avoid: both on same element -->
-<ul if="showList" foreach="item in items">...</ul>
+<li if="showList" foreach="item in items">...</li>
 
 <!-- Preferred: separate elements -->
 <div if="showList">
-  <ul foreach="item in items">
-    <li bind="item.name"></li>
+  <ul>
+    <li foreach="item in items" bind="item.name"></li>
   </ul>
 </div>
 ```
@@ -773,13 +775,13 @@ NoJS.config({ router: { base: '/app' } });
 ```html
 <!-- Default: data is stored as "data" -->
 <div get="/api/users">
-  <ul foreach="user in data">...</ul>
+  <div foreach="user in data">...</div>
 </div>
 
 <!-- Custom key with as -->
-<div get="/api/users" as="users">
-  <ul foreach="user in users">...</ul>
-</div>
+<ul get="/api/users" as="users">
+  <li foreach="user in users" bind="user.name"></li>
+</ul>
 ```
 
 ### CORS With baseApiUrl
