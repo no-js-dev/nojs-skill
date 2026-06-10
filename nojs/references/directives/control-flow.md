@@ -79,7 +79,7 @@ Must follow an element with `if` or another `else-if`.
 
 ### `else`
 
-Fallback block after `if`, `else-if`, **or a loop element**. References a template ID.
+Fallback branch for conditionals (element placed after `if`/`else-if`) **or** empty-state fallback for loops (companion attribute on the loop element itself). References a template ID.
 
 **Syntax:** `<element else>` or `<element else="templateId">`
 
@@ -87,21 +87,21 @@ Fallback block after `if`, `else-if`, **or a loop element**. References a templa
 
 | Attribute | Description |
 |-----------|-------------|
-| `else` | Template ID for empty list fallback (on loops) |
+| `else` | Template ID rendered when the loop's list is empty or null/undefined/non-array (on loops) |
 | `then` | Template ID to render as fallback content |
 
 **Usage with conditionals:** follows an `if` or `else-if` element as the fallback branch.
 
 **Usage with loops:**
 
-**Companion attribute** -- `else="templateId"` on the loop element itself. References a `<template>` to show when the array is empty, null, or undefined:
+**Companion attribute** -- `else="templateId"` on the loop element itself. References a `<template>` that renders when the list is empty (`[]`) **or** null/undefined/non-array -- e.g. API state before the first fetch resolves:
 
 ```html
 <li each="item in items" else="emptyTpl">...</li>
 <template id="emptyTpl"><li>No items found.</li></template>
 ```
 
-> **Breaking change (v1.15):** The sibling else pattern (`<li else>` placed after a loop element) has been removed. Use the companion attribute `else="templateId"` on the loop element instead. Migration: move inline fallback content into a `<template id="...">` and reference it via `else="templateId"` on the loop.
+> **Breaking change (v1.15):** The sibling else pattern (`<li else>` placed after a loop element) has been removed. Use the companion attribute `else="templateId"` on the loop element instead. Migration: move inline fallback content into a `<template id="...">` and reference it via `else="templateId"` on the loop. Also changed in v1.15: null/undefined/non-array lists now render the else template (previously they rendered nothing). An orphan `else` element (one with no preceding `if`/`else-if` sibling) logs a one-time console warning mentioning the v1.15 removal.
 
 The companion attribute is **reactive**: when items are added to an empty array, the else content is automatically removed and the loop clones appear. When all items are removed, the else content reappears.
 
@@ -264,7 +264,7 @@ The `in` keyword separates the loop variable from the source array expression. T
 | `foreach` | `"variable in arrayExpression"` |
 | `index` | Variable name for the index (default: `$index`) |
 | `key` | Unique key expression for DOM diffing |
-| `else` | Template ID or `#id` reference to render when array is empty (companion attribute) |
+| `else` | Template ID or `#id` reference to render when the list is empty or null/undefined/non-array (companion attribute) |
 | `template` | Template ID to clone for each iteration |
 | `filter` | Expression to filter items |
 | `sort` | Property path to sort by (prefix with `-` for descending) |
@@ -433,9 +433,9 @@ Child loops can access parent scope variables. Each loop element is self-repeati
 
 ### Empty-List Fallback (else)
 
-When a loop's source array is empty, null, or undefined, an `else` fallback is displayed.
+When a loop's source list is empty (`[]`) **or** null/undefined/non-array, an `else` fallback is displayed -- e.g. API state before the first fetch resolves.
 
-**Companion attribute** -- `else="templateId"` or `else="#templateId"` on the loop element references a `<template>` to show when the array is empty, null, or undefined. Both bare ID and `#id` syntax are accepted:
+**Companion attribute** -- `else="templateId"` or `else="#templateId"` on the loop element references a `<template>` that renders when the list is empty or null/undefined/non-array. Both bare ID and `#id` syntax are accepted:
 
 ```html
 <!-- Bare ID syntax -->
@@ -451,7 +451,7 @@ When a loop's source array is empty, null, or undefined, an `else` fallback is d
 <template id="no-items"><span>No items found</span></template>
 ```
 
-> **Breaking change (v1.15):** The sibling else pattern (`<el else>` as a separate element after the loop) has been removed. Migrate by wrapping inline fallback content in a `<template id="...">` and referencing it with `else="templateId"` on the loop element.
+> **Breaking change (v1.15):** The sibling else pattern (`<el else>` as a separate element after the loop) has been removed. Migrate by wrapping inline fallback content in a `<template id="...">` and referencing it with `else="templateId"` on the loop element. Also changed in v1.15: null/undefined/non-array lists now render the else template (previously they rendered nothing).
 
 The companion attribute is **reactive**: when items are added to an empty array, the else content is automatically removed and the loop clones appear. When all items are removed, the else content reappears.
 

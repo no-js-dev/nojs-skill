@@ -19,6 +19,7 @@ Common issues, their causes, and fixes when developing with the No.JS framework.
   - [Deprecated sanitize:false](#deprecated-sanitizefalse)
   - [HTML Sanitization Disabled](#html-sanitization-disabled)
   - [Deprecated Loop Syntax](#deprecated-loop-syntax)
+  - [Orphan else Element](#orphan-else-element)
   - [Security Warning for bind-html](#security-warning-for-bind-html)
   - [Cannot Override Core Directive](#cannot-override-core-directive)
   - [MaxListenersExceeded](#maxlistenersexceeded)
@@ -295,7 +296,7 @@ NoJS.config({ sanitizeHtml: html => DOMPurify.sanitize(html) });
 
 **Console message:**
 ```
-[NoJS] "<directive>" with "from" is deprecated. Use <directive>="<item> in <list>" instead.
+[No.JS] "<directive>" with "from" is deprecated. Use <directive>="<item> in <list>" instead.
 ```
 
 **Cause:** Using the old `foreach="item" from="list"` syntax.
@@ -311,6 +312,33 @@ NoJS.config({ sanitizeHtml: html => DOMPurify.sanitize(html) });
   <li foreach="user in users" bind="user.name"></li>
 </ul>
 ```
+
+### Orphan else Element
+
+**Console message:**
+```
+[No.JS] else: no preceding if/else-if sibling found — note the sibling else pattern for loops was removed in v1.15; use else="templateId" on the loop element
+```
+
+**Cause:** An `else` element has no preceding `if`/`else-if` sibling. The most common trigger is the legacy loop sibling-else pattern (`<li else>` placed after a `foreach`/`each`/`for` element), which was removed in v1.15. The warning is logged once.
+
+**Fix:** For loop empty states, move the fallback content into a `<template id="...">` and reference it via the companion `else="templateId"` attribute on the loop element. The template renders when the list is empty (`[]`) or null/undefined/non-array:
+
+```html
+<!-- Old (removed in v1.15) -->
+<ul>
+  <li each="item in items" bind="item.name"></li>
+  <li else>No items found.</li>
+</ul>
+
+<!-- New (companion attribute) -->
+<ul>
+  <li each="item in items" else="noItemsTpl" bind="item.name"></li>
+</ul>
+<template id="noItemsTpl"><li>No items found.</li></template>
+```
+
+For conditionals, ensure the `else` element directly follows its `if`/`else-if` sibling (conditional chains are unchanged in v1.15).
 
 ### Security Warning for bind-html
 

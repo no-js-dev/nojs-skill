@@ -75,7 +75,7 @@ Directives are organized into eight categories. Each summary below provides enou
 
 **State and Binding** -- `state` (local), `store` (global via `$store`), `computed`, `watch`, `persist`/`persist-key`/`persist-fields`. Binding: `bind` (text), `bind-html` (sanitized), `bind-*` (attributes), `model` (two-way). See [references/directives/state-and-binding.md](references/directives/state-and-binding.md).
 
-**Control Flow** -- `if`/`else-if`/`else`, `show`/`hide` (CSS toggle), `switch`/`case`/`default`. Loops: `foreach`/`each`/`for` (aliases, same handler) -- self-repeating pattern where the element with the directive IS the repeating template (removed from DOM, clones inserted as siblings between comment markers). Companion attributes: `filter`, `sort`, `limit`, `offset`, `key`, `template`, `index`, `else`. Empty-list fallback via companion `else="templateId"` attribute (sibling else pattern removed in v1.15). Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`. See [references/directives/control-flow.md](references/directives/control-flow.md).
+**Control Flow** -- `if`/`else-if`/`else`, `show`/`hide` (CSS toggle), `switch`/`case`/`default`. Loops: `foreach`/`each`/`for` (aliases, same handler) -- self-repeating pattern where the element with the directive IS the repeating template (removed from DOM, clones inserted as siblings between comment markers). Companion attributes: `filter`, `sort`, `limit`, `offset`, `key`, `template`, `index`, `else`. Empty-list fallback via companion `else="templateId"` attribute -- renders when the list is empty or null/undefined/non-array (sibling else pattern removed in v1.15). Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`. See [references/directives/control-flow.md](references/directives/control-flow.md).
 
 **Events** -- `on:click="expr"` with modifiers (`.prevent`, `.stop`, `.once`, `.debounce.300`, `.throttle.100`). Key mods, lifecycle hooks (`on:init`, `on:mounted`, `on:updated`, `on:unmounted`, `on:error`). Vars: `$event`, `$el`. See [references/directives/events.md](references/directives/events.md).
 
@@ -146,7 +146,7 @@ See [references/api.md](references/api.md) for the complete API reference. See [
 5. **Scope state close to usage** -- put `state` on the nearest common ancestor
 6. **Use `$store` for cross-component data** -- auth, theme, cart, notifications
 7. **Add `key` on loops** -- `each="item in items" key="item.id"` for efficient updates
-8. **Use `else="templateId"` for empty lists** -- `<li each="item in items" else="noItemsTpl"></li>` with a `<template id="noItemsTpl">` for empty-state content (sibling else pattern removed in v1.15)
+8. **Use `else="templateId"` for empty lists** -- `<li each="item in items" else="noItemsTpl"></li>` with a `<template id="noItemsTpl">` for empty-state content; the template renders when the list is empty or null/undefined/non-array (sibling else pattern removed in v1.15)
 9. **Use filters for display** -- `bind="price | currency"` not inline formatting
 10. **Events use colon syntax** -- `on:click` not `onclick` or `on-click`
 11. **Validate forms declaratively** -- `<form validate>` + `validate="required,email"` on inputs
