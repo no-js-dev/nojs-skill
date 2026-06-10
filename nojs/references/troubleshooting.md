@@ -296,7 +296,7 @@ NoJS.config({ sanitizeHtml: html => DOMPurify.sanitize(html) });
 
 **Console message:**
 ```
-[NoJS] "<directive>" with "from" is deprecated. Use <directive>="<item> in <list>" instead.
+[No.JS] "<directive>" with "from" is deprecated. Use <directive>="<item> in <list>" instead.
 ```
 
 **Cause:** Using the old `foreach="item" from="list"` syntax.
@@ -317,7 +317,7 @@ NoJS.config({ sanitizeHtml: html => DOMPurify.sanitize(html) });
 
 **Console message:**
 ```
-[NoJS] else: no preceding if/else-if sibling found — note the sibling else pattern for loops was removed in v1.15; use else="templateId" on the loop element
+[No.JS] else: no preceding if/else-if sibling found — note the sibling else pattern for loops was removed in v1.15; use else="templateId" on the loop element
 ```
 
 **Cause:** An `else` element has no preceding `if`/`else-if` sibling. The most common trigger is the legacy loop sibling-else pattern (`<li else>` placed after a `foreach`/`each`/`for` element), which was removed in v1.15. The warning is logged once.
