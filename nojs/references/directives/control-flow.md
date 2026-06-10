@@ -28,7 +28,7 @@ Conditional rendering, visibility control, and list iteration.
   - [offset](#offset) -- items to skip
   - [Loop Context Variables](#loop-context-variables) -- $index, $count, $first, $last, $even, $odd
   - [Nested Loops](#nested-loops) -- parent scope access
-  - [Empty-List Fallback (else)](#empty-list-fallback-else) -- companion attribute and sibling element patterns
+  - [Empty-List Fallback (else)](#empty-list-fallback-else) -- companion attribute pattern (`else="templateId"`)
 
 ---
 
@@ -79,7 +79,7 @@ Must follow an element with `if` or another `else-if`.
 
 ### `else`
 
-Fallback block after `if`, `else-if`, **or a loop element**. Can reference a template ID or contain inline content.
+Fallback block after `if`, `else-if`, **or a loop element**. References a template ID.
 
 **Syntax:** `<element else>` or `<element else="templateId">`
 
@@ -87,26 +87,23 @@ Fallback block after `if`, `else-if`, **or a loop element**. Can reference a tem
 
 | Attribute | Description |
 |-----------|-------------|
-| `else` | Optional template ID for empty list fallback (on loops) |
+| `else` | Template ID for empty list fallback (on loops) |
 | `then` | Template ID to render as fallback content |
 
 **Usage with conditionals:** follows an `if` or `else-if` element as the fallback branch.
 
-**Usage with loops (two patterns):**
+**Usage with loops:**
 
-1. **Companion attribute** -- `else="templateId"` on the loop element itself. References a `<template>` to show when the array is empty, null, or undefined:
-   ```html
-   <li each="item in items" else="emptyTpl">...</li>
-   <template id="emptyTpl"><li>No items found.</li></template>
-   ```
+**Companion attribute** -- `else="templateId"` on the loop element itself. References a `<template>` to show when the array is empty, null, or undefined:
 
-2. **Sibling element** -- a separate element with `else` placed immediately after the loop element. Shows inline content when the array is empty, null, or undefined. Reactively hides when items exist:
-   ```html
-   <li each="item in items" bind="item.name"></li>
-   <li else>No items found.</li>
-   ```
+```html
+<li each="item in items" else="emptyTpl">...</li>
+<template id="emptyTpl"><li>No items found.</li></template>
+```
 
-Both patterns are reactive: the else content appears/disappears as the array changes.
+> **Breaking change (v1.15):** The sibling else pattern (`<li else>` placed after a loop element) has been removed. Use the companion attribute `else="templateId"` on the loop element instead. Migration: move inline fallback content into a `<template id="...">` and reference it via `else="templateId"` on the loop.
+
+The companion attribute is **reactive**: when items are added to an empty array, the else content is automatically removed and the loop clones appear. When all items are removed, the else content reappears.
 
 ### `then`
 
@@ -301,11 +298,11 @@ The element with `foreach` IS the repeating template -- its children are part of
   </li>
 </ul>
 
-<!-- With sibling else for empty-list fallback -->
+<!-- With else attribute for empty-list fallback -->
 <ul>
-  <li foreach="item in menuItems" key="item.id" bind="item.label"></li>
-  <li else>No menu items available.</li>
+  <li foreach="item in menuItems" key="item.id" else="noMenuTpl" bind="item.label"></li>
 </ul>
+<template id="noMenuTpl"><li>No menu items available.</li></template>
 
 <!-- With template reference -->
 <div foreach="post in posts" template="postCard"></div>
@@ -325,11 +322,11 @@ Alias for `foreach`. Identical handler, identical behavior. Self-repeating patte
 
 ```html
 <ul>
-  <li each="user in users" key="user.id">
+  <li each="user in users" key="user.id" else="noUsersTpl">
     <span bind="user.name"></span>
   </li>
-  <li else>No users found.</li>
 </ul>
+<template id="noUsersTpl"><li>No users found.</li></template>
 ```
 
 All `foreach` attributes (`filter`, `sort`, `limit`, `offset`, `key`, `else`, `template`, `index`, `animate-*`) work on `each`.
@@ -342,11 +339,11 @@ Alias for `foreach`. Identical handler, identical behavior. Self-repeating patte
 
 ```html
 <ul>
-  <li for="task in tasks" key="task.id" filter="!task.done">
+  <li for="task in tasks" key="task.id" filter="!task.done" else="noPendingTpl">
     <span bind="task.title"></span>
   </li>
-  <li else>No pending tasks.</li>
 </ul>
+<template id="noPendingTpl"><li>No pending tasks.</li></template>
 ```
 
 All `foreach` attributes (`filter`, `sort`, `limit`, `offset`, `key`, `else`, `template`, `index`, `animate-*`) work on `for`.
@@ -427,18 +424,18 @@ Child loops can access parent scope variables. Each loop element is self-repeati
 ```html
 <div each="category in categories">
   <h3 bind="category.name"></h3>
-  <p each="product in category.products">
+  <p each="product in category.products" else="noProdTpl">
     <span bind="category.name"></span>: <span bind="product.name"></span>
   </p>
-  <p else>No products in this category.</p>
 </div>
+<template id="noProdTpl"><p>No products in this category.</p></template>
 ```
 
 ### Empty-List Fallback (else)
 
-When a loop's source array is empty, null, or undefined, an `else` fallback is displayed. There are two patterns:
+When a loop's source array is empty, null, or undefined, an `else` fallback is displayed.
 
-**1. Companion attribute** -- `else="templateId"` or `else="#templateId"` on the loop element references a `<template>` to show when the array is empty, null, or undefined. Both bare ID and `#id` syntax are accepted:
+**Companion attribute** -- `else="templateId"` or `else="#templateId"` on the loop element references a `<template>` to show when the array is empty, null, or undefined. Both bare ID and `#id` syntax are accepted:
 
 ```html
 <!-- Bare ID syntax -->
@@ -454,24 +451,17 @@ When a loop's source array is empty, null, or undefined, an `else` fallback is d
 <template id="no-items"><span>No items found</span></template>
 ```
 
-**2. Sibling element** -- a separate element with `else` placed immediately after the loop element provides inline fallback content:
+> **Breaking change (v1.15):** The sibling else pattern (`<el else>` as a separate element after the loop) has been removed. Migrate by wrapping inline fallback content in a `<template id="...">` and referencing it with `else="templateId"` on the loop element.
 
-```html
-<ul get="/api/users" as="users">
-  <li each="user in users" key="user.id" bind="user.name"></li>
-  <li else>No users found.</li>
-</ul>
-```
-
-Both patterns are **reactive**: when items are added to an empty array, the else content is automatically removed and the loop clones appear. When all items are removed, the else content reappears.
+The companion attribute is **reactive**: when items are added to an empty array, the else content is automatically removed and the loop clones appear. When all items are removed, the else content reappears.
 
 **Combined with data fetching:**
 
 ```html
 <ul get="/api/tasks" as="tasks">
-  <li each="task in tasks" key="task.id">
+  <li each="task in tasks" key="task.id" else="noTasksTpl">
     <span bind="task.title"></span>
   </li>
-  <li else>You have no tasks yet. Create one to get started.</li>
 </ul>
+<template id="noTasksTpl"><li>You have no tasks yet. Create one to get started.</li></template>
 ```
