@@ -60,12 +60,12 @@ Event handler -- supports all DOM events plus lifecycle hooks.
 | `.shift` | Shift |
 | `.meta` | Meta/Command |
 
-Modifiers can be combined: `on:submit.prevent.once="register()"`, `on:keydown.ctrl.s="save()"`
+Modifiers can be combined: `on:submit.prevent.once="register()"`, `on:keydown.ctrl.enter="save()"`
 
 ```html
 <input on:input.debounce.300="search($event.target.value)" />
 <div on:scroll.throttle.100="handleScroll()">
-<input on:keydown.ctrl.s="save()" />
+<input on:keydown.ctrl.enter="save()" />
 ```
 
 ### `$event` and `$el`

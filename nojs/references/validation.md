@@ -10,7 +10,7 @@ Rules, common mistakes, and a checklist for validating No.JS templates. Based on
   - [`model` only on form inputs](#model-only-on-form-inputs) — Valid model targets
 - [3. Event Modifier Validation](#3-event-modifier-validation) — Valid and invalid event modifiers
   - [Valid Modifiers](#valid-modifiers) — Supported event modifier list
-  - [Invalid Modifiers](#invalid-modifiers-produce-warnings) — Modifiers that trigger warnings
+  - [Invalid Modifiers](#invalid-modifiers) — Unsupported modifiers
 - [4. Deprecation Warnings](#4-deprecation-warnings) — Deprecated features and alternatives
   - [Router `mode` is deprecated](#router-mode-is-deprecated) — Migration from mode attribute
 - [5. Security](#5-security) — Template security considerations
@@ -153,24 +153,24 @@ Event handlers support modifiers chained with dots after the event name: `on:eve
 <form on:submit.prevent.once="register()">
 
 <!-- Key + modifier key combination -->
-<input on:keydown.ctrl.s="save()" />
+<input on:keydown.ctrl.enter="save()" />
 <input on:keydown.shift.enter="submitAndContinue()" />
 
 <!-- Self modifier for overlay close -->
 <div class="overlay" on:click.self="closeModal()">
 ```
 
-### Invalid Modifiers (produce warnings)
+### Invalid Modifiers
 
-Any modifier not in the valid list triggers a warning:
+Unknown modifiers are silently ignored by the runtime. Validation tooling like NoJS-LSP flags unsupported modifiers during development.
 
 ```html
-<!-- WARNING: unknown modifier -->
+<!-- Silently ignored by runtime, flagged by NoJS-LSP -->
 <button on:click.capture="...">     <!-- "capture" is not valid -->
 <button on:click.passive="...">     <!-- "passive" is not valid -->
 ```
 
-**Note:** `delete` and `backspace` ARE valid key modifiers (both map to Delete/Backspace keys).
+**Note:** `delete` matches both the Delete and Backspace keys. `backspace` matches only the Backspace key. Both are valid key modifiers.
 
 ### Additional Modifiers (supported in framework, not in strict validation)
 
