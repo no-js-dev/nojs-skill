@@ -532,15 +532,18 @@ Complete, copy-paste-ready templates and patterns for building applications with
 
 ### Infinite Scroll List
 
+Uses Core's built-in pagination directives (`get-trigger="scroll"`, `get-insert`, `get-page`) instead of manual JavaScript. The framework handles IntersectionObserver, page tracking, and end-of-data detection automatically.
+
 ```html
-<div state="{ items: [], page: 1, hasMore: true, loading: false }">
+<!-- Infinite scroll — Core handles viewport detection and page incrementing -->
+<div get="/api/feed?page={page}" as="items"
+     get-trigger="scroll"
+     get-insert="append"
+     get-page="1"
+     get-threshold="200"
+     loading="#feedLoading"
+     empty="#feedEmpty">
 
-  <!-- Initial load -->
-  <div get="/api/feed?page=1" as="initial"
-       then="items = initial.data; hasMore = initial.hasMore">
-  </div>
-
-  <!-- Items -->
   <div each="item in items" key="item.id"
        animate="fadeIn" animate-stagger="30">
     <div class="feed-item">
@@ -549,25 +552,33 @@ Complete, copy-paste-ready templates and patterns for building applications with
       <span bind="item.date | relative"></span>
     </div>
   </div>
+</div>
 
-  <!-- Load more trigger -->
-  <div show="hasMore && !loading" on:mounted="
-    new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        loading = true;
-        page++;
-      }
-    }).observe($el)
-  ">
-    <div get="/api/feed?page={page}" as="more"
-         then="items = [...items, ...more.data]; hasMore = more.hasMore; loading = false">
-    </div>
-    <div class="loading-indicator">Loading more...</div>
+<template id="feedLoading">
+  <div class="loading-indicator">Loading more...</div>
+</template>
+
+<template id="feedEmpty">
+  <p class="end-message">No items found.</p>
+</template>
+```
+
+For cursor-based APIs, replace `get-page` with `get-cursor`:
+
+```html
+<div get="/api/feed?after={cursor}" as="items"
+     get-trigger="scroll"
+     get-insert="append"
+     get-cursor
+     get-cursor-field="paging.next"
+     get-threshold="200">
+  <div each="item in items" key="item.id">
+    <h3 bind="item.title"></h3>
   </div>
-
-  <p show="!hasMore" class="end-message">No more items to load.</p>
 </div>
 ```
+
+> **How it works:** `get-trigger="scroll"` creates an IntersectionObserver on a sentinel element. When the sentinel enters the viewport (controlled by `get-threshold`), the next page is fetched and appended. Pagination stops automatically when the server returns an empty response.
 
 ---
 
@@ -1297,7 +1308,7 @@ Each `.tpl` file is a self-contained piece of HTML. No.JS fetches and caches the
 <template id="dataError" var="err">
   <div class="error-box">
     <p bind="err.message"></p>
-    <button on:click="$el.parentElement.dispatchEvent(new Event('retry'))">
+    <button trigger="retry">
       Retry
     </button>
   </div>
