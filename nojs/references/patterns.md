@@ -349,6 +349,8 @@ Complete, copy-paste-ready templates and patterns for building applications with
 
 ```html
 <script>
+  // DEVELOPMENT ONLY — localStorage token storage is XSS-vulnerable.
+  // For production, use httpOnly cookies (see Authentication Flow warning).
   NoJS.config({
     baseApiUrl: 'https://api.myapp.com/v1',
     stores: {
@@ -586,8 +588,14 @@ For cursor-based APIs, replace `get-page` with `get-cursor`:
 
 ### Authentication Flow (login, store token, protected routes)
 
+> **Security warning -- development only.** The examples below store auth tokens in `localStorage` for simplicity. In production, `localStorage` is accessible to **any** JavaScript running on the page, making it vulnerable to XSS (cross-site scripting) attacks. A single XSS vulnerability allows an attacker to steal every token in storage.
+>
+> **For production use**, store tokens in **httpOnly cookies** set by the server. httpOnly cookies are inaccessible to client-side JavaScript and are automatically sent with requests to the issuing domain. Pair them with `Secure`, `SameSite=Strict` (or `Lax`), and short expiry times. The NoJS request interceptor still works -- the browser attaches the cookie automatically, so no `Authorization` header manipulation is needed.
+
 ```html
 <script>
+  // DEVELOPMENT ONLY — uses localStorage for token persistence.
+  // For production, use httpOnly cookies instead (see warning above).
   NoJS.config({
     baseApiUrl: 'https://api.myapp.com/v1',
     stores: {
@@ -622,6 +630,8 @@ For cursor-based APIs, replace `get-page` with `get-cursor`:
 </script>
 
 <!-- Login page (redirect away if already authenticated) -->
+<!-- DEVELOPMENT ONLY — localStorage.setItem('token', ...) below is XSS-vulnerable.
+     In production, have the server set an httpOnly cookie instead. -->
 <template route="/login" guard="!$store.auth.user" redirect="/dashboard">
   <div state="{ email: '', password: '', error: '' }">
     <h2>Login</h2>
@@ -714,6 +724,7 @@ For cursor-based APIs, replace `get-page` with `get-cursor`:
 
 ```html
 <script>
+  // localStorage is safe here — theme preference is non-sensitive data.
   NoJS.config({
     stores: {
       theme: { mode: localStorage.getItem('theme') || 'light' }
@@ -1451,7 +1462,9 @@ Use `into` to write API responses directly into a named global store, making the
 
 ### Full SPA Example
 
-Login + JWT interceptors + dashboard + validation -- all integrated:
+Login + JWT interceptors + dashboard + validation -- all integrated.
+
+> **Note:** This example uses `localStorage` for token persistence for demonstration purposes only. See the [Authentication Flow security warning](#authentication-flow-login-store-token-protected-routes) for production guidance.
 
 ```html
 <!DOCTYPE html>
