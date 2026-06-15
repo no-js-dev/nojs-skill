@@ -8,7 +8,7 @@ AI skill that gives [Claude Code](https://claude.com/claude-code) and compatible
 
 When installed, this skill automatically activates whenever you work with No.JS directives. Your AI assistant will:
 
-- **Know all 39+ directives** with correct priorities, syntax, and companion attributes
+- **Know all 43+ directives** with correct priorities, syntax, and companion attributes
 - **Generate valid No.JS templates** following best practices (scoped state, keyed loops, proper filters)
 - **Validate templates** for common mistakes (missing `as`, wrong event syntax, unsanitized `bind-html`)
 - **Explain any directive** with working examples
@@ -51,6 +51,7 @@ Copy `nojs/SKILL.md` and the `nojs/references/` directory into your skills direc
 | `nojs/references/directives/extras.md` | animations, i18n, DnD, refs, head management, error-boundary |
 | `nojs/references/filters.md` | All 32 built-in filters with syntax and arguments |
 | `nojs/references/api.md` | Full JavaScript API, config, interceptors, plugin system, custom directive utilities |
+| `nojs/references/plugins.md` | Plugin system — lifecycle, globals, interceptors, sentinels, security |
 | `nojs/references/patterns.md` | Common patterns, scaffolds, and best practices |
 | `nojs/references/validation.md` | Template validation rules and common mistakes |
 | `nojs/references/troubleshooting.md` | Common issues, console warnings, debugging guide |
@@ -75,7 +76,7 @@ The skill activates when it detects:
 
 ## Version
 
-This skill documents **No.JS v1.11.1**. The framework source code is the ground truth — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to keep the skill in sync.
+This skill documents **No.JS v1.14.1**. The framework source code is the ground truth — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to keep the skill in sync.
 
 ## License
 
