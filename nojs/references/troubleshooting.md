@@ -317,13 +317,15 @@ NoJS.config({ sanitizeHtml: html => DOMPurify.sanitize(html) });
 
 **Cause:** Using the old `foreach="item" from="list"` syntax.
 
+> **DEPRECATED:** The `from` attribute on loop directives is deprecated and will be removed in a future release. **Never use `from="..."` in new code.** Always use the `in` syntax shown below.
+
 **Fix:** Use the unified `in` syntax with the self-repeating pattern (the directive goes on the element that repeats, not a container):
 
 ```html
-<!-- Old (deprecated) -->
+<!-- DEPRECATED -- do NOT use from="..." -->
 <ul foreach="user" from="users"><li bind="user.name"></li></ul>
 
-<!-- New (self-repeating pattern) -->
+<!-- Correct (self-repeating pattern) -->
 <ul>
   <li foreach="user in users" bind="user.name"></li>
 </ul>
