@@ -7,11 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/ErickXavier/nojs-skill/compare/v1.14.1...HEAD)
 
+### Added
+
+- `references/directives/` — 12 granular directive files (binding, state, conditionals, loops, events, http, routing, templates, styling, i18n, animations, head-seo) replacing 8 mixed-concern files
+- `references/elements/` — 17 new element reference files covering all NoJS-Elements components (accordion, breadcrumb, dnd, dropdown, modal, popover, scroll-spy, skeleton, split, stepper, table, tabs, toast, tooltip, tree, validate, virtual-list)
+- `references/core/` — 6 new framework internals files (api, expressions, filters, config, security, plugins)
+- `references/patterns/` — 6 domain-specific pattern files (auth, data-fetching, forms, spa, ecommerce, realtime) replacing monolithic patterns.md
+- Complete expression syntax documentation (all operators, 49 safe globals, forbidden patterns)
+- Error-boundary directive documentation in http.md
+- 18 new usage patterns (infinite scroll, WebSocket, SSE, file upload, multi-step forms, etc.)
+
 ### Changed
 
 - **BREAKING (Core v1.15 sync):** removed all sibling-`else` loop teaching from SKILL.md and control-flow.md; loops document only the `else="templateId"` companion attribute
 - Documented new `else` semantics: the else template renders when the list is empty (`[]`) or null/undefined/non-array
 - Added orphan-`else` console warning entry to the troubleshooting reference
+- SKILL.md rewritten from ~270 to ~605 lines as standalone quick-reference with inline examples
+- File map converted to markdown links for AI navigability
+- README.md and CONTRIBUTING.md updated with new file structure paths
+- Filter count corrected to 32 (verified from source)
+- devtools.md version updated to 1.14.1
+
+### Removed
+
+- `references/api.md` (superseded by `core/api.md`)
+- `references/filters.md` (superseded by `core/filters.md`)
+- `references/plugins.md` (superseded by `core/plugins.md`)
+- `references/patterns.md` (split into `patterns/` directory)
+- `references/directives/state-and-binding.md` (split into `state.md`, `binding.md`, `styling.md`)
+- `references/directives/control-flow.md` (split into `conditionals.md`, `loops.md`)
+- `references/directives/data-fetching.md` (renamed to `http.md`)
+- `references/directives/extras.md` (distributed to `i18n.md`, `animations.md`, `head-seo.md`)
+- `references/directives/forms.md` (distributed to `binding.md` and `elements/validate.md`)
 
 ## [1.14.1](https://github.com/ErickXavier/nojs-skill/compare/v1.14.0...v1.14.1) — 2026-06-11
 
