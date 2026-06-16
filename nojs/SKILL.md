@@ -87,21 +87,21 @@ Data lives in Proxy-backed reactive contexts that inherit from parent elements (
 
 Directives are organized into eight categories. Each summary below provides enough context to decide when to consult the full reference.
 
-**Data Fetching** -- `get`, `post`, `put`, `patch`, `delete` with `as`, `loading`, `error`, `empty`, `success`, `refresh`, `cached`, `skeleton`, `debounce`, `headers`, `params`, `get-trigger`, `get-insert`, `get-page`, `get-cursor`, `get-cursor-field`, `get-threshold`. URLs support interpolation (`/users/{userId}`). Pagination via `get-trigger="scroll"` + `get-insert="append"` + `get-page` or `get-cursor`. See [references/directives/data-fetching.md](references/directives/data-fetching.md).
+**Data Fetching** -- `get`, `post`, `put`, `patch`, `delete` with `as`, `loading`, `error`, `empty`, `success`, `refresh`, `cached`, `skeleton`, `debounce`, `headers`, `params`, `get-trigger`, `get-insert`, `get-page`, `get-cursor`, `get-cursor-field`, `get-threshold`. URLs support interpolation (`/users/{userId}`). Pagination via `get-trigger="scroll"` + `get-insert="append"` + `get-page` or `get-cursor`. Error boundaries via `error-boundary="#fallback"`. See [references/directives/http.md](references/directives/http.md).
 
-**State and Binding** -- `state` (local), `store` (global via `$store`), `computed`, `watch`, `persist`/`persist-key`/`persist-fields`. Binding: `bind` (text), `bind-html` (sanitized), `bind-*` (attributes), `model` (two-way). See [references/directives/state-and-binding.md](references/directives/state-and-binding.md).
+**State and Binding** -- `state` (local), `store` (global via `$store`), `computed`, `watch`, `persist`/`persist-key`/`persist-fields`. Binding: `bind` (text), `bind-html` (sanitized), `bind-*` (attributes), `model` (two-way). See [references/directives/state.md](references/directives/state.md) and [references/directives/binding.md](references/directives/binding.md).
 
-**Control Flow** -- `if`/`else-if`/`else`, `show`/`hide` (CSS toggle), `switch`/`case`/`default`. Loops: `foreach`/`each`/`for` (aliases, same handler) -- self-repeating pattern where the element with the directive IS the repeating template (removed from DOM, clones inserted as siblings between comment markers). Companion attributes: `filter`, `sort`, `limit`, `offset`, `key`, `template`, `index`, `else`. Empty-list fallback via companion `else="templateId"` attribute -- renders when the list is empty or null/undefined/non-array (sibling else pattern removed — Unreleased). Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`. See [references/directives/control-flow.md](references/directives/control-flow.md).
+**Control Flow** -- `if`/`else-if`/`else`, `show`/`hide` (CSS toggle), `switch`/`case`/`default`. Loops: `foreach`/`each`/`for` (aliases, same handler) -- self-repeating pattern where the element with the directive IS the repeating template (removed from DOM, clones inserted as siblings between comment markers). Companion attributes: `filter`, `sort`, `limit`, `offset`, `key`, `template`, `index`, `else`. Empty-list fallback via companion `else="templateId"` attribute -- renders when the list is empty or null/undefined/non-array (sibling else pattern removed -- Unreleased). Loop vars: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`. See [references/directives/conditionals.md](references/directives/conditionals.md) and [references/directives/loops.md](references/directives/loops.md).
 
 **Events** -- `on:click="expr"` with modifiers (`.prevent`, `.stop`, `.once`, `.debounce.300`, `.throttle.100`). Key mods, lifecycle hooks (`on:init`, `on:mounted`, `on:updated`, `on:unmounted`, `on:error`). Vars: `$event`, `$el`. See [references/directives/events.md](references/directives/events.md).
 
 **Routing** -- `<a route>`, `<template route>`, `<main route-view>`. View Transition API with presets (`slide`, `fade`, `scale`, `none`). Guards, named outlets, `$route` context, file-based routing, head attributes. See [references/directives/routing.md](references/directives/routing.md).
 
-**Forms** -- `<form validate>` with `$form` context (requires Elements plugin since v1.13.0). Field rules: `validate="required,email,min:5"`. Triggers: `validate-on`. Conditional: `validate-if`. Custom validators via `NoJS.validator()` (remains in core). See [references/directives/forms.md](references/directives/forms.md).
+**Forms** -- `<form validate>` with `$form` context (requires Elements plugin since v1.13.0). Field rules: `validate="required,email,min:5"`. Triggers: `validate-on`. Conditional: `validate-if`. Custom validators via `NoJS.validator()` (remains in core). See [references/elements/validate.md](references/elements/validate.md).
 
 **Templates** -- `<template id>` + `use`, `<slot>`, `<template src>` (remote loading), `include`, lazy loading (`lazy`, `lazy="priority"`, `lazy="ondemand"`). See [references/directives/templates.md](references/directives/templates.md).
 
-**Extras** -- Animations (`animate`, `transition`, `animate-stagger`), i18n (`t`, `i18n-ns`, pluralization), DnD (`drag`, `drop`, `drag-list`, `drag-multiple` -- requires Elements plugin since v1.13.0), head management (`page-title`, `page-description`, `page-canonical`, `page-jsonld`), refs (`ref`, `call`, `trigger`), styling (`class-*`, `style-*`), error boundaries. See [references/directives/extras.md](references/directives/extras.md).
+**Extras** -- Animations (`animate`, `transition`, `animate-stagger`), i18n (`t`, `i18n-ns`, pluralization), DnD (`drag`, `drop`, `drag-list`, `drag-multiple` -- requires Elements plugin since v1.13.0), head management (`page-title`, `page-description`, `page-canonical`, `page-jsonld`), refs (`ref`, `call`, `trigger`), styling (`class-*`, `style-*`), error boundaries. See [references/directives/animations.md](references/directives/animations.md), [references/directives/i18n.md](references/directives/i18n.md), [references/directives/head-seo.md](references/directives/head-seo.md), and [references/directives/styling.md](references/directives/styling.md).
 
 ### 3. Use the expression syntax correctly
 
@@ -127,7 +127,7 @@ Expressions support JavaScript-like syntax against the reactive context:
 
 ### 4. Apply filters via pipe syntax
 
-`bind="value | filter1 | filter2:arg"` -- 32 built-in filters across text, numbers, arrays, dates, and utilities. Custom filters via `NoJS.filter('name', fn)`. See [references/filters.md](references/filters.md) for the complete list.
+`bind="value | filter1 | filter2:arg"` -- 32 built-in filters across text, numbers, arrays, dates, and utilities. Custom filters via `NoJS.filter('name', fn)`. See [references/core/filters.md](references/core/filters.md) for the complete list.
 
 ### 5. Use the public API when needed
 
@@ -153,7 +153,7 @@ NoJS.RESPOND               // Symbol sentinel: short-circuit with mock response
 NoJS.REPLACE               // Symbol sentinel: replace response data
 ```
 
-See [references/api.md](references/api.md) for the complete API reference. See [references/plugins.md](references/plugins.md) for the plugin system (lifecycle, globals, interceptors, sentinels, security).
+See [references/core/api.md](references/core/api.md) for the complete API reference. See [references/core/plugins.md](references/core/plugins.md) for the plugin system (lifecycle, globals, interceptors, sentinels, security).
 
 ### 6. Follow these rules when generating No.JS code
 
@@ -179,18 +179,23 @@ Check for: directive typos (`bnd` -> `bind`, `on-click` -> `on:click`), missing 
 
 | Need | Reference file |
 |------|---------------|
-| Directive syntax for `get`, `post`, `put`, `patch`, `delete`, `as`, `loading`, `error`, `cached`, `skeleton`, `get-trigger`, `get-insert`, `get-page`, `get-cursor`, `get-threshold` | [references/directives/data-fetching.md](references/directives/data-fetching.md) |
-| Directive syntax for `state`, `store`, `computed`, `watch`, `bind`, `model`, `persist` | [references/directives/state-and-binding.md](references/directives/state-and-binding.md) |
-| Directive syntax for `if`, `else`, `show`, `hide`, `switch`, `foreach`, `each`, `for` | [references/directives/control-flow.md](references/directives/control-flow.md) |
-| Directive syntax for `on:*`, event modifiers, lifecycle hooks | [references/directives/events.md](references/directives/events.md) |
-| Setting up routing, view transitions, guards, named outlets, `$route` | [references/directives/routing.md](references/directives/routing.md) |
-| Building a form with validation rules, `$form`, custom validators | [references/directives/forms.md](references/directives/forms.md) |
-| Template reuse, slots, remote loading, lazy loading | [references/directives/templates.md](references/directives/templates.md) |
-| Animations, i18n, DnD, head management, refs, styling, errors | [references/directives/extras.md](references/directives/extras.md) |
-| Filter syntax and the 32 built-in filters | [references/filters.md](references/filters.md) |
-| JavaScript API (`NoJS.config`, `NoJS.init`, `NoJS.use`, etc.) | [references/api.md](references/api.md) |
-| Plugin system (lifecycle, globals, interceptors, sentinels) | [references/plugins.md](references/plugins.md) |
-| Common patterns and scaffolds | [references/patterns.md](references/patterns.md) |
+| HTTP directives: `get`, `post`, `put`, `patch`, `delete`, `as`, `loading`, `error`, `cached`, `skeleton`, `get-trigger`, `get-insert`, `get-page`, `get-cursor`, `get-threshold`, `error-boundary` | [references/directives/http.md](references/directives/http.md) |
+| State directives: `state`, `store`, `computed`, `watch`, `persist` | [references/directives/state.md](references/directives/state.md) |
+| Binding directives: `bind`, `bind-html`, `bind-*`, `model` | [references/directives/binding.md](references/directives/binding.md) |
+| Conditionals: `if`, `else-if`, `else`, `show`, `hide`, `switch`, `case`, `default` | [references/directives/conditionals.md](references/directives/conditionals.md) |
+| Loops: `foreach`, `each`, `for`, `filter`, `sort`, `limit`, `key` | [references/directives/loops.md](references/directives/loops.md) |
+| Events: `on:*`, event modifiers, lifecycle hooks | [references/directives/events.md](references/directives/events.md) |
+| Routing: view transitions, guards, named outlets, `$route` | [references/directives/routing.md](references/directives/routing.md) |
+| Templates: `use`, `<slot>`, remote loading, lazy loading | [references/directives/templates.md](references/directives/templates.md) |
+| Animations: `animate`, `transition`, `animate-stagger` | [references/directives/animations.md](references/directives/animations.md) |
+| i18n: `t`, `i18n-ns`, pluralization | [references/directives/i18n.md](references/directives/i18n.md) |
+| Head/SEO: `page-title`, `page-description`, `page-canonical`, `page-jsonld` | [references/directives/head-seo.md](references/directives/head-seo.md) |
+| Styling: `class-*`, `style-*` | [references/directives/styling.md](references/directives/styling.md) |
+| Form validation: `validate`, `$form`, custom validators | [references/elements/validate.md](references/elements/validate.md) |
+| Filter syntax and the 32 built-in filters | [references/core/filters.md](references/core/filters.md) |
+| JavaScript API (`NoJS.config`, `NoJS.init`, `NoJS.use`, etc.) | [references/core/api.md](references/core/api.md) |
+| Plugin system (lifecycle, globals, interceptors, sentinels) | [references/core/plugins.md](references/core/plugins.md) |
+| Common patterns: auth, forms, data fetching, SPA, e-commerce, realtime | [references/patterns/](references/patterns/) |
 | Template validation rules and common mistakes | [references/validation.md](references/validation.md) |
 | Debugging issues, console warnings, common mistakes | [references/troubleshooting.md](references/troubleshooting.md) |
 
@@ -240,7 +245,7 @@ Check for: directive typos (`bnd` -> `bind`, `on-click` -> `on:click`), missing 
 7. Access form state: `$form.valid`, `$form.dirty`, `$form.errors`, `$form.firstError`
 8. Submit handling: `on:submit.prevent="post('/api/submit', $form.data)"` (auto-sets `$form.submitting`)
 9. Register custom validators: `NoJS.validator('phone', fn)`
-10. See [references/directives/forms.md](references/directives/forms.md) and [references/validation.md](references/validation.md)
+10. See [references/elements/validate.md](references/elements/validate.md) and [references/validation.md](references/validation.md)
 
 ### Create a CRUD interface
 
@@ -257,7 +262,7 @@ Check for: directive typos (`bnd` -> `bind`, `on-click` -> `on:click`), missing 
 9. **Load More**: Same as infinite scroll but `get-trigger="button"` + optional `get-trigger-label="Show More"`
 10. **Cursor Pagination**: `<div get="/feed?cursor={cursor}" get-trigger="scroll" get-insert="append" get-cursor as="posts">...</div>`
 11. **Loading states**: Use `loading`, `error`, `empty` attributes on fetch containers
-12. See [references/directives/data-fetching.md](references/directives/data-fetching.md) and [references/patterns.md](references/patterns.md)
+12. See [references/directives/http.md](references/directives/http.md) and [references/patterns/](references/patterns/)
 
 ## Ecosystem
 
