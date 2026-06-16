@@ -556,29 +556,29 @@ All paths relative to `nojs/references/`:
 
 | Path | Content |
 |------|---------|
-| `core/api.md` | JS API: config, init, use, global, dispose |
-| `core/config.md` | All config options with defaults |
-| `core/expressions.md` | Expression parser, safe globals, security proxies |
-| `core/filters.md` | All 32 built-in filters, custom filter API |
-| `core/plugins.md` | Plugin lifecycle, interceptors, sentinels |
-| `core/security.md` | XSS, CSRF, CSP, sanitization |
-| `directives/animations.md` | animate, transition, stagger, view transitions |
-| `directives/binding.md` | bind, bind-html, bind-*, model |
-| `directives/conditionals.md` | if, else-if, else, show, hide, switch/case |
-| `directives/events.md` | on:*, modifiers, lifecycle hooks, $event, $el |
-| `directives/head-seo.md` | page-title, page-description, page-canonical, page-jsonld |
-| `directives/http.md` | get, post, put, patch, delete, pagination, caching |
-| `directives/i18n.md` | t, t-html, i18n-ns, locale setup, pluralization |
-| `directives/loops.md` | foreach/each/for, filter, sort, key, loop vars |
-| `directives/routing.md` | route, route-view, guards, named outlets, file-based |
-| `directives/state.md` | state, store, computed, watch, persist |
-| `directives/styling.md` | class-*, class-map, style-*, style-map |
-| `directives/templates.md` | use, slot, src, include, lazy loading |
-| `elements/*.md` | 17 files: accordion, breadcrumb, dnd, dropdown, modal, popover, scroll-spy, skeleton, split, stepper, table, tabs, toast, tooltip, tree, validate, virtual-list |
-| `patterns/*.md` | 6 files: auth, data-fetching, ecommerce, forms, realtime, spa |
-| `devtools.md` | Browser devtools panel usage |
-| `troubleshooting.md` | Common errors, debugging tips |
-| `validation.md` | Template validation rules, common mistakes |
+| [core/api.md](references/core/api.md) | JS API: config, init, use, global, dispose |
+| [core/config.md](references/core/config.md) | All config options with defaults |
+| [core/expressions.md](references/core/expressions.md) | Expression parser, safe globals, security proxies |
+| [core/filters.md](references/core/filters.md) | All 32 built-in filters, custom filter API |
+| [core/plugins.md](references/core/plugins.md) | Plugin lifecycle, interceptors, sentinels |
+| [core/security.md](references/core/security.md) | XSS, CSRF, CSP, sanitization |
+| [directives/animations.md](references/directives/animations.md) | animate, transition, stagger, view transitions |
+| [directives/binding.md](references/directives/binding.md) | bind, bind-html, bind-*, model |
+| [directives/conditionals.md](references/directives/conditionals.md) | if, else-if, else, show, hide, switch/case |
+| [directives/events.md](references/directives/events.md) | on:*, modifiers, lifecycle hooks, $event, $el |
+| [directives/head-seo.md](references/directives/head-seo.md) | page-title, page-description, page-canonical, page-jsonld |
+| [directives/http.md](references/directives/http.md) | get, post, put, patch, delete, pagination, caching |
+| [directives/i18n.md](references/directives/i18n.md) | t, t-html, i18n-ns, locale setup, pluralization |
+| [directives/loops.md](references/directives/loops.md) | foreach/each/for, filter, sort, key, loop vars |
+| [directives/routing.md](references/directives/routing.md) | route, route-view, guards, named outlets, file-based |
+| [directives/state.md](references/directives/state.md) | state, store, computed, watch, persist |
+| [directives/styling.md](references/directives/styling.md) | class-*, class-map, style-*, style-map |
+| [directives/templates.md](references/directives/templates.md) | use, slot, src, include, lazy loading |
+| [elements/](references/elements/) | 17 files: accordion, breadcrumb, dnd, dropdown, modal, popover, scroll-spy, skeleton, split, stepper, table, tabs, toast, tooltip, tree, validate, virtual-list |
+| [patterns/](references/patterns/) | 6 files: auth, data-fetching, ecommerce, forms, realtime, spa |
+| [devtools.md](references/devtools.md) | Browser devtools panel usage |
+| [troubleshooting.md](references/troubleshooting.md) | Common errors, debugging tips |
+| [validation.md](references/validation.md) | Template validation rules, common mistakes |
 
 ## 10. Version and Metadata
 

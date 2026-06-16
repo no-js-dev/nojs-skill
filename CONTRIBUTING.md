@@ -26,24 +26,33 @@ The NoJS Skill is part of the No.JS ecosystem:
 ## Project Structure
 
 ```plaintext
-SKILL.md                  # Main skill file (loaded by AI tools)
+SKILL.md                    # Main skill file (loaded by AI tools)
 references/
+├── core/
+│   ├── api.md              # Framework API, config, custom directive utilities
+│   ├── config.md           # All config options with defaults
+│   ├── expressions.md      # Expression parser, safe globals, security proxies
+│   ├── filters.md          # All 32 built-in filters, custom filter API
+│   ├── plugins.md          # Plugin lifecycle, interceptors, sentinels
+│   └── security.md         # XSS, CSRF, CSP, sanitization
 ├── directives/
-│   ├── data-fetching.md  # GET/POST/PUT/PATCH/DELETE
-│   ├── state-and-binding.md # state, store, computed, watch, bind, model, class-*, style-*
-│   ├── control-flow.md   # if/else, switch, foreach/each/for, show/hide
-│   ├── events.md         # on:* events, modifiers, lifecycle hooks
-│   ├── routing.md        # route, route-view, View Transitions
-│   ├── forms.md          # validate, $form
-│   ├── templates.md      # template, use, slot, include, lazy, call
-│   └── extras.md         # animations, i18n, DnD, refs, head, error-boundary
-├── filters.md            # All 32 built-in filters
-├── api.md                # Framework API, config, plugins, custom directive utilities
-├── patterns.md           # Common patterns & best practices
-├── validation.md         # Template validation rules
-├── troubleshooting.md    # Common issues & debugging guide
-├── devtools.md           # DevTools API & event protocol
-└── cli.md                # CLI commands & prebuild plugins
+│   ├── animations.md       # animate, transition, stagger, view transitions
+│   ├── binding.md          # bind, bind-html, bind-*, model
+│   ├── conditionals.md     # if/else, switch/case, show/hide
+│   ├── events.md           # on:* events, modifiers, lifecycle hooks
+│   ├── head-seo.md         # page-title, page-description, page-canonical, page-jsonld
+│   ├── http.md             # GET/POST/PUT/PATCH/DELETE, pagination, caching
+│   ├── i18n.md             # t, t-html, i18n-ns, locale setup, pluralization
+│   ├── loops.md            # foreach/each/for, filter, sort, key, loop vars
+│   ├── routing.md          # route, route-view, View Transitions, file-based
+│   ├── state.md            # state, store, computed, watch, persist
+│   ├── styling.md          # class-*, class-map, style-*, style-map
+│   └── templates.md        # template, use, slot, include, lazy loading
+├── elements/               # 17 files: accordion, breadcrumb, dnd, dropdown, etc.
+├── patterns/               # 6 files: auth, data-fetching, ecommerce, forms, realtime, spa
+├── devtools.md             # DevTools API & event protocol
+├── troubleshooting.md      # Common issues & debugging guide
+└── validation.md           # Template validation rules
 ```
 
 ---
@@ -56,13 +65,14 @@ When the No.JS framework changes, the skill must stay in sync:
 
 - [ ] Update `SKILL.md` if directives, priorities, or core concepts changed
 - [ ] Update the relevant file in `references/directives/` for new/changed directives
-- [ ] Update `references/filters.md` for new/changed filters
-- [ ] Update `references/api.md` for API changes
-- [ ] Update `references/patterns.md` for new best practices
+- [ ] Update `references/core/filters.md` for new/changed filters
+- [ ] Update `references/core/api.md` for API changes
+- [ ] Update `references/core/config.md` for config option changes
+- [ ] Update `references/core/plugins.md` for plugin system changes
+- [ ] Update the relevant file in `references/patterns/` for new best practices
 - [ ] Update `references/validation.md` for new validation rules
 - [ ] Update `references/troubleshooting.md` for new warnings or common issues
 - [ ] Update `references/devtools.md` for DevTools API changes
-- [ ] Update `references/cli.md` for CLI changes
 - [ ] Update the `version` in `SKILL.md` frontmatter metadata
 
 ### Ground Truth

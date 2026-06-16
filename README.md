@@ -41,18 +41,26 @@ Copy `nojs/SKILL.md` and the `nojs/references/` directory into your skills direc
 | File | Purpose |
 | --- | --- |
 | `nojs/SKILL.md` | Main skill file — framework overview, directive priorities, expression syntax, decision tree, workflow checklists |
-| `nojs/references/directives/data-fetching.md` | GET/POST/PUT/PATCH/DELETE directives |
-| `nojs/references/directives/state-and-binding.md` | state, store, computed, watch, bind, model, class-*, style-* |
-| `nojs/references/directives/control-flow.md` | if/else, switch, foreach/each/for, show/hide |
+| `nojs/references/directives/http.md` | GET/POST/PUT/PATCH/DELETE directives, pagination, caching |
+| `nojs/references/directives/state.md` | state, store, computed, watch, persist |
+| `nojs/references/directives/binding.md` | bind, bind-html, bind-*, model, class-*, style-* |
+| `nojs/references/directives/conditionals.md` | if/else, switch/case, show/hide |
+| `nojs/references/directives/loops.md` | foreach/each/for, filter, sort, key, loop vars |
 | `nojs/references/directives/events.md` | on:* events, modifiers, lifecycle hooks |
 | `nojs/references/directives/routing.md` | route, route-view, View Transitions, file-based routing |
-| `nojs/references/directives/forms.md` | validate, $form, error handling |
-| `nojs/references/directives/templates.md` | template, use, slot, include, lazy, call |
-| `nojs/references/directives/extras.md` | animations, i18n, DnD, refs, head management, error-boundary |
-| `nojs/references/filters.md` | All 32 built-in filters with syntax and arguments |
-| `nojs/references/api.md` | Full JavaScript API, config, interceptors, plugin system, custom directive utilities |
-| `nojs/references/plugins.md` | Plugin system — lifecycle, globals, interceptors, sentinels, security |
-| `nojs/references/patterns.md` | Common patterns, scaffolds, and best practices |
+| `nojs/references/directives/templates.md` | template, use, slot, include, lazy loading |
+| `nojs/references/directives/i18n.md` | t, t-html, i18n-ns, locale setup, pluralization |
+| `nojs/references/directives/animations.md` | animate, transition, stagger, view transitions |
+| `nojs/references/directives/head-seo.md` | page-title, page-description, page-canonical, page-jsonld |
+| `nojs/references/directives/styling.md` | class-*, class-map, style-*, style-map |
+| `nojs/references/core/filters.md` | All 32 built-in filters, custom filter API |
+| `nojs/references/core/api.md` | Full JavaScript API, config, interceptors, plugin system, custom directive utilities |
+| `nojs/references/core/plugins.md` | Plugin system — lifecycle, globals, interceptors, sentinels, security |
+| `nojs/references/core/config.md` | All config options with defaults |
+| `nojs/references/core/expressions.md` | Expression parser, safe globals, security proxies |
+| `nojs/references/core/security.md` | XSS, CSRF, CSP, sanitization |
+| `nojs/references/patterns/` | 6 files: auth, data-fetching, ecommerce, forms, realtime, spa |
+| `nojs/references/elements/` | 17 files: accordion, breadcrumb, dnd, dropdown, modal, popover, scroll-spy, skeleton, split, stepper, table, tabs, toast, tooltip, tree, validate, virtual-list |
 | `nojs/references/validation.md` | Template validation rules and common mistakes |
 | `nojs/references/troubleshooting.md` | Common issues, console warnings, debugging guide |
 | `nojs/references/devtools.md` | DevTools API, event protocol, inspector |
