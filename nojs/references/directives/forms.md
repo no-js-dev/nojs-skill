@@ -15,7 +15,7 @@ Built-in form validation with `$form` context. Priority 30 (validate), Priority 
 - [Submit Behavior](#submit-behavior) -- marks all fields touched, $form.submitting lifecycle
 - [Auto-Disable Submit Buttons](#auto-disable-submit-buttons) -- automatic submit button handling
 - [Custom Validators](#custom-validators) -- NoJS.validator() registration
-- [error-boundary](#error-boundary) -- render fallback template on error
+- [error-boundary](#error-boundary) -- catch errors in a subtree and render fallback template (core directive, priority 1)
 
 ---
 
@@ -179,7 +179,14 @@ Register custom validators with `NoJS.validator()`:
 
 ### `error-boundary`
 
-Error boundary -- renders fallback template on error within a subtree.
+Error boundary -- catches errors in a subtree and renders a fallback template. Priority 1 (same tier as HTTP directives).
+
+The boundary intercepts two kinds of errors:
+
+1. **Expression evaluation errors** -- dispatched as `nojs:error` CustomEvents that bubble up from handler expressions (e.g. a `bind` or `on:click` expression throws).
+2. **Window-level errors** -- uncaught JS errors and resource load failures (e.g. an `<img>` 404) that originate from elements inside the boundary.
+
+> **Note:** `error-boundary` does **not** catch failed HTTP requests made by `get`/`post`/`put`/`patch`/`delete` directives. Use the `error` attribute on the fetch element for per-request error handling, or `NoJS.on('fetch:error', ...)` for global HTTP error handling.
 
 **Syntax:** `<element error-boundary="#fallbackTemplate">`
 
@@ -196,3 +203,5 @@ Error boundary -- renders fallback template on error within a subtree.
   </div>
 </template>
 ```
+
+When an error is caught, the boundary replaces its children with the fallback template. The `nojs:error` CustomEvent carries the error details in `event.detail`.
