@@ -14,11 +14,22 @@ Element references, template instantiation, slots, remote templates, and the `ca
 
 ---
 
-## Refs and Templates
+## Syntax Reference
 
-Element references, template instantiation, slots, and remote templates.
+| Directive | Syntax | Description |
+|-----------|--------|-------------|
+| `ref` | `ref="name"` | Named element reference accessible via `$refs` |
+| `use` | `use="templateId"` | Clone and instantiate a template inline |
+| `include` | `include="#fragmentId"` | Synchronously clone an inline template |
+| `slot` | `<slot name="slotName">` | Define insertion point for projected content |
+| `src` | `src="/path/to/file.html"` | Load template from external file |
+| `var` | `var="variableName"` | Declare expected template variable |
+| `var-*` | `var-config="expression"` | Pass variable to template on instantiation |
+| `call` | `call="/api/action"` | Trigger API call on click |
 
-### `ref`
+---
+
+## `ref`
 
 Named element reference accessible via `$refs`.
 
@@ -33,11 +44,33 @@ Named element reference accessible via `$refs`.
 <button on:click="$refs.player.pause()">Pause</button>
 ```
 
-### `use`
+### Edge Cases
+
+- `$refs` is scoped to the reactive context. Refs defined inside a template are not accessible from outside.
+- If the referenced element is removed from the DOM (e.g. by `if`), the ref becomes stale. Re-adding the element creates a fresh ref.
+- Refs on loop items refer to the last rendered item with that ref name.
+
+### Complete Example
+
+```html
+<div state="{ message: '' }">
+  <input ref="msgInput" type="text" model="message" />
+  <button on:click="$refs.msgInput.focus(); $refs.msgInput.select()">
+    Edit Message
+  </button>
+  <p>Message: <span bind="message"></span></p>
+</div>
+```
+
+---
+
+## `use`
 
 Instantiate a template inline. Clones the referenced template into the element.
 
 **Syntax:** `<element use="templateId">`
+
+Pass variables to the template using `var-*` attributes.
 
 ```html
 <template id="counter-component" var="config">
@@ -53,7 +86,31 @@ Instantiate a template inline. Clones the referenced template into the element.
 <div use="counter-component" var-config="{ label: 'Oranges', initial: 3 }"></div>
 ```
 
-### `include`
+### Edge Cases
+
+- Each `use` creates an independent instance with its own state.
+- The `var` attribute on the `<template>` declares what variable name the template expects.
+- The `var-*` attribute on the `use` element passes the value.
+
+### Complete Example -- Reusable Card Component
+
+```html
+<template id="info-card" var="data">
+  <div class="card">
+    <h3 bind="data.title"></h3>
+    <p bind="data.description"></p>
+    <a bind-href="data.link">Learn More</a>
+  </div>
+</template>
+
+<div use="info-card" var-data="{ title: 'No.JS', description: 'HTML-first framework', link: '/docs' }"></div>
+<div use="info-card" var-data="{ title: 'Elements', description: 'UI components', link: '/elements' }"></div>
+<div use="info-card" var-data="{ title: 'CLI', description: 'Command-line tools', link: '/cli' }"></div>
+```
+
+---
+
+## `include`
 
 Synchronously clone an inline template into the current position. Useful for reusable markup that needs no network request.
 
@@ -69,7 +126,15 @@ Synchronously clone an inline template into the current position. Useful for reu
 
 Each `include` creates a fresh independent clone. Both plain IDs and `#id` syntax are accepted.
 
-### Template Slots
+### Edge Cases
+
+- Unlike `use`, `include` does not support variable passing. It is a simple clone.
+- The `include` element is replaced by the cloned content.
+- Circular includes (A includes B, B includes A) are not detected and will cause infinite loops.
+
+---
+
+## Template Slots
 
 Templates can accept projected content via named `<slot>` elements:
 
@@ -89,7 +154,37 @@ Templates can accept projected content via named `<slot>` elements:
 </div>
 ```
 
-### Remote Templates (`src`)
+### Edge Cases
+
+- The unnamed `<slot>` (default slot) receives all projected content that does not have a `slot` attribute.
+- Named slots match by `slot="name"` on the projected elements to `name="name"` on the `<slot>`.
+- If no content is projected for a slot, the slot's default children (if any) are rendered.
+
+### Complete Example -- Layout Template
+
+```html
+<template id="page-layout">
+  <header class="page-header"><slot name="header"></slot></header>
+  <main class="page-body"><slot></slot></main>
+  <footer class="page-footer"><slot name="footer"></slot></footer>
+</template>
+
+<div use="page-layout">
+  <nav slot="header">
+    <a route="/">Home</a>
+    <a route="/about">About</a>
+  </nav>
+
+  <h1>Welcome to My App</h1>
+  <p>This content goes in the default slot.</p>
+
+  <p slot="footer">Copyright 2026</p>
+</div>
+```
+
+---
+
+## Remote Templates (`src`)
 
 Load templates from external HTML files. Resolved recursively.
 
@@ -109,7 +204,15 @@ Load templates from external HTML files. Resolved recursively.
 </template>
 ```
 
-### Template Variables (`var`)
+### Edge Cases
+
+- Remote templates are cached after the first fetch. Subsequent uses do not trigger additional network requests.
+- If the remote file returns HTTP 404, the template remains empty.
+- Templates loaded via `src` can themselves reference other templates (resolved recursively).
+
+---
+
+## Template Variables (`var`)
 
 Templates can declare which variable they expect:
 
@@ -119,11 +222,11 @@ Templates can declare which variable they expect:
 </template>
 ```
 
+The `var` attribute names the variable that will be available inside the template when it is instantiated (via `use`, `success`, `error`, or loop `template`).
+
 ---
 
-## Miscellaneous
-
-### `call`
+## `call`
 
 Trigger an API call on click, with loading/error/success templates.
 
@@ -147,6 +250,14 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
 | `confirm` | string | Show browser `confirm()` dialog before sending |
 | `redirect` | string | SPA route to navigate to on success |
 | `headers` | string | JSON string of request headers |
+
+### Behavior Details
+
+- **Loading state disables button:** While the loading template is displayed, the button/element is set to `disabled = true`. Re-enabled after the response returns.
+- **Sensitive header warning:** If inline `headers` contain credentials (e.g. `Authorization`, `X-Auth-*`), a console warning is emitted.
+- **Success template target:** The success template is **appended** to `el.closest("[route-view]") || el.parentElement` -- it does NOT replace the button content.
+- **Request lifecycle:** `click -> [confirm?] -> [loading] -> [success | error]`
+- **Events emitted:** `fetch:success` (`{ url, data }`) and `fetch:error` (`{ url, error }`) on the document.
 
 ```html
 <!-- Logout button -->
@@ -175,12 +286,35 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
 </button>
 ```
 
-**Loading state disables button:** While the loading template is displayed, the button/element is set to `disabled = true`. It is re-enabled after the response returns.
+### Edge Cases
 
-**Sensitive header warning:** If inline `headers` contain credentials (e.g. `Authorization`, `X-Auth-*`, `X-Api-*`), a console warning is emitted advising the use of `NoJS.config({ headers })` or an interceptor instead of exposing credentials in HTML source.
+- `call` always triggers on `click`, regardless of element type (even `<a>` or `<form>`).
+- SwitchMap behavior: rapid clicks abort the previous in-flight request. Only the latest response is rendered.
+- The `method` attribute defaults to `"get"` if omitted.
 
-**Success template target:** The success template is **appended** to `el.closest("[route-view]") || el.parentElement` -- it does NOT replace the button content. The response data is available inside the success template under the variable declared by `var` on the template (defaults to `"result"`).
+### Complete Example -- CRUD Actions
 
-**Request lifecycle:** `click -> [confirm?] -> [loading] -> [success | error]`
+```html
+<div state="{ items: [] }" get="/api/items" as="items">
+  <div each="item in items" key="item.id">
+    <span bind="item.name"></span>
 
-**Events emitted:** `fetch:success` (`{ url, data }`) and `fetch:error` (`{ url, error }`) on the document.
+    <button call="/api/items/{item.id}" method="delete"
+            confirm="Delete this item?"
+            then="items.splice($index, 1)">
+      Delete
+    </button>
+  </div>
+
+  <button call="/api/items" method="post"
+          body="{ name: 'New Item' }"
+          then="items.push(result)"
+          loading="#spinner">
+    Add Item
+  </button>
+</div>
+
+<template id="spinner">
+  <span class="spinner">Loading...</span>
+</template>
+```

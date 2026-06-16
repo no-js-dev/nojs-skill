@@ -40,6 +40,21 @@ Client-side SPA routing with params, guards, nested routes, file-based routing, 
 
 ---
 
+## Syntax Reference
+
+| Directive | Syntax | Description |
+|-----------|--------|-------------|
+| `route` | `route="/path"` | Define a route or navigation link |
+| `route-view` | `route-view` or `route-view="name"` | Route outlet for matched template |
+| `route-active` | `route-active="class"` | CSS class on active route (prefix match) |
+| `route-active-exact` | `route-active-exact="class"` | CSS class on active route (exact match) |
+| `guard` | `guard="condition" redirect="/path"` | Route guard with redirect |
+| `lazy` | `lazy="ondemand"` or `lazy="priority"` | Control when route templates are fetched |
+| `outlet` | `outlet="outletName"` | Assign template to named outlet |
+| `transition` | `transition="preset"` | View Transition API preset on `route-view` |
+
+---
+
 ## Routing
 
 Client-side SPA routing with params, guards, nested routes, file-based routing, and named outlets.

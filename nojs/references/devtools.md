@@ -90,7 +90,7 @@ dt.stores   // Object — snapshot of all stores { name: { ...data } }
 dt.config   // Object — shallow copy of current framework config
 dt.refs     // Object — copy of all ref-registered elements
 dt.router   // Object — live router instance (or null)
-dt.version  // String — framework version (e.g., "1.11.1")
+dt.version  // String — framework version (e.g., "1.14.1")
 dt.plugins  // Map — copy of installed plugins (name -> { plugin, options })
 dt.globals  // Object — copy of plugin globals
 ```
