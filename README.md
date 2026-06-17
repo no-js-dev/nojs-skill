@@ -1,6 +1,6 @@
 # NoJS Skill
 
-[![jsDelivr hits](https://data.jsdelivr.com/v1/package/gh/erickxavier/nojs-skill/badge)](https://www.jsdelivr.com/package/gh/erickxavier/nojs-skill)
+[![jsDelivr hits](https://data.jsdelivr.com/v1/package/gh/no-js-dev/nojs-skill/badge)](https://www.jsdelivr.com/package/gh/no-js-dev/nojs-skill)
 
 AI skill that gives [Claude Code](https://claude.com/claude-code) and compatible AI tools expert-level knowledge of the **[No.JS](https://no-js.dev)** framework — the HTML-first reactive framework for building dynamic web applications using only HTML attributes.
 
@@ -22,14 +22,14 @@ When installed, this skill automatically activates whenever you work with No.JS 
 ### Claude Code (Marketplace)
 
 ```bash
-/plugin marketplace add ErickXavier/nojs-skill
+/plugin marketplace add no-js-dev/nojs-skill
 /plugin install nojs@nojs-skill
 ```
 
 ### Claude Code (Skill)
 
 ```bash
-claude skill install github:ErickXavier/nojs-skill
+claude skill install github:no-js-dev/nojs-skill
 ```
 
 ### Manual
@@ -85,9 +85,9 @@ The skill activates when it detects:
 
 | Project | Description |
 | --- | --- |
-| [No.JS](https://github.com/ErickXavier/no-js) | Core framework (zero dependencies) |
-| [NoJS Elements](https://github.com/ErickXavier/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
-| [NoJS LSP](https://github.com/ErickXavier/nojs-lsp) | VS Code extension — completions, diagnostics, hover docs |
+| [No.JS](https://github.com/no-js-dev/nojs) | Core framework (zero dependencies) |
+| [NoJS Elements](https://github.com/no-js-dev/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
+| [NoJS LSP](https://github.com/no-js-dev/nojs-lsp) | VS Code extension — completions, diagnostics, hover docs |
 | **NoJS Skill** | This project — AI skill for Claude Code |
 
 ## Version

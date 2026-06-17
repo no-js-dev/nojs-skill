@@ -5,7 +5,7 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/ErickXavier/nojs-skill/compare/v1.14.1...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.14.1...HEAD)
 
 ### Added
 
@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `references/directives/extras.md` (distributed to `i18n.md`, `animations.md`, `head-seo.md`)
 - `references/directives/forms.md` (distributed to `binding.md` and `elements/validate.md`)
 
-## [1.14.1](https://github.com/ErickXavier/nojs-skill/compare/v1.14.0...v1.14.1) — 2026-06-11
+## [1.14.1](https://github.com/no-js-dev/nojs-skill/compare/v1.14.0...v1.14.1) — 2026-06-11
 
 ### Fixed
 
@@ -60,44 +60,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated version strings from 1.11.1/1.10.0 to 1.14.0
 - Changed "removed in v1.15" to "removed — Unreleased" for sibling else pattern
 
-## [1.14.0](https://github.com/ErickXavier/nojs-skill/compare/v1.13.3...v1.14.0) — 2026-06-09
+## [1.14.0](https://github.com/no-js-dev/nojs-skill/compare/v1.13.3...v1.14.0) — 2026-06-09
 
 ### Added
 
 - Pagination & Fetch Triggers reference section in data-fetching.md: `get-trigger`, `get-insert`, `get-page`, `get-cursor`, `get-cursor-field`, `get-threshold` with examples and composition rules
 - Updated SKILL.md with pagination attributes in Data Fetching summary and CRUD examples
 
-## [1.13.3](https://github.com/ErickXavier/nojs-skill/compare/v1.13.2...v1.13.3) — 2026-06-05
+## [1.13.3](https://github.com/no-js-dev/nojs-skill/compare/v1.13.2...v1.13.3) — 2026-06-05
 
 ### Changed
 
 - Version sync with NoJS ecosystem 1.13.3.
 
-## [1.13.2](https://github.com/ErickXavier/nojs-skill/compare/v1.13.1...v1.13.2) — 2026-06-02
+## [1.13.2](https://github.com/no-js-dev/nojs-skill/compare/v1.13.1...v1.13.2) — 2026-06-02
 
 ### Changed
 
 - Version sync with NoJS ecosystem 1.13.2.
 
-## [1.13.1](https://github.com/ErickXavier/nojs-skill/compare/v1.13.0...v1.13.1) — 2026-06-01
+## [1.13.1](https://github.com/no-js-dev/nojs-skill/compare/v1.13.0...v1.13.1) — 2026-06-01
 
 ### Changed
 
 - Version bump for ecosystem sync with NoJS v1.13.1 (no content changes)
 
-## [1.13.0](https://github.com/ErickXavier/nojs-skill/compare/v1.12.0...v1.13.0) — 2026-06-01
+## [1.13.0](https://github.com/no-js-dev/nojs-skill/compare/v1.12.0...v1.13.0) — 2026-06-01
 
 ### Changed
 
-- `drag`, `drop`, `drag-list`, `drag-multiple`, and `validate` now require the `@erickxavier/nojs-elements` plugin (`NoJS.use(NoJSElements)`); `error-boundary` and `NoJS.validator()` remain in core
+- `drag`, `drop`, `drag-list`, `drag-multiple`, and `validate` now require the `@no-js-dev/nojs-elements` plugin (`NoJS.use(NoJSElements)`); `error-boundary` and `NoJS.validator()` remain in core
 
-## [1.12.0](https://github.com/ErickXavier/nojs-skill/compare/v1.11.1...v1.12.0) — 2026-05-21
+## [1.12.0](https://github.com/no-js-dev/nojs-skill/compare/v1.11.1...v1.12.0) — 2026-05-21
 
 ### Changed
 
 - Version bump for ecosystem sync with NoJS v1.12.0
 
-## [1.11.1](https://github.com/ErickXavier/nojs-skill/compare/v1.11.0...v1.11.1) — 2026-05-21
+## [1.11.1](https://github.com/no-js-dev/nojs-skill/compare/v1.11.0...v1.11.1) — 2026-05-21
 
 ### Added
 
@@ -133,26 +133,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 12 directive discrepancies found by dev/QA verification against source
 - All priority numbers, attribute lists, and modifier lists verified against source
 
-## [1.11.0](https://github.com/ErickXavier/nojs-skill/compare/v1.10.1...v1.11.0) — 2026-03-26
+## [1.11.0](https://github.com/no-js-dev/nojs-skill/compare/v1.10.1...v1.11.0) — 2026-03-26
 
 ### Added
 
-- Plugin reference documentation for the plugin system ([`e6155b1`](https://github.com/ErickXavier/nojs-skill/commit/e6155b1))
-- NoJS CLI reference and skill section ([`326710f`](https://github.com/ErickXavier/nojs-skill/commit/326710f))
-- Head management directives (`page-title`, `page-description`, `page-canonical`, `page-jsonld`) reference ([`8ca73ff`](https://github.com/ErickXavier/nojs-skill/commit/8ca73ff))
-- `focusBehavior` config option and validation notes ([`8ca73ff`](https://github.com/ErickXavier/nojs-skill/commit/8ca73ff))
+- Plugin reference documentation for the plugin system ([`e6155b1`](https://github.com/no-js-dev/nojs-skill/commit/e6155b1))
+- NoJS CLI reference and skill section ([`326710f`](https://github.com/no-js-dev/nojs-skill/commit/326710f))
+- Head management directives (`page-title`, `page-description`, `page-canonical`, `page-jsonld`) reference ([`8ca73ff`](https://github.com/no-js-dev/nojs-skill/commit/8ca73ff))
+- `focusBehavior` config option and validation notes ([`8ca73ff`](https://github.com/no-js-dev/nojs-skill/commit/8ca73ff))
 
 ### Fixed
 
-- Add missing config options to SKILL.md ([`a0e47b7`](https://github.com/ErickXavier/nojs-skill/commit/a0e47b7))
+- Add missing config options to SKILL.md ([`a0e47b7`](https://github.com/no-js-dev/nojs-skill/commit/a0e47b7))
 
-## [1.10.1](https://github.com/ErickXavier/nojs-skill/compare/v1.10.0...v1.10.1) — 2026-03-23
+## [1.10.1](https://github.com/no-js-dev/nojs-skill/compare/v1.10.0...v1.10.1) — 2026-03-23
 
 ### Fixed
 
-- Sync skill reference documentation with NoJS v1.10.1 security model and hardening changes ([`4d0be1d`](https://github.com/ErickXavier/nojs-skill/commit/4d0be1d))
+- Sync skill reference documentation with NoJS v1.10.1 security model and hardening changes ([`4d0be1d`](https://github.com/no-js-dev/nojs-skill/commit/4d0be1d))
 
-## [1.10.0](https://github.com/ErickXavier/nojs-skill/compare/v1.0.0...v1.10.0) — 2026-03-23
+## [1.10.0](https://github.com/no-js-dev/nojs-skill/compare/v1.0.0...v1.10.0) — 2026-03-23
 
 ### Added
 
@@ -164,7 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version references updated to 1.10.0
 
-## [1.0.0](https://github.com/ErickXavier/nojs-skill/releases/tag/v1.0.0) — 2026-03-22
+## [1.0.0](https://github.com/no-js-dev/nojs-skill/releases/tag/v1.0.0) — 2026-03-22
 
 ### Added
 

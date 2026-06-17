@@ -28,5 +28,5 @@ The following are in scope:
 
 ### Out of scope
 
-- Vulnerabilities in the No.JS framework itself (report those to the [framework repo](https://github.com/ErickXavier/no-js))
+- Vulnerabilities in the No.JS framework itself (report those to the [framework repo](https://github.com/no-js-dev/nojs))
 - Issues in the AI tool consuming the skill (Claude Code, etc.)

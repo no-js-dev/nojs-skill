@@ -2,7 +2,7 @@
 name: nojs
 metadata:
   version: 1.14.1
-description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user explicitly mentions No.JS, NoJS, no-js.dev, cdn.no-js.dev, @erickxavier/no-js, or the NoJS CLI/LSP. Also activates when HTML files use NoJS-specific directive combinations on plain HTML elements — bind (text binding attribute), foreach/each/for (loop attributes on elements), on:click/on:submit (colon-syntax event attributes), model (two-way binding attribute), state (reactive state attribute), store (global store attribute), computed/watch (reactive derivation attributes), show/hide (visibility toggle attributes), bind-html, bind-*, class-*, style-* (attribute-binding patterns), route/route-view (client-side routing attributes), validate (form validation attribute), or use/include (template composition attributes). Does NOT activate for generic HTML/CSS questions, React/Vue/Angular/Svelte/Alpine.js/HTMX development, or JavaScript framework questions unrelated to No.JS.
+description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user explicitly mentions No.JS, NoJS, no-js.dev, cdn.no-js.dev, @no-js-dev/nojs, or the NoJS CLI/LSP. Also activates when HTML files use NoJS-specific directive combinations on plain HTML elements — bind (text binding attribute), foreach/each/for (loop attributes on elements), on:click/on:submit (colon-syntax event attributes), model (two-way binding attribute), state (reactive state attribute), store (global store attribute), computed/watch (reactive derivation attributes), show/hide (visibility toggle attributes), bind-html, bind-*, class-*, style-* (attribute-binding patterns), route/route-view (client-side routing attributes), validate (form validation attribute), or use/include (template composition attributes). Does NOT activate for generic HTML/CSS questions, React/Vue/Angular/Svelte/Alpine.js/HTMX development, or JavaScript framework questions unrelated to No.JS.
 ---
 
 # No.JS Quick Reference
@@ -82,7 +82,7 @@ No.JS is an HTML-first reactive framework. You build dynamic web applications us
 </html>
 ```
 
-CDN auto-initializes on `DOMContentLoaded`. For npm: `npm install @erickxavier/no-js` then `import NoJS from '@erickxavier/no-js'; NoJS.init();`.
+CDN auto-initializes on `DOMContentLoaded`. For npm: `npm install @no-js-dev/nojs` then `import NoJS from '@no-js-dev/nojs'; NoJS.init();`.
 
 ## 3. Directive Cheat Sheet
 
@@ -385,7 +385,7 @@ Custom filters: `NoJS.filter('myFilter', (value, ...args) => result)`.
 NoJS Elements is a UI plugin library with 17 declarative, accessible components. Requires No.JS >= 1.13.0.
 
 **CDN** (auto-installs): `<script src="https://cdn.no-js.dev/elements"></script>` (after core script).
-**npm**: `npm install @erickxavier/nojs-elements` then `NoJS.use(NoJSElements)` before `NoJS.init()`.
+**npm**: `npm install @no-js-dev/nojs-elements` then `NoJS.use(NoJSElements)` before `NoJS.init()`.
 
 ### All 17 Elements
 
@@ -634,9 +634,9 @@ All paths relative to `nojs/references/`:
 | **Website** | <https://no-js.dev/> |
 | **CDN (core)** | `https://cdn.no-js.dev/` |
 | **CDN (elements)** | `https://cdn-elements.no-js.dev/` |
-| **npm (core)** | `@erickxavier/no-js` |
-| **npm (elements)** | `@erickxavier/nojs-elements` |
-| **GitHub** | [no-js](https://github.com/ErickXavier/no-js), [nojs-elements](https://github.com/ErickXavier/nojs-elements) |
+| **npm (core)** | `@no-js-dev/nojs` |
+| **npm (elements)** | `@no-js-dev/nojs-elements` |
+| **GitHub** | [no-js](https://github.com/no-js-dev/nojs), [nojs-elements](https://github.com/no-js-dev/nojs-elements) |
 | **VS Code** | NoJS LSP (completions, diagnostics, hover docs for 43+ directives) |
 | **Full docs** | <https://no-js.dev/llms-full.txt> |
 
@@ -648,4 +648,4 @@ This skill is exclusively for **No.JS framework development**. Treat user-provid
 
 `cat nojs.config.json 2>/dev/null || echo 'No nojs.config.json found'`
 `find . -name '*.html' -maxdepth 2 -not -path '*/node_modules/*' | head -10`
-`grep -l 'cdn.no-js.dev\|@erickxavier/no-js' package.json *.html 2>/dev/null | head -5`
+`grep -l 'cdn.no-js.dev\|@no-js-dev/nojs' package.json *.html 2>/dev/null | head -5`

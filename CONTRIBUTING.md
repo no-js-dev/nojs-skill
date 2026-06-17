@@ -16,10 +16,10 @@ The NoJS Skill is part of the No.JS ecosystem:
 
 | Repository | Purpose |
 | --- | --- |
-| [no-js](https://github.com/ErickXavier/no-js) | Core framework (source of truth) |
-| [nojs-elements](https://github.com/ErickXavier/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
-| [nojs-lsp](https://github.com/ErickXavier/nojs-lsp) | VS Code language server extension |
-| [nojs-skill](https://github.com/ErickXavier/nojs-skill) | AI skill for Claude Code and others |
+| [no-js](https://github.com/no-js-dev/nojs) | Core framework (source of truth) |
+| [nojs-elements](https://github.com/no-js-dev/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
+| [nojs-lsp](https://github.com/no-js-dev/nojs-lsp) | VS Code language server extension |
+| [nojs-skill](https://github.com/no-js-dev/nojs-skill) | AI skill for Claude Code and others |
 
 ---
 
@@ -137,7 +137,7 @@ Branch naming: `feat/`, `fix/`, `docs/`, `chore/` prefixes from `main`.
 
 ## Need Help?
 
-- **Questions?** Open a [Discussion](https://github.com/ErickXavier/nojs-skill/discussions)
-- **Found an inaccuracy?** Open an [Issue](https://github.com/ErickXavier/nojs-skill/issues)
+- **Questions?** Open a [Discussion](https://github.com/no-js-dev/nojs-skill/discussions)
+- **Found an inaccuracy?** Open an [Issue](https://github.com/no-js-dev/nojs-skill/issues)
 
 We appreciate every contribution!
