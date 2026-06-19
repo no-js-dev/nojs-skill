@@ -297,13 +297,36 @@ Programmatic: `NoJS.router.push('/path')`, `NoJS.router.replace('/path')`, `NoJS
 
 `t="key"` (translate), `t-name="expr"` (interpolation param), `t-html` (render as HTML), `i18n-ns="namespace"` (lazy-load namespace). Pluralization: `"1 item | {count} items"` in locale files.
 
+**`$i18n` reactive proxy:** Access translations directly in any expression via dot-notation. The proxy is fully reactive -- locale changes auto-update all bindings.
+
+| Property | Description |
+|----------|-------------|
+| `$i18n.[namespace].[key]` | Translation string via dot-notation path |
+| `$i18n.locale` | Current active locale (get/set) |
+| `$i18n.locales` | Array of available locale codes |
+| `$i18n.t(key, params)` | Translate with interpolation/pluralization |
+| `$i18n.setLocale(code)` | Change the active locale |
+
+Reserved properties (`locale`, `locales`, `t`, `setLocale`) cannot be used as translation namespace names.
+
 ```html
 <script>NoJS.i18n({ defaultLocale: 'en', loadPath: '/locales/{locale}.json' });</script>
 
 <h1 t="greeting" t-name="user.name"></h1>  <!-- "Hello, {name}!" -> "Hello, John!" -->
 <span t="items" t-count="cart.length"></span>  <!-- pluralized -->
 <span bind="price | currency:'BRL'"></span>  <!-- R$ 1.234,56 -->
+
+<!-- $i18n reactive proxy — dot-notation access to translations -->
+<span bind="$i18n.shell.sidebar.intro"></span>
+<div state="{ label: $i18n.common.title }">
+  <h2 bind="label"></h2>
+</div>
+<button bind="$i18n.common.buttons.save" on:click="save()"></button>
+<span bind="$i18n.t('items', { count: cart.length })"></span>
+<button on:click="$i18n.setLocale('pt')">Portugues</button>
 ```
+
+`$i18n.[path]` works in: `state`, `store`, `computed`, `watch`, `foreach`, `bind`, `if`/`show`/`hide`.
 
 ### Animations
 
