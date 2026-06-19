@@ -1,6 +1,7 @@
 # NoJS Skill
 
 [![jsDelivr hits](https://data.jsdelivr.com/v1/package/gh/no-js-dev/nojs-skill/badge)](https://www.jsdelivr.com/package/gh/no-js-dev/nojs-skill)
+![version](https://img.shields.io/github/v/tag/no-js-dev/nojs-skill?label=version)
 
 AI skill that gives [Claude Code](https://claude.com/claude-code) and compatible AI tools expert-level knowledge of the **[No.JS](https://no-js.dev)** framework — the HTML-first reactive framework for building dynamic web applications using only HTML attributes.
 
@@ -92,7 +93,7 @@ The skill activates when it detects:
 
 ## Version
 
-This skill documents **No.JS v1.14.1**. The framework source code is the ground truth — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to keep the skill in sync.
+This skill documents **No.JS**. The framework source code is the ground truth — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to keep the skill in sync.
 
 ## License
 
