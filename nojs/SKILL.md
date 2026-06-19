@@ -1,7 +1,7 @@
 ---
 name: nojs
 metadata:
-  version: 1.14.1
+  version: 1.15.0
 description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user explicitly mentions No.JS, NoJS, no-js.dev, cdn.no-js.dev, @no-js-dev/nojs, or the NoJS CLI/LSP. Also activates when HTML files use NoJS-specific directive combinations on plain HTML elements — bind (text binding attribute), foreach/each/for (loop attributes on elements), on:click/on:submit (colon-syntax event attributes), model (two-way binding attribute), state (reactive state attribute), store (global store attribute), computed/watch (reactive derivation attributes), show/hide (visibility toggle attributes), bind-html, bind-*, class-*, style-* (attribute-binding patterns), route/route-view (client-side routing attributes), validate (form validation attribute), or use/include (template composition attributes). Does NOT activate for generic HTML/CSS questions, React/Vue/Angular/Svelte/Alpine.js/HTMX development, or JavaScript framework questions unrelated to No.JS.
 ---
 
@@ -526,7 +526,7 @@ NoJS.store                     // Access global stores
 NoJS.notify()                  // Flush UI updates after external mutation
 NoJS.router                    // push(), replace(), back(), forward()
 NoJS.locale                    // Get/set current locale
-NoJS.version                   // "1.14.1"
+NoJS.version                   // "1.15.0"
 NoJS.CANCEL                    // Interceptor sentinel: cancel request
 NoJS.RESPOND                   // Interceptor sentinel: short-circuit with response
 NoJS.REPLACE                   // Interceptor sentinel: replace response data
@@ -653,7 +653,7 @@ All paths relative to `nojs/references/`:
 
 | Property | Value |
 |----------|-------|
-| **Version** | 1.14.1 |
+| **Version** | 1.15.0 |
 | **Website** | <https://no-js.dev/> |
 | **CDN (core)** | `https://cdn.no-js.dev/` |
 | **CDN (elements)** | `https://cdn-elements.no-js.dev/` |

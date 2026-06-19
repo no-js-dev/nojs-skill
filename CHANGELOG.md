@@ -5,10 +5,13 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.14.1...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.15.0...HEAD)
+
+## [1.15.0](https://github.com/no-js-dev/nojs-skill/compare/v1.14.1...v1.15.0) — 2026-06-19
 
 ### Added
 
+- `feat(i18n): document $i18n.[path] reactive translation proxy`
 - **Skill commands** — `/nojs cdn`, `/nojs scaffold`, `/nojs component` for interactive code generation
 - `templates/scaffold-core.html` — Starter app with state, binding, events, data fetching
 - `templates/scaffold-elements.html` — Starter app with Elements: tabs, accordion, modal, toast
