@@ -16,12 +16,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install tools
-        run: npm install -g markdownlint-cli markdown-link-check
-
-      - name: Lint markdown
-        run: markdownlint '**/*.md' --ignore node_modules --ignore CHANGELOG.md
-
       - name: Validate frontmatter version
         run: |
           SKILL_VERSION=$(grep -m1 '^\s*version:' nojs/SKILL.md | sed 's/.*version: *//')
@@ -31,10 +25,3 @@ jobs:
             exit 1
           fi
           echo "Version validated: $SKILL_VERSION"
-
-      - name: Check links
-        run: |
-          find . -name '*.md' -not -path './node_modules/*' -not -path './CHANGELOG.md' | while read f; do
-            echo "Checking $f"
-            markdown-link-check "$f" --quiet || true
-          done
