@@ -5,7 +5,13 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.15.2...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.15.3...HEAD)
+
+## [1.15.3] - 2026-06-20
+
+### Changed
+
+- chore: version bump for ecosystem sync
 
 ## [1.15.2] - 2026-06-20
 
