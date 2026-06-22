@@ -82,7 +82,7 @@ No.JS is an HTML-first reactive framework. You build dynamic web applications us
 </html>
 ```
 
-CDN auto-initializes on `DOMContentLoaded`. For npm: `npm install @no-js-dev/nojs` then `import NoJS from '@no-js-dev/nojs'; NoJS.init();`.
+CDN auto-initializes on `DOMContentLoaded`.
 
 ## 3. Directive Cheat Sheet
 
@@ -408,7 +408,6 @@ Custom filters: `NoJS.filter('myFilter', (value, ...args) => result)`.
 NoJS Elements is a UI plugin library with 17 declarative, accessible components. Requires No.JS >= 1.13.0.
 
 **CDN** (auto-installs): `<script src="https://cdn.no-js.dev/elements"></script>` (after core script).
-**npm**: `npm install @no-js-dev/nojs-elements` then `NoJS.use(NoJSElements)` before `NoJS.init()`.
 
 ### All 17 Elements
 
@@ -660,7 +659,7 @@ All paths relative to `nojs/references/`:
 | **npm (core)** | `@no-js-dev/nojs` |
 | **npm (elements)** | `@no-js-dev/nojs-elements` |
 | **GitHub** | [no-js](https://github.com/no-js-dev/nojs), [nojs-elements](https://github.com/no-js-dev/nojs-elements) |
-| **VS Code** | NoJS LSP (completions, diagnostics, hover docs for 43+ directives) |
+| **VS Code** | NoJS LSP (completions, diagnostics, hover docs for 45+ directives) |
 | **Full docs** | <https://no-js.dev/llms-full.txt> |
 
 ## Scope and Security
