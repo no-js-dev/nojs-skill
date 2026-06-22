@@ -1,6 +1,5 @@
 # NoJS Skill
 
-[![jsDelivr hits](https://data.jsdelivr.com/v1/package/gh/no-js-dev/nojs-skill/badge)](https://www.jsdelivr.com/package/gh/no-js-dev/nojs-skill)
 ![version](https://img.shields.io/github/v/tag/no-js-dev/nojs-skill?label=version)
 
 AI skill that gives [Claude Code](https://claude.com/claude-code) and compatible AI tools expert-level knowledge of the **[No.JS](https://no-js.dev)** framework — the HTML-first reactive framework for building dynamic web applications using only HTML attributes.
@@ -9,7 +8,7 @@ AI skill that gives [Claude Code](https://claude.com/claude-code) and compatible
 
 When installed, this skill automatically activates whenever you work with No.JS directives. Your AI assistant will:
 
-- **Know all 43+ directives** with correct priorities, syntax, and companion attributes
+- **Know all 45+ directives** with correct priorities, syntax, and companion attributes
 - **Generate valid No.JS templates** following best practices (scoped state, keyed loops, proper filters)
 - **Validate templates** for common mistakes (missing `as`, wrong event syntax, unsanitized `bind-html`)
 - **Explain any directive** with working examples
@@ -20,22 +19,15 @@ When installed, this skill automatically activates whenever you work with No.JS 
 
 ## Installation
 
-### Claude Code (Marketplace)
+### GitHub
 
 ```bash
-/plugin marketplace add no-js-dev/nojs-skill
-/plugin install nojs@nojs-skill
-```
-
-### Claude Code (Skill)
-
-```bash
-claude skill install github:no-js-dev/nojs-skill
+claude install-skill github:no-js-dev/nojs-skill
 ```
 
 ### Manual
 
-Copy `nojs/SKILL.md` and the `nojs/references/` directory into your skills directory.
+Copy the `nojs/` directory (including `SKILL.md`, `references/`, and `templates/`) into `~/.claude/skills/`.
 
 ## Files
 
@@ -87,7 +79,7 @@ The skill activates when it detects:
 | Project | Description |
 | --- | --- |
 | [No.JS](https://github.com/no-js-dev/nojs) | Core framework (zero dependencies) |
-| [NoJS Elements](https://github.com/no-js-dev/nojs-elements) | UI plugin — `drag`, `drop`, `drag-list`, `drag-multiple`, `validate` (new in v1.13.0) |
+| [NoJS Elements](https://github.com/no-js-dev/nojs-elements) | UI plugin — 17 accessible components (drag-and-drop, validation, modal, tabs, toast, and more) |
 | [NoJS LSP](https://github.com/no-js-dev/nojs-lsp) | VS Code extension — completions, diagnostics, hover docs |
 | **NoJS Skill** | This project — AI skill for Claude Code |
 

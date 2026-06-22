@@ -5,7 +5,20 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.15.3...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.15.4...HEAD)
+
+## [1.15.4](https://github.com/no-js-dev/nojs-skill/compare/v1.15.3...v1.15.4) — 2026-06-22
+
+### Fixed
+
+- fix(docs): remove jsDelivr badge from README
+- fix(docs): fix install commands to use `claude install-skill`
+- fix(docs): specify ~/.claude/skills/ as manual install target
+- fix(docs): update directive count from 43+ to 45+
+- fix(docs): update Elements ecosystem description (17 accessible components)
+- fix(docs): remove npm install references from SKILL.md (Core and Elements are CDN-only)
+- fix(docs): standardize Elements CDN URL to cdn-elements.no-js.dev/
+- fix(docs): remove npm rows from SKILL.md quick-reference table
 
 ## [1.15.3] - 2026-06-20
 
