@@ -1,7 +1,7 @@
 ---
 name: nojs
 metadata:
-  version: 1.15.3
+  version: 1.15.4
 description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user explicitly mentions No.JS, NoJS, no-js.dev, cdn.no-js.dev, @no-js-dev/nojs, or the NoJS CLI/LSP. Also activates when HTML files use NoJS-specific directive combinations on plain HTML elements — bind (text binding attribute), foreach/each/for (loop attributes on elements), on:click/on:submit (colon-syntax event attributes), model (two-way binding attribute), state (reactive state attribute), store (global store attribute), computed/watch (reactive derivation attributes), show/hide (visibility toggle attributes), bind-html, bind-*, class-*, style-* (attribute-binding patterns), route/route-view (client-side routing attributes), validate (form validation attribute), or use/include (template composition attributes). Does NOT activate for generic HTML/CSS questions, React/Vue/Angular/Svelte/Alpine.js/HTMX development, or JavaScript framework questions unrelated to No.JS.
 ---
 
