@@ -108,7 +108,7 @@ When releasing a new version, bump **all** of the following in a single commit:
 - [ ] `README.md` — version reference in the "Version" section
 - [ ] Git tag — `git tag -a vX.Y.Z -m "vX.Y.Z"` and push with `git push origin vX.Y.Z`
 
-All NoJS ecosystem repos share the same version. Never bump this repo independently — coordinate with Core, Elements, LSP, and CLI.
+All NoJS ecosystem repos share the same version. Never bump this repo independently — coordinate with Core, Elements, and LSP.
 
 ---
 

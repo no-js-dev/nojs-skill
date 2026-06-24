@@ -27,13 +27,7 @@ Hierarchical tree view with expand/collapse, selection, keyboard navigation, and
 
 ```html
 <!-- CDN (auto-installs, no registration needed) -->
-<script src="https://unpkg.com/@nickeljs/elements"></script>
-
-<!-- ESM -->
-<script type="module">
-  import NoJSElements from '@nickeljs/elements';
-  NoJS.use(NoJSElements);
-</script>
+<script src="https://cdn-elements.no-js.dev/nojs-elements.iife.js"></script>
 ```
 
 Requires No.JS >= 1.13.0.

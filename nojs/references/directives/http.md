@@ -306,12 +306,12 @@ Default: value from `NoJS.config({ retries })`. Set `retry="0"` to disable retri
 
 Delay in milliseconds between retry attempts.
 
-**Syntax:** `<element get="/data" retry="3" retry-delay="2000">`
+**Syntax:** `<element get="/data" retry="3" retry-delay="1000">`
 
 Default: `1000` ms (or value from `NoJS.config({ retryDelay })`).
 
 ```html
-<div get="/api/unreliable" retry="3" retry-delay="2000" as="data">
+<div get="/api/unreliable" retry="3" retry-delay="1000" as="data">
   <span bind="data.value"></span>
 </div>
 ```

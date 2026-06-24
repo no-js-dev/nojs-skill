@@ -105,7 +105,7 @@ Pass variables to the template using `var-*` attributes.
 
 <div use="info-card" var-data="{ title: 'No.JS', description: 'HTML-first framework', link: '/docs' }"></div>
 <div use="info-card" var-data="{ title: 'Elements', description: 'UI components', link: '/elements' }"></div>
-<div use="info-card" var-data="{ title: 'CLI', description: 'Command-line tools', link: '/cli' }"></div>
+<div use="info-card" var-data="{ title: 'LSP', description: 'VS Code extension', link: '/lsp' }"></div>
 ```
 
 ---

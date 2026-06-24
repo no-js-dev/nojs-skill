@@ -41,13 +41,7 @@ Comprehensive form validation system driven by HTML attributes. Add `validate` t
 
 ```html
 <!-- CDN (auto-installs, no registration needed) -->
-<script src="https://unpkg.com/@nickeljs/elements"></script>
-
-<!-- ESM (register the full plugin or individually) -->
-<script type="module">
-  import NoJSElements from '@nickeljs/elements';
-  NoJS.use(NoJSElements);
-</script>
+<script src="https://cdn-elements.no-js.dev/nojs-elements.iife.js"></script>
 ```
 
 Requires No.JS >= 1.13.0. The Validation module is included in NoJS Elements. When using the CDN, it is auto-installed -- no separate registration needed.

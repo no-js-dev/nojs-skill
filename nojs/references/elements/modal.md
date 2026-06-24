@@ -22,17 +22,7 @@ Overlay dialog using the native Popover API (`popover="manual"`). Features focus
 
 ```html
 <!-- CDN (auto-installs, no registration needed) -->
-<script src="https://unpkg.com/@nickeljs/elements"></script>
-
-<!-- ESM (register the full plugin or just the modal) -->
-<script type="module">
-  import NoJSElements from '@nickeljs/elements';
-  NoJS.use(NoJSElements);
-
-  // Or register only the modal element
-  import { modal } from '@nickeljs/elements';
-  NoJS.use(modal);
-</script>
+<script src="https://cdn-elements.no-js.dev/nojs-elements.iife.js"></script>
 ```
 
 Requires No.JS >= 1.13.0.

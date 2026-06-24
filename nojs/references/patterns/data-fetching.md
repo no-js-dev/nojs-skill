@@ -394,7 +394,7 @@ Use `into` to write API responses directly into a named global store, making the
 <div get="/api/data" as="data"
      error="#dataError"
      retry="3"
-     retry-delay="2000">
+     retry-delay="1000">
   <span bind="data.value"></span>
 </div>
 

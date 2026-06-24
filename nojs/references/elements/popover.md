@@ -22,17 +22,7 @@ Rich content popover anchored to a trigger element. Uses three directives: `popo
 
 ```html
 <!-- CDN (auto-installs, no registration needed) -->
-<script src="https://unpkg.com/@nickeljs/elements"></script>
-
-<!-- ESM (register the full plugin or just the popover) -->
-<script type="module">
-  import NoJSElements from '@nickeljs/elements';
-  NoJS.use(NoJSElements);
-
-  // Or register only the popover element
-  import { popover } from '@nickeljs/elements';
-  NoJS.use(popover);
-</script>
+<script src="https://cdn-elements.no-js.dev/nojs-elements.iife.js"></script>
 ```
 
 Requires No.JS >= 1.13.0.
