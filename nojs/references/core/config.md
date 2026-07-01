@@ -233,6 +233,7 @@ NoJS.config({
     detectBrowser: true,
     loadPath: '/locales/{locale}/{ns}.json',
     ns: ['common', 'auth'],
+    supportedLocales: ['en', 'pt', 'es'],
     cache: true,
     persist: true
   }
@@ -246,6 +247,7 @@ NoJS.config({
 | `i18n.detectBrowser` | boolean | `false` | Auto-detect locale from `navigator.language` on initialization |
 | `i18n.loadPath` | string\|null | `null` | URL pattern for locale files. Supports `{locale}` and `{ns}` placeholders |
 | `i18n.ns` | string[] | `[]` | Namespaces to load |
+| `i18n.supportedLocales` | string[] | `[]` | Locales eligible for browser detection under `loadPath`. On first visit `detectBrowser` adopts the browser language (or its prefix, e.g. `pt` from `pt-BR`) only when present in this list. Locale priority: persisted `nojs-locale` > detection > `defaultLocale` |
 | `i18n.cache` | boolean | `true` | Cache loaded locale JSON files to avoid duplicate fetches |
 | `i18n.persist` | boolean | `false` | Persist the selected locale to `localStorage` so it survives page reloads |
 

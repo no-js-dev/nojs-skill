@@ -491,6 +491,7 @@ Browser globals (`window`, `document`, `location`, `history`, `navigator`) avail
 | `i18n.loadPath` | `null` | External locale files: `"/locales/{locale}.json"` |
 | `i18n.ns` | `[]` | Namespaces to preload |
 | `i18n.detectBrowser` | `true` | Auto-detect browser locale |
+| `i18n.supportedLocales` | `[]` | Locales eligible for `detectBrowser` under `loadPath`. First-visit priority: persisted `nojs-locale` > detection (browser lang or prefix in list) > `defaultLocale` |
 | `i18n.persist` | `false` | Persist selected locale to localStorage |
 | `stores` | `{}` | Pre-initialize global stores before DOM processing |
 | `debug` / `devtools` | `false` / `false` | Logging and browser devtools panel |

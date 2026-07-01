@@ -248,6 +248,7 @@ Configure internationalization settings. Can be called before or after `init()`.
 | `defaultLocale` | string | Default locale code |
 | `fallbackLocale` | string | Fallback locale when a key is missing |
 | `detectBrowser` | boolean | Auto-detect locale from `navigator.language` |
+| `supportedLocales` | string[] | Locales eligible for browser detection. When set with `loadPath`, `detectBrowser` adopts the browser language (or its prefix, e.g. `pt` from `pt-BR`) only if present in this list |
 
 ```javascript
 NoJS.i18n({
@@ -256,9 +257,12 @@ NoJS.i18n({
   defaultLocale: 'en',
   fallbackLocale: 'en',
   detectBrowser: true,
+  supportedLocales: ['en', 'pt', 'es'],
   persist: true
 });
 ```
+
+On first visit the active locale is resolved by priority: persisted `nojs-locale` > browser detection (when `detectBrowser` + `supportedLocales` match) > `defaultLocale`.
 
 ### Examples
 
