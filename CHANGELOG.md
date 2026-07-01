@@ -5,7 +5,13 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.15.6...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.16.0...HEAD)
+
+## [1.16.0](https://github.com/no-js-dev/nojs-skill/compare/v1.15.6...v1.16.0) — 2026-07-01
+
+### Added
+
+- Documented the `supportedLocales` i18n config option (api.md, config.md, i18n.md, SKILL.md). The supportedLocales docs already merged via PR #62.
 
 ## [1.15.6](https://github.com/no-js-dev/nojs-skill/compare/v1.15.5...v1.15.6) — 2026-06-25
 
