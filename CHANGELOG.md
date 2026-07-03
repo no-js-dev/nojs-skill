@@ -5,7 +5,13 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.16.0...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.16.1...HEAD)
+
+## [1.16.1](https://github.com/no-js-dev/nojs-skill/compare/v1.16.0...v1.16.1) — 2026-07-03
+
+### Changed
+
+- Version aligned with the NoJS Core v1.16.1 security release. No reference or content changes (no directive/filter/validator changes in this release).
 
 ## [1.16.0](https://github.com/no-js-dev/nojs-skill/compare/v1.15.6...v1.16.0) — 2026-07-01
 
