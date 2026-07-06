@@ -1,7 +1,7 @@
 ---
 name: nojs
 metadata:
-  version: 1.16.1
+  version: 1.17.0
 description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user explicitly mentions No.JS, NoJS, no-js.dev, cdn.no-js.dev, @no-js-dev/nojs, or the NoJS LSP. Also activates when HTML files use NoJS-specific directive combinations on plain HTML elements — bind (text binding attribute), foreach/each/for (loop attributes on elements), on:click/on:submit (colon-syntax event attributes), model (two-way binding attribute), state (reactive state attribute), store (global store attribute), computed/watch (reactive derivation attributes), show/hide (visibility toggle attributes), bind-html, bind-*, class-*, style-* (attribute-binding patterns), route/route-view (client-side routing attributes), validate (form validation attribute), or use/include (template composition attributes). Does NOT activate for generic HTML/CSS questions, React/Vue/Angular/Svelte/Alpine.js/HTMX development, or JavaScript framework questions unrelated to No.JS.
 ---
 
@@ -196,7 +196,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 
 ### HTTP / Data Fetching
 
-**Verbs**: `get="/url"`, `post="/url"`, `put="/url"`, `patch="/url"`, `delete="/url"`. Set base: `base="https://api.com"`.
+**Verbs**: `get="/url"`, `post="/url"`, `put="/url"`, `patch="/url"`, `delete="/url"`, `query="/url"` (safe/read method that carries a body — cacheable, idempotent, CSRF-exempt). Set base: `base="https://api.com"`.
 
 | Directive | Syntax | Description |
 |-----------|--------|-------------|
@@ -460,7 +460,7 @@ Property access (`user.name`, `items[0]`, `user?.address?.city`), arithmetic (`+
 
 `Array`, `Object`, `String`, `Number`, `Boolean`, `Math`, `Date`, `RegExp`, `Map`, `Set`, `JSON`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `Infinity`, `NaN`, `undefined`, `Error`, `Symbol`, `console`.
 
-Browser globals (`window`, `document`, `location`, `history`, `navigator`) available through security proxies that block sensitive sub-properties. **NOT available**: `fetch`, `XMLHttpRequest`, `localStorage`, `sessionStorage`, `WebSocket`, `indexedDB` -- use `get`/`post` directives and `persist` instead.
+Browser globals (`window`, `document`, `location`, `history`, `navigator`) available through security proxies that block sensitive sub-properties. **NOT available**: `fetch`, `XMLHttpRequest`, `localStorage`, `sessionStorage`, `WebSocket`, `indexedDB` -- use `get`/`post`/`query` directives and `persist` instead.
 
 ### Key limitations
 
@@ -627,7 +627,7 @@ All paths relative to `nojs/references/`:
 | [directives/conditionals.md](references/directives/conditionals.md) | if, else-if, else, show, hide, switch/case |
 | [directives/events.md](references/directives/events.md) | on:*, modifiers, lifecycle hooks, $event, $el |
 | [directives/head-seo.md](references/directives/head-seo.md) | page-title, page-description, page-canonical, page-jsonld |
-| [directives/http.md](references/directives/http.md) | get, post, put, patch, delete, pagination, caching |
+| [directives/http.md](references/directives/http.md) | get, post, put, patch, delete, query, pagination, caching |
 | [directives/i18n.md](references/directives/i18n.md) | t, t-html, i18n-ns, locale setup, pluralization |
 | [directives/loops.md](references/directives/loops.md) | foreach/each/for, filter, sort, key, loop vars |
 | [directives/routing.md](references/directives/routing.md) | route, route-view, guards, named outlets, file-based |

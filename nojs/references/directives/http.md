@@ -4,13 +4,14 @@ Declarative HTTP requests via HTML attributes. Priority 1.
 
 ## Contents
 
-- [Data Fetching](#data-fetching) -- base, get, post, put, patch, delete and all companion attributes
+- [Data Fetching](#data-fetching) -- base, get, post, put, patch, delete, query and all companion attributes
   - [base](#base) -- set API base URL for descendant HTTP directives
   - [get](#get) -- fetch data via HTTP GET
   - [post](#post) -- submit data via HTTP POST
   - [put](#put) -- update data via HTTP PUT (full replacement)
   - [patch](#patch) -- partial update via HTTP PATCH
   - [delete](#delete) -- delete data via HTTP DELETE
+  - [query](#query) -- safe/idempotent read via HTTP QUERY (carries a request body)
   - [Mutation Attributes](#mutation-attributes-postputpatchdelete) -- body, success, error, loading, confirm, redirect, then, into, cached, retry, retry-delay
   - [as](#as) -- name for fetched data in local context
   - [body](#body) -- request body for POST/PUT/PATCH
@@ -42,6 +43,7 @@ Declarative HTTP requests via HTML attributes. Priority 1.
 | `put` | `put="/endpoint"` | Update data via HTTP PUT (fires on submit/click) |
 | `patch` | `patch="/endpoint"` | Partial update via HTTP PATCH (fires on submit/click) |
 | `delete` | `delete="/endpoint"` | Delete data via HTTP DELETE (fires on submit/click) |
+| `query` | `query="/endpoint"` | Safe/idempotent read via HTTP QUERY that carries a request body (fires on mount/submit, cacheable) |
 | `error-boundary` | `error-boundary="#fallbackId"` | Catch errors in a subtree and render fallback template |
 
 ---
@@ -56,7 +58,7 @@ Set API base URL for all descendant HTTP directives.
 
 **Syntax:** `<element base="https://api.example.com">`
 
-All descendant `get`, `post`, `put`, `patch`, `delete` resolve relative URLs against this base. Absolute URLs skip base resolution. Can be overridden on nested elements.
+All descendant `get`, `post`, `put`, `patch`, `delete`, `query` resolve relative URLs against this base. Absolute URLs skip base resolution. Can be overridden on nested elements.
 
 ```html
 <body base="https://api.myapp.com/v1">
@@ -184,6 +186,67 @@ Delete data via HTTP DELETE request.
 </button>
 ```
 
+### `query`
+
+Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008.html)).
+
+**Syntax:** `<element query="/endpoint" body="{expression}" as="dataVar">`
+
+`QUERY` is a **safe, idempotent, cacheable** method that — unlike `get` — **carries a request body**. Use it for complex read operations whose criteria don't fit cleanly in a URL query string: rich search, faceted filtering, or long structured filter payloads. Semantically it is a **read**, not a mutation: it never changes server state, so it is safe to retry, cache, and re-fire reactively.
+
+**Trigger:**
+
+- On a `<form>`, intercepts the `submit` event and serializes fields via `FormData` (same as `post`).
+- On any other element, **auto-fires on mount** and **re-fires reactively** when reactive variables in its URL or `body` change (same on-mount/reactive behavior as `get`).
+
+**Trigger modes (non-form elements):** control *when* the request fires with `query-trigger` — the QUERY-side counterparts of `get-trigger`:
+
+| Attribute | Description |
+|-----------|-------------|
+| `query-trigger` | When the request fires: `visible` (on IntersectionObserver entry), `scroll`, `hover` (first `mouseenter`), `button` (renders a trigger button), or `none` (suppress auto-fire; use `.refresh()`). Absent = fires on mount |
+| `query-trigger-label` | Custom label for the auto-generated button when `query-trigger="button"`. Default: `"Load More"` |
+| `query-threshold` | IntersectionObserver `rootMargin` for `visible`/`scroll` triggers (e.g. `"200px"`) |
+
+**Body-aware caching:** when `cached` is set, the cache key incorporates the serialized request body (not just the URL), so two QUERY requests to the same endpoint with different filter bodies cache independently.
+
+**CSRF-exempt:** because `QUERY` is a safe method, No.JS does **not** attach a CSRF token to these requests (same treatment as `get`).
+
+> **Pagination is GET-only:** the `get-cursor` / `get-page` (and related `get-insert`) pagination companions are **not** available on `query` in this version. For paginated reads, use `get`. All other method-agnostic companions — `as`, `loading`, `error`, `empty`, `then`, `into`, `headers`, `params`, `retry`, `retry-delay`, `debounce`, `refresh` — work with `query`.
+
+```html
+<!-- Complex search/filter as a safe, body-carrying read -->
+<form query="/orders" body="{ status, minTotal, sort }" as="result">
+  <select model="status">
+    <option value="open">Open</option>
+    <option value="closed">Closed</option>
+  </select>
+  <input model="minTotal" type="number">
+  <select model="sort">
+    <option value="date">Newest</option>
+    <option value="total">Total</option>
+  </select>
+  <button>Search</button>
+
+  <div each="order in result">
+    <span bind="order.id"></span>
+  </div>
+</form>
+
+<!-- Non-form: auto-fires on mount, re-fires when filter state changes -->
+<div state="{ region: 'us', tags: [] }">
+  <div query="/products/search"
+       body="{ region, tags }"
+       query-trigger="visible"
+       query-threshold="200px"
+       as="products"
+       cached>
+    <div each="p in products">
+      <h3 bind="p.name"></h3>
+    </div>
+  </div>
+</div>
+```
+
 ### Mutation Attributes (post/put/patch/delete)
 
 | Attribute | Description |
@@ -203,6 +266,8 @@ Delete data via HTTP DELETE request.
 
 **Request lifecycle:** `[idle] -> [loading] -> [success | error]`
 
+> **`body`/`headers` and `query`:** the `body` and `headers` attributes are shared with the [`query`](#query) directive. `query` sends a `body` too (that is its whole purpose — a body-carrying read), but it is a **safe read method, not a mutation**: state-changing companions like `confirm` and `redirect` are meant for the mutation verbs above, whereas `query` behaves like `get` (auto-fires on mount, reactive, cacheable, CSRF-exempt).
+
 ### `as`
 
 Name for fetched data in the local context.
@@ -219,11 +284,11 @@ Default value is `"data"`. The response data becomes available in the context un
 
 ### `body`
 
-Request body for POST/PUT/PATCH/DELETE requests.
+Request body for POST/PUT/PATCH/DELETE requests, and for the safe `query` read.
 
 **Syntax:** `<element post="/api" body="{ key: value }">`
 
-Accepts a JSON string with `{variable}` interpolation. For `<form>` elements on any method, fields are always auto-serialized via `FormData` (overrides `body`).
+Accepts a JSON string with `{variable}` interpolation. For `<form>` elements on any method, fields are always auto-serialized via `FormData` (overrides `body`). `query` is the one **read** method that carries a `body` — see [`query`](#query).
 
 ### `headers`
 
@@ -327,7 +392,7 @@ Every HTTP element exposes a `.refresh()` method on the DOM element. Use it to r
 <button on:click="$refs.notifPanel.refresh()">Reload</button>
 ```
 
-The method is available on all directives (`get`, `post`, `put`, `patch`, `delete`). It is cleaned up automatically when the element is disposed.
+The method is available on all directives (`get`, `post`, `put`, `patch`, `delete`, `query`). It is cleaned up automatically when the element is disposed.
 
 ### Template var Priority
 
@@ -362,6 +427,7 @@ The variable name exposed inside `success` and `error` templates follows a prior
 | `put` | Intercepts `submit` | Attaches `click` listener |
 | `patch` | Intercepts `submit` | Attaches `click` listener |
 | `delete` | Intercepts `submit` | Attaches `click` listener |
+| `query` | Intercepts `submit` | Fetches on mount (reactive re-fetch); `query-trigger` overrides |
 
 For `<form>` elements, the `submit` event is prevented (`e.preventDefault()`) and the request fires instead.
 
@@ -529,7 +595,7 @@ The boundary intercepts two kinds of errors:
 1. **Expression evaluation errors** -- dispatched as `nojs:error` CustomEvents that bubble up from handler expressions (e.g. a `bind` or `on:click` expression throws).
 2. **Window-level errors** -- uncaught JS errors and resource load failures (e.g. an `<img>` 404) that originate from elements inside the boundary.
 
-> **Note:** `error-boundary` does **not** catch failed HTTP requests made by `get`/`post`/`put`/`patch`/`delete` directives. Use the `error` attribute on the fetch element for per-request error handling, or `NoJS.on('fetch:error', ...)` for global HTTP error handling.
+> **Note:** `error-boundary` does **not** catch failed HTTP requests made by `get`/`post`/`put`/`patch`/`delete`/`query` directives. Use the `error` attribute on the fetch element for per-request error handling, or `NoJS.on('fetch:error', ...)` for global HTTP error handling.
 
 ```html
 <div error-boundary="#errorFallback">

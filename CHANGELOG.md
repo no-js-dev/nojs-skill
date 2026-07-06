@@ -5,7 +5,13 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.16.1...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.17.0...HEAD)
+
+## [1.17.0](https://github.com/no-js-dev/nojs-skill/compare/v1.16.1...v1.17.0) — 2026-07-06
+
+### Added
+
+- Documented the `query` HTTP-method directive — a safe, idempotent, cacheable `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008.html)) that carries a request body for complex search/filter reads. Covers the form-submit vs non-form auto-fire/reactive behavior, the `query-trigger` / `query-trigger-label` / `query-threshold` companions, body-aware caching, CSRF exemption, and the GET-only limitation of the `get-cursor`/`get-page` pagination companions (http.md, SKILL.md).
 
 ## [1.16.1](https://github.com/no-js-dev/nojs-skill/compare/v1.16.0...v1.16.1) — 2026-07-03
 
