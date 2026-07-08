@@ -44,6 +44,7 @@ Replaces the element's text content with the evaluated expression. Supports pipe
 - When the expression evaluates to `null` or `undefined`, the text content is set to an empty string.
 - Pipe expressions are evaluated left to right: `bind="value | filterA | filterB"` passes the result of `filterA` into `filterB`.
 - HTML entities in the expression result are rendered as literal text (not HTML). Use `bind-html` for HTML output.
+- **Incompatible with `t` on the same element:** Both `bind` and `t` write text content. The last-processed directive wins silently. Use only one text source per element.
 
 ### Complete Example
 
@@ -104,6 +105,8 @@ Works with any attribute: `src`, `href`, `alt`, `title`, `disabled`, `checked`, 
 ### Two-Way `bind-value`
 
 On `<input>`, `<textarea>`, and `<select>`, `bind-value` is **two-way** -- it also attaches an `input` event listener that writes the element's value back to the expression. For `type="number"` inputs, the value is coerced to `Number`.
+
+> **Limitation:** Do not use `bind-value` and `model` on the same element -- both create two-way bindings with duplicate listeners. For number inputs, they may fight over the value due to different coercion policies. Use one or the other.
 
 ### Boolean Attributes
 
@@ -177,6 +180,7 @@ Creates automatic two-way data binding between a form input and a state property
 - `model` is only valid on `<input>`, `<select>`, and `<textarea>` elements. Using it on non-input elements produces a validation warning.
 - For radio buttons, multiple radios with the same `model` property share the value -- selecting one updates the property for all.
 - For `type="number"`, the value is coerced via `Number()`. If the input is empty, the value becomes `NaN` -- use `0` as the initial state to avoid this.
+- **Incompatible with `bind-value` on the same element:** Both `model` and `bind-value` create two-way bindings with separate listeners. Remove one to avoid duplicate pipelines and potential value conflicts.
 
 ### Complete Example
 

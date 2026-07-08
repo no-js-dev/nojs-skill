@@ -5,7 +5,15 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.17.0...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.18.0...HEAD)
+
+## [1.18.0](https://github.com/no-js-dev/nojs-skill/compare/v1.17.0...v1.18.0) — 2026-07-07
+
+### Added
+
+- Directive compatibility section in SKILL.md documenting directive interaction rules, if-gate semantics, and use priority changes
+- Limitation notes in directive reference docs for known incompatible combinations
+- 6 validation diagnostics documented (switch×loop, if+loop, ref+loop, bind-value+model, watch+on:change, t+bind)
 
 ## [1.17.0](https://github.com/no-js-dev/nojs-skill/compare/v1.16.1...v1.17.0) — 2026-07-06
 

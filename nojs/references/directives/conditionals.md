@@ -57,6 +57,7 @@ Conditionally render element. Removes from DOM when condition is false; re-creat
 - When `if` is false, the element and all its children are removed from the DOM entirely. Event listeners and component state are lost.
 - When `if` becomes true again, the element is re-created from scratch (directives re-initialize).
 - Expressions that evaluate to `0`, `""`, `null`, `undefined`, or `false` are all falsy.
+- **Incompatible with loops on the same element:** Do not place `if` and a loop (`each`/`foreach`/`for`) on the same element — the condition cannot remove individual items. Use the loop's `filter` attribute for per-item filtering, or wrap the loop in a container element with `if` for conditional rendering of the entire list.
 
 ### Complete Example
 
@@ -307,6 +308,7 @@ Supports multi-value matching with comma separation.
 
 - Multi-value matching uses comma separation inside the attribute value, not multiple `case` attributes.
 - Values are compared using loose equality (`==`), so `case="'1'"` matches the number `1`.
+- **Incompatible with loops on the same element:** Do not place `case` or `default` on an element that also has `each`/`foreach`/`for` — the switch/case logic becomes inert and all branches render regardless of the switch value. Move the loop inside the case branch or restructure.
 
 ---
 
@@ -330,3 +332,7 @@ Default case inside a `switch` block. Renders when no `case` matches.
   <span default>Unknown</span>
 </div>
 ```
+
+### Edge Cases
+
+- **Incompatible with loops on the same element:** Do not place `default` on an element that also has `each`/`foreach`/`for` — the switch/case logic becomes inert. See `case` edge cases.

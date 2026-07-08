@@ -345,3 +345,15 @@ Child loops can access parent scope variables. Each loop element is self-repeati
 </ul>
 <template id="noTasksTpl"><li>You have no tasks yet. Create one to get started.</li></template>
 ```
+
+---
+
+## Directive Compatibility Notes
+
+The following directive combinations on the same loop element produce unexpected behavior:
+
+- **`if` + loop:** Do not place `if` and a loop on the same element -- the condition cannot remove individual items. Use the loop's `filter` attribute for per-item filtering, or wrap the loop in a container element with `if`.
+- **`ref` on a looped element:** Every clone re-registers the same ref name in `$refs`, so `$refs.name` will point to the last clone only. Deterministic but almost never the intended behavior.
+- **`case`/`default` + loop:** Do not place `case` or `default` on a looped element -- the switch/case logic becomes inert and all branches render. Move the loop inside the case branch.
+
+See the [validation reference](../validation.md) for the full list of LSP diagnostics that detect these combinations.
