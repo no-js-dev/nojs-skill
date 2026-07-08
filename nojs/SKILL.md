@@ -469,6 +469,20 @@ Browser globals (`window`, `document`, `location`, `history`, `navigator`) avail
 - Statement write-back: in `on:*`/`watch`, mutated variables auto-write-back to the owning context
 - AST caching: LRU-cached (configurable: `exprCacheSize`, default 500)
 
+
+## 6.5. Directive Compatibility
+
+Certain directive combinations on the same element produce unexpected behavior. The NoJS LSP warns about these during development.
+
+| Combination | Problem | Fix |
+|------------|---------|-----|
+| `case`/`default` + `each`/`foreach`/`for` | Switch becomes inert; all branches render | Move loop inside the case branch |
+| `if` + `each`/`foreach`/`for` | Condition cannot filter individual items | Use `filter` attribute or wrap in container with `if` |
+| `ref` + `each`/`foreach`/`for` | Every clone re-registers; `$refs` points to last clone | Remove `ref` or access via loop context |
+| `bind-value` + `model` | Redundant two-way bindings; duplicate listeners | Use one: `model` (preferred) or `bind-value` |
+| `watch` + `on:change` (on form controls) | Both claim the change event; may conflict | Use `watch` with its `on:change` companion OR a standalone `on:change` |
+| `t` + `bind` | Both write text content; last-processed wins silently | Use one text source per element |
+
 ## 7. Config Reference
 
 | Option | Default | Description |

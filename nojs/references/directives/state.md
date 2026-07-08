@@ -210,6 +210,7 @@ Executes the `on:change` handler whenever the watched property changes. The hand
 - The `on:change` handler fires asynchronously after the state update completes.
 - `$old` and `$new` are only available inside the `on:change` handler, not in other expressions.
 - Watching a nested property path (e.g. `watch="user.name"`) is not supported -- watch the top-level property instead.
+- **Incompatible with `on:change` on form controls:** On `<input>`, `<textarea>`, or `<select>`, the `watch` directive's `on:change` companion and an explicit `on:change` event handler both claim the change event and may conflict. Use one approach -- either `watch` with its `on:change` companion, or a standalone `on:change`/`on:input` event handler.
 
 ### Complete Example -- Debounced Search
 

@@ -11,13 +11,20 @@ Rules, common mistakes, and a checklist for validating No.JS templates. Based on
 - [3. Event Modifier Validation](#3-event-modifier-validation) — Valid and invalid event modifiers
   - [Valid Modifiers](#valid-modifiers) — Supported event modifier list
   - [Invalid Modifiers](#invalid-modifiers) — Unsupported modifiers
-- [4. Deprecation Warnings](#4-deprecation-warnings) — Deprecated features and alternatives
+- [4. Directive Incompatibility Diagnostics](#4-directive-incompatibility-diagnostics) — Incompatible directive combinations
+  - [`case`/`default` + loop](#casedefault--loop) — switch becomes inert
+  - [`if` + loop](#if--loop) — condition cannot filter items
+  - [`ref` + loop](#ref--loop) — last clone wins
+  - [`bind-value` + `model`](#bind-value--model) — redundant two-way bindings
+  - [`watch` + `on:change`](#watch--onchange) — event conflict on form controls
+  - [`t` + `bind`](#t--bind) — double text-writer
+- [5. Deprecation Warnings](#5-deprecation-warnings) — Deprecated features and alternatives
   - [Router `mode` is deprecated](#router-mode-is-deprecated) — Migration from mode attribute
-- [5. Security](#5-security) — Template security considerations
+- [6. Security](#6-security) — Template security considerations
   - [`bind-html` sanitization warning](#bind-html-sanitization-warning) — XSS risk with raw HTML binding
   - [Expression evaluator security](#expression-evaluator-security) — Safe expression evaluation
   - [CSRF protection](#csrf-protection) — Cross-site request forgery setup
-- [6. Quick Validation Checklist](#6-quick-validation-checklist) — Categorized checklist for reviews
+- [7. Quick Validation Checklist](#7-quick-validation-checklist) — Categorized checklist for reviews
   - [Directives & Syntax](#directives--syntax) — Directive usage checks
   - [Events](#events) — Event handler checks
   - [Security](#security) — Security verification items
@@ -185,7 +192,99 @@ Note that `debounce` and `throttle` are also supported by the framework runtime 
 
 ---
 
-## 4. Deprecation Warnings
+
+## 4. Directive Incompatibility Diagnostics
+
+The NoJS LSP detects directive combinations that produce unexpected behavior at runtime. These are emitted as warnings during development.
+
+### `case`/`default` + loop
+
+Placing `case` or `default` on an element that also has `each`/`foreach`/`for` causes the switch/case logic to become inert -- all branches render regardless of the switch value.
+
+```html
+<!-- WARNING: switch becomes inert -->
+<div switch="status">
+  <span each="item in items" case="'active'" bind="item.name"></span>
+</div>
+
+<!-- CORRECT: loop inside the case branch -->
+<div switch="status">
+  <div case="'active'">
+    <span each="item in items" bind="item.name"></span>
+  </div>
+</div>
+```
+
+### `if` + loop
+
+Placing `if` and a loop on the same element is unreliable -- the condition cannot remove individual items. Use the loop's `filter` attribute for per-item filtering, or wrap the loop in a container with `if`.
+
+```html
+<!-- WARNING: condition cannot filter items -->
+<li if="showActive" each="item in items" bind="item.name"></li>
+
+<!-- CORRECT: filter attribute -->
+<li each="item in items" filter="item.active" bind="item.name"></li>
+
+<!-- CORRECT: wrapper element -->
+<div if="showItems">
+  <li each="item in items" bind="item.name"></li>
+</div>
+```
+
+### `ref` + loop
+
+Using `ref` on a looped element means every clone re-registers the same ref name. `$refs.name` will point to the last clone only.
+
+```html
+<!-- WARNING: $refs.card points to last clone only -->
+<div each="item in items" ref="card" bind="item.name"></div>
+```
+
+### `bind-value` + `model`
+
+Both `bind-value` and `model` create two-way bindings with separate input listeners. Using both is redundant and they may conflict, especially on `type="number"` inputs where they use different coercion policies.
+
+```html
+<!-- WARNING: redundant two-way bindings -->
+<input bind-value="name" model="name">
+
+<!-- CORRECT: use one or the other -->
+<input model="name">
+<input bind-value="name">
+```
+
+### `watch` + `on:change`
+
+On form controls (`input`, `textarea`, `select`), both `watch` (via its `on:change` companion) and an explicit `on:change` event handler claim the change event and may conflict.
+
+```html
+<!-- WARNING: both claim change event -->
+<input watch="value" on:change="save()">
+
+<!-- CORRECT: use watch with its companion -->
+<input watch="value" on:change="console.log($old, $new)">
+
+<!-- CORRECT: use standalone event handler -->
+<input on:change="save()">
+```
+
+### `t` + `bind`
+
+Both `t` and `bind` write text content to the element. The last-processed directive wins silently, which depends on attribute order.
+
+```html
+<!-- WARNING: double text-writer -->
+<span t="greeting" bind="name"></span>
+
+<!-- CORRECT: use one text source -->
+<span t="greeting" t-name="name"></span>
+<span bind="name"></span>
+```
+
+---
+
+## 5. Deprecation Warnings
 
 ### Router `mode` is deprecated
 
@@ -209,7 +308,7 @@ The `mode="hash"` and `mode="history"` router attributes are deprecated. Use the
 
 ---
 
-## 5. Security
+## 6. Security
 
 ### `bind-html` sanitization warning
 
@@ -253,7 +352,7 @@ For mutating requests, configure CSRF tokens globally:
 
 ---
 
-## 6. Quick Validation Checklist
+## 7. Quick Validation Checklist
 
 Use this checklist when reviewing No.JS templates:
 
