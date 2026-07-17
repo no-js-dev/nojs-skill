@@ -239,6 +239,39 @@ URLs support interpolation: `get="/users/{userId}"`. Reactive expressions in URL
 </div>
 ```
 
+### SSE (Server-Sent Events)
+
+`sse="/url"` opens a persistent EventSource connection and binds incoming messages to the reactive context. Streaming counterpart to `get` -- where `get` does a one-shot fetch, `sse` holds an open connection for server-pushed data.
+
+| Directive | Syntax | Description |
+|-----------|--------|-------------|
+| `sse` | `sse="/endpoint"` | EventSource URL (supports reactive `{var}` interpolation) |
+| `as` | `as="varName"` | Context variable for incoming data (default `"data"`) |
+| `sse-event` | `sse-event="eventName"` | Named SSE event (default `"message"`; named events ignore default messages) |
+| `sse-insert` | `sse-insert="append"` | Insert mode: `replace` (default), `append`, `prepend` |
+| `sse-limit` | `sse-limit="50"` | Array cap for append/prepend (oldest items dropped) |
+| `sse-credentials` | `sse-credentials` | Set `withCredentials: true` on the EventSource |
+| `into` | `into="storeName"` | Dual-write to a global store |
+| `error` | `error="tplId"` | Template shown on terminal close only (not during auto-reconnect) |
+| `then` | `then="expr"` | Expression per message (`$event` = parsed data) |
+
+**Connection state:** `$sse.connecting`, `$sse.open`, `$sse.error` -- reactive booleans reflecting the EventSource lifecycle. Use with `show`/`hide`/`if` to compose status indicators.
+
+**Data parsing:** JSON.parse with raw-string fallback. **Auth limitation:** EventSource sends no custom headers -- use query tokens or cookies (`sse-credentials`). **No loading template** -- compose with `$sse.connecting`/`$sse.open` instead.
+
+```html
+<!-- Live feed: append messages, cap at 100, show connection state -->
+<div sse="/api/feed" as="messages" sse-insert="append" sse-limit="100"
+     error="sseFailed">
+  <span show="$sse.connecting" class="badge">Connecting...</span>
+  <span show="$sse.open" class="badge green">Live</span>
+  <ul>
+    <li each="msg in messages" key="msg.id" bind="msg.text"></li>
+  </ul>
+</div>
+<template id="sseFailed"><p>Connection lost. Please refresh.</p></template>
+```
+
 ### Routing
 
 `route="/path"` (define route or navigate link), `route="*"` (404 catch-all), `route-view` (outlet), `route-view="name"` (named outlet), `route-view src="pages/"` (file-based routing).
@@ -642,6 +675,7 @@ All paths relative to `nojs/references/`:
 | [directives/events.md](references/directives/events.md) | on:*, modifiers, lifecycle hooks, $event, $el |
 | [directives/head-seo.md](references/directives/head-seo.md) | page-title, page-description, page-canonical, page-jsonld |
 | [directives/http.md](references/directives/http.md) | get, post, put, patch, delete, query, pagination, caching |
+| [directives/sse.md](references/directives/sse.md) | sse, sse-event, sse-insert, sse-limit, sse-credentials, $sse state |
 | [directives/i18n.md](references/directives/i18n.md) | t, t-html, i18n-ns, locale setup, pluralization |
 | [directives/loops.md](references/directives/loops.md) | foreach/each/for, filter, sort, key, loop vars |
 | [directives/routing.md](references/directives/routing.md) | route, route-view, guards, named outlets, file-based |
