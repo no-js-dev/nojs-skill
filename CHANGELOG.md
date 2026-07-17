@@ -5,7 +5,14 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.19.0...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.20.0...HEAD)
+
+## [1.20.0](https://github.com/no-js-dev/nojs-skill/compare/v1.19.0...v1.20.0) — 2026-07-17
+
+### Added
+
+- SSE (Server-Sent Events) directive documentation in SKILL.md — full attribute table (`sse`, `as`, `sse-event`, `sse-insert`, `sse-limit`, `sse-credentials`, `into`, `error`, `then`), connection state (`$sse`), data parsing, auth limitations, and usage examples
+- `references/directives/sse.md` — comprehensive SSE directive reference covering attribute API, connection state, reactive URL, authentication, connection limits, and disposal
 
 ## [1.19.0](https://github.com/no-js-dev/nojs-skill/compare/v1.18.0...v1.19.0) — 2026-07-09
 
