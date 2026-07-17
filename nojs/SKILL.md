@@ -573,7 +573,7 @@ NoJS.store                     // Access global stores
 NoJS.notify()                  // Flush UI updates after external mutation
 NoJS.router                    // push(), replace(), back(), forward()
 NoJS.locale                    // Get/set current locale
-NoJS.version                   // "1.15.0"
+NoJS.version                   // current framework version string
 NoJS.CANCEL                    // Interceptor sentinel: cancel request
 NoJS.RESPOND                   // Interceptor sentinel: short-circuit with response
 NoJS.REPLACE                   // Interceptor sentinel: replace response data
@@ -701,7 +701,7 @@ All paths relative to `nojs/references/`:
 
 | Property | Value |
 |----------|-------|
-| **Version** | 1.15.0 |
+| **Version** | 1.20.0 |
 | **Website** | <https://no-js.dev/> |
 | **CDN (core)** | `https://cdn.no-js.dev/` |
 | **CDN (elements)** | `https://cdn-elements.no-js.dev/` |
