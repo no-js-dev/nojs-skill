@@ -620,7 +620,7 @@ Setting the base URL after initialization triggers re-evaluation of any active f
 Read-only string with the current framework version.
 
 ```javascript
-console.log(NoJS.version); // "1.14.1"
+console.log(NoJS.version); // current framework version string
 ```
 
 ---
