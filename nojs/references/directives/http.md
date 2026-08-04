@@ -559,7 +559,7 @@ IntersectionObserver `rootMargin` for `scroll` and `visible` triggers.
 
 Controls how early the trigger fires. Default: `200px` for `scroll`, `0px` for `visible`.
 
-**Observer root:** All three IntersectionObservers (`get-trigger="scroll"` sentinel observer, `get-trigger="visible"` observer, and the initial-request observer) resolve the nearest ancestor element with computed `overflow-y: auto` or `overflow-y: scroll` as the observer root. If no scrollable ancestor is found, the document (viewport) is used. Because the root is the scroll container, `get-threshold` is relative to that container's bounds, not the browser viewport.
+**Observer root:** The IntersectionObservers used by `get-trigger="scroll"` (sentinel observer) and `get-trigger="visible"` -- as well as the fallback observer used when `get-trigger="scroll"` is set without an insert mode -- all resolve the nearest ancestor element with computed `overflow-y: auto` or `overflow-y: scroll` as the observer root. If no scrollable ancestor is found, the document (viewport) is used. Because the root is the scroll container, `get-threshold` is relative to that container's bounds, not the browser viewport.
 
 **Fill-until-overflow:** When `get-trigger="scroll"` targets a container that has not yet overflowed (content is shorter than the container), the sentinel is immediately visible within the scroll container. This causes successive loads until content grows enough to push the sentinel out of view -- correct infinite-scroll semantics. Once the container overflows, loads pause and only resume when actual scrolling brings the sentinel back into view.
 
