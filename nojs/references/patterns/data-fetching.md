@@ -143,7 +143,7 @@ Uses `watch` + `debounce` on a reactive URL to fire requests 300ms after typing 
 Uses Core's built-in pagination directives (`get-trigger="scroll"`, `get-insert`, `get-page`) instead of manual JavaScript. The framework handles IntersectionObserver, page tracking, and end-of-data detection automatically.
 
 ```html
-<!-- Infinite scroll — Core handles viewport detection and page incrementing -->
+<!-- Infinite scroll — Core handles scroll-container detection and page incrementing -->
 <div get="/api/feed?page={page}" as="items"
      get-trigger="scroll"
      get-insert="append"
@@ -171,13 +171,13 @@ Uses Core's built-in pagination directives (`get-trigger="scroll"`, `get-insert`
 </template>
 ```
 
-> **How it works:** `get-trigger="scroll"` creates an IntersectionObserver on a sentinel element. When the sentinel enters the viewport (controlled by `get-threshold`), the next page is fetched and appended. Pagination stops automatically when the server returns an empty response.
+> **How it works:** `get-trigger="scroll"` creates an IntersectionObserver on a sentinel element. When the sentinel becomes visible in the nearest scrollable ancestor (controlled by `get-threshold`; see [get-threshold](../directives/http.md#get-threshold) for observer root details), the next page is fetched and appended. Pagination stops automatically when the server returns an empty response.
 
 ### Directive Reference
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `get-trigger` | `string` | How the next page is requested: `"scroll"` (IntersectionObserver-based), `"button"` (auto-generated "Load More"), or `"visible"` (fetch when element enters viewport) |
+| `get-trigger` | `string` | How the next page is requested: `"scroll"` (IntersectionObserver-based), `"button"` (auto-generated "Load More"), or `"visible"` (fetch when element enters scroll container) |
 | `get-trigger-label` | `string` | Label text for the load-more button (default: `"Load More"`) |
 | `get-insert` | `string` | How new data is inserted: `"append"` (after existing) or `"prepend"` (before existing). **Required** for `scroll` and `button` triggers -- without it, content is replaced |
 | `get-page` | `number` | Enable offset-based pagination. Sets the initial page number (default: `1`). Auto-increments on each fetch. Use `{page}` in the URL |
