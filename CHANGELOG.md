@@ -5,7 +5,25 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.20.0...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.20.1...HEAD)
+
+## [1.20.1](https://github.com/no-js-dev/nojs-skill/compare/v1.20.0...v1.20.1) — 2026-08-04
+
+### Changed
+
+- Version alignment with NoJS Core v1.20.1
+
+### Fixed
+
+- Stale version references in SKILL.md and reference docs (PR #71)
+
+### Added
+
+- Observer root semantics documentation for scroll/visible triggers (#72, PR #73)
+
+### Chores
+
+- Bump actions/setup-node from 6 to 7 (#68)
 
 ## [1.20.0](https://github.com/no-js-dev/nojs-skill/compare/v1.19.0...v1.20.0) — 2026-07-17
 
