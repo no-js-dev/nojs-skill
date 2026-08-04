@@ -444,10 +444,10 @@ Controls when the GET request fires.
 | Value | Behavior |
 |-------|----------|
 | (absent) | Fetches immediately on mount (default `get` behavior) |
-| `visible` | Fetches when element enters viewport via IntersectionObserver |
+| `visible` | Fetches when element becomes visible in its scroll container via IntersectionObserver |
 | `hover` | Fetches on first `mouseenter` event |
 | `none` | Suppresses auto-fetch; use `.refresh()` to trigger manually |
-| `scroll` | Infinite scroll — fetches next page when sentinel enters viewport. Requires `get-insert` |
+| `scroll` | Infinite scroll — fetches next page when sentinel becomes visible in the scroll container. Requires `get-insert` |
 | `button` | Renders a "Load More" button. Requires `get-insert` |
 
 ```html
@@ -559,8 +559,12 @@ IntersectionObserver `rootMargin` for `scroll` and `visible` triggers.
 
 Controls how early the trigger fires. Default: `200px` for `scroll`, `0px` for `visible`.
 
+**Observer root:** All three IntersectionObservers (`get-trigger="scroll"` sentinel observer, `get-trigger="visible"` observer, and the initial-request observer) resolve the nearest ancestor element with computed `overflow-y: auto` or `overflow-y: scroll` as the observer root. If no scrollable ancestor is found, the document (viewport) is used. Because the root is the scroll container, `get-threshold` is relative to that container's bounds, not the browser viewport.
+
+**Fill-until-overflow:** When `get-trigger="scroll"` targets a container that has not yet overflowed (content is shorter than the container), the sentinel is immediately visible within the scroll container. This causes successive loads until content grows enough to push the sentinel out of view -- correct infinite-scroll semantics. Once the container overflows, loads pause and only resume when actual scrolling brings the sentinel back into view.
+
 ```html
-<!-- Start loading 500px before element enters viewport -->
+<!-- Start loading 500px before element scrolls into view -->
 <div get="/api/heavy-data"
      get-trigger="visible"
      get-threshold="500px"

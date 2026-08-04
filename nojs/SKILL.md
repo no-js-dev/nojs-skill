@@ -215,7 +215,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 | `then` | `then="expr"` | Expression to run on success |
 | `error-boundary` | `error-boundary="tplId"` | Catch errors in subtree |
 
-**Pagination**: `get-trigger="scroll"` (infinite) or `"button"` (load more), `get-insert="append"`, `get-page="1"` (offset) or `get-cursor` + `get-cursor-field` (cursor), `get-threshold="200"` (scroll px).
+**Pagination**: `get-trigger="scroll"` (infinite) or `"button"` (load more), `get-insert="append"`, `get-page="1"` (offset) or `get-cursor` + `get-cursor-field` (cursor), `get-threshold="200"` (scroll px). Observer root is the nearest scrollable ancestor (`overflow-y: auto|scroll`), falling back to the viewport; `get-threshold` is relative to that container. A not-yet-overflowing container triggers loads until content fills it (fill-until-overflow).
 
 URLs support interpolation: `get="/users/{userId}"`. Reactive expressions in URLs automatically re-fetch.
 
