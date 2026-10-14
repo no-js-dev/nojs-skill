@@ -65,7 +65,7 @@ When `validate-if` evaluates to `false`, the field is treated as valid and exclu
 
 ## Custom Validators
 
-Register custom validation functions with `NoJS.validator()`:
+Register custom validation functions with `NoJS.validator()`, in a script between the core and the NoJS Elements `<script>` tags (Elements reads the validators when it installs, so later registrations are ignored). Return a message string to fail; `true` or any falsy value counts as valid:
 
 ```html
 <script>
@@ -99,22 +99,22 @@ Access individual field validation state through `$form.fields`:
 
 ## Conditional Validation
 
-Validate fields only when related conditions are true:
+Validate fields only when related conditions are true. Read the other field through `$form.values`: a `<select model>` inside `<form validate>` does not keep its value.
 
 ```html
 <form validate>
-  <select model="contactMethod" name="contactMethod">
+  <select name="contactMethod">
     <option value="email">Email</option>
     <option value="phone">Phone</option>
   </select>
 
   <input name="email" type="email"
-         validate-if="contactMethod === 'email'"
+         validate-if="$form.values.contactMethod === 'email'"
          required
          error-required="Email is required when email contact is selected" />
 
   <input name="phone" type="tel"
-         validate-if="contactMethod === 'phone'"
+         validate-if="$form.values.contactMethod === 'phone'"
          required
          pattern="[0-9]{10,}"
          error-required="Phone number is required"
@@ -148,7 +148,8 @@ Full create/read/update/delete pattern with inline form switching:
       <!-- Create -->
       <button if="!editing"
               call="/api/users" method="post"
-              body='{"name": "{name}", "email": "{email}"}'
+              headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+              body="name={name}&email={email}"
               then="showForm = false"
               bind-disabled="!$form.valid">
         Create
@@ -157,7 +158,8 @@ Full create/read/update/delete pattern with inline form switching:
       <!-- Update -->
       <button if="editing"
               call="/api/users/{editing.id}" method="put"
-              body='{"name": "{name}", "email": "{email}"}'
+              headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+              body="name={name}&email={email}"
               then="showForm = false"
               bind-disabled="!$form.valid">
         Save
@@ -330,16 +332,7 @@ For real-time upload progress, use `XMLHttpRequest` with `on:init` to set up the
 A wizard-style form where each step validates independently before proceeding. Uses local state to track the current step and per-step visibility.
 
 ```html
-<div state="{
-  step: 1,
-  name: '',
-  email: '',
-  address: '',
-  city: '',
-  cardNumber: '',
-  expiry: '',
-  submitting: false
-}">
+<div state="{ step: 1 }">
   <h2>Checkout</h2>
 
   <!-- Step indicators -->
@@ -349,61 +342,61 @@ A wizard-style form where each step validates independently before proceeding. U
     <span class-active="step === 3">3. Payment</span>
   </div>
 
-  <!-- Step 1: Personal Info -->
-  <form show="step === 1" validate validate-on="blur">
-    <input model="name" name="name" placeholder="Full Name"
-           required minlength="2"
-           error-required="Name is required" />
-    <input model="email" name="email" type="email" placeholder="Email"
-           required
-           error-required="Email is required"
-           error-email="Enter a valid email" />
-    <button type="button"
-            on:click="if ($form.valid) step = 2"
-            bind-disabled="!$form.valid">
-      Next
-    </button>
-  </form>
+  <form validate post="/api/checkout"
+        success="#checkoutSuccess"
+        error="#checkoutError">
 
-  <!-- Step 2: Address -->
-  <form show="step === 2" validate validate-on="blur">
-    <input model="address" name="address" placeholder="Street Address"
-           required
-           error-required="Address is required" />
-    <input model="city" name="city" placeholder="City"
-           required
-           error-required="City is required" />
-    <div class="form-actions">
-      <button type="button" on:click="step = 1">Back</button>
+    <!-- Step 1: Personal Info -->
+    <fieldset show="step === 1">
+      <input name="name" placeholder="Full Name"
+             required minlength="2"
+             error-required="Name is required" />
+      <input name="email" type="email" placeholder="Email"
+             required
+             error-required="Email is required"
+             error-email="Enter a valid email" />
+      <p class="error" bind="$form.errors.name || $form.errors.email"></p>
       <button type="button"
-              on:click="if ($form.valid) step = 3"
-              bind-disabled="!$form.valid">
+              on:click="step = 2"
+              bind-disabled="!($form.fields.name.valid && $form.fields.email.valid)">
         Next
       </button>
-    </div>
-  </form>
+    </fieldset>
 
-  <!-- Step 3: Payment -->
-  <form show="step === 3" validate validate-on="blur"
-        post="/api/checkout"
-        success="#checkoutSuccess"
-        error="#checkoutError"
-        on:submit.prevent="submitting = true">
-    <input model="cardNumber" name="cardNumber" placeholder="Card Number"
-           required pattern="[0-9]{13,19}"
-           error-required="Card number is required"
-           error-pattern="Enter a valid card number" />
-    <input model="expiry" name="expiry" placeholder="MM/YY"
-           required pattern="(0[1-9]|1[0-2])\/[0-9]{2}"
-           error-required="Expiry date is required"
-           error-pattern="Use MM/YY format" />
-    <div class="form-actions">
-      <button type="button" on:click="step = 2">Back</button>
-      <button type="submit" bind-disabled="!$form.valid || submitting">
-        <span hide="submitting">Place Order</span>
-        <span show="submitting">Processing...</span>
+    <!-- Step 2: Address -->
+    <fieldset show="step === 2">
+      <input name="address" placeholder="Street Address"
+             required
+             error-required="Address is required" />
+      <input name="city" placeholder="City"
+             required
+             error-required="City is required" />
+      <p class="error" bind="$form.errors.address || $form.errors.city"></p>
+      <button type="button" on:click="step = 1">Back</button>
+      <button type="button"
+              on:click="step = 3"
+              bind-disabled="!($form.fields.address.valid && $form.fields.city.valid)">
+        Next
       </button>
-    </div>
+    </fieldset>
+
+    <!-- Step 3: Payment -->
+    <fieldset show="step === 3">
+      <input name="cardNumber" placeholder="Card Number"
+             required pattern="[0-9]{13,19}"
+             error-required="Card number is required"
+             error-pattern="Enter a valid card number" />
+      <input name="expiry" placeholder="MM/YY"
+             required pattern="(0[1-9]|1[0-2])/[0-9]{2}"
+             error-required="Expiry date is required"
+             error-pattern="Use MM/YY format" />
+      <p class="error" bind="$form.errors.cardNumber || $form.errors.expiry"></p>
+      <button type="button" on:click="step = 2">Back</button>
+      <button type="submit" bind-disabled="!$form.valid || $form.submitting">
+        <span hide="$form.submitting">Place Order</span>
+        <span show="$form.submitting">Processing...</span>
+      </button>
+    </fieldset>
   </form>
 </div>
 
@@ -418,6 +411,8 @@ A wizard-style form where each step validates independently before proceeding. U
   <p class="error" bind="err.message"></p>
 </template>
 ```
+
+One `<form>` holds all three steps, so the final submit sends every field (`name`, `email`, `address`, `city`, `cardNumber`, `expiry`) as one JSON object. Each **Next** button checks only its own step's fields through `$form.fields.<name>.valid`. Statement handlers do not support `if (...)`, so the step change is a plain assignment guarded by `bind-disabled`. Fields have no `model`, because NoJS Elements releases up to v1.21.1 clear typed values when `model` is combined with `validate-on`; validation reads the field values directly.
 
 ---
 

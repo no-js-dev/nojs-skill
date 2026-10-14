@@ -21,6 +21,7 @@ No.JS is designed with defense-in-depth: a sandboxed expression engine, HTML san
 - [Network Access Restrictions](#network-access-restrictions)
 - [Browser Global Proxies](#browser-global-proxies)
 - [Plugin Security](#plugin-security)
+- [Opt-in Hardening Flags](#opt-in-hardening-flags)
 - [Best Practices](#best-practices)
 
 ---
@@ -229,7 +230,7 @@ Interceptors process HTTP requests and responses. NoJS isolates untrusted interc
 
 ### URL Parameter Redaction
 
-For untrusted interceptors, URL query parameters matching the following pattern are replaced with `[REDACTED]`:
+By default (v1.21.1 behavior), only the URL handed to **untrusted response interceptors** is redacted. Query parameters whose name matches the following pattern have their value replaced:
 
 ```
 token|key|secret|auth|password|credential
@@ -237,7 +238,9 @@ token|key|secret|auth|password|credential
 
 (Case-insensitive match)
 
-Example: `https://api.example.com/data?token=abc123` becomes `https://api.example.com/data?token=[REDACTED]`.
+The URL is re-serialized by the `URL` API, so `https://api.example.com/data?token=abc123` becomes `https://api.example.com/data?token=%5BREDACTED%5D`. Untrusted **request** interceptors and the `fetch:success` / `fetch:error` / `error` event payloads get the raw URL.
+
+With `NoJS.config({ strictRedaction: true })`, request interceptors, response interceptors and the event payloads all get the same string-level redacted URL: the `#fragment` is dropped (it can carry tokens such as an OAuth implicit-flow `access_token`), and sensitive values become `[REDACTED]` with the rest of the URL unchanged: `https://api.example.com/data?token=[REDACTED]`. The flag also withholds the `csrf.header` from untrusted request interceptors and strips request-sensitive headers from responses.
 
 ### Untrusted Response Isolation
 
@@ -245,12 +248,11 @@ Response objects passed to untrusted interceptors are wrapped in a `Proxy` that 
 
 ### Trusted Plugins
 
-Plugins can be granted trusted interceptor access, which bypasses header redaction:
+Plugins can be granted trusted interceptor access, which bypasses header redaction. Pass `{ trusted: true }` as the `NoJS.use()` options; a `trusted` property on the plugin object is ignored:
 
 ```javascript
 const AuthPlugin = {
   name: 'auth',
-  trusted: true,  // must be set before NoJS.use()
   install(app) {
     app.interceptor('request', (url, opts) => {
       // Can see Authorization header, cookies, etc.
@@ -259,7 +261,7 @@ const AuthPlugin = {
   }
 };
 
-NoJS.use(AuthPlugin);
+NoJS.use(AuthPlugin, { trusted: true });
 ```
 
 Only grant `trusted: true` to first-party plugins that genuinely need access to credentials.
@@ -309,7 +311,7 @@ NoJS.interceptor('request', (url, opts) => {
 
 1. **Reserved names** -- A large set of names (`store`, `route`, `router`, `i18n`, `refs`, `form`, `parent`, `watch`, `set`, `notify`, etc.) are reserved and cannot be used
 2. **Forbidden keys** -- `__proto__`, `constructor`, `prototype` are blocked
-3. **Dangerous values** -- References to `eval` or `Function` are rejected
+3. **Dangerous values** -- References to `eval` or `Function` (including bound copies) and the real `window`, `document` and `globalThis` objects are rejected. With `{ byRef: true }`, the whole object is checked at any depth for forbidden keys and `eval`/`Function`
 4. **Ownership tracking** -- Globals registered during plugin installation are tracked and cleaned up during `NoJS.dispose()`
 
 ---
@@ -367,7 +369,7 @@ Plugin names must be non-empty strings. Duplicate plugin names are rejected with
 
 ### Directive registry freezing
 
-After `NoJS.init()`, core directive names are frozen. Plugins can only register NEW directive names -- they cannot override built-in directives.
+Core directive names are frozen as soon as No.JS loads (before `NoJS.init()`). Plugins can only register NEW directive names -- they cannot override built-in directives. A name covered by a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`, e.g. `bind-chart`) is accepted and wins for that attribute only; set `strictDirectives: true` before registration to reject such names.
 
 ### Ownership tracking
 
@@ -375,11 +377,31 @@ When `NoJS.global()` or `NoJS.interceptor()` is called during `NoJS.use()`, the 
 
 ### Interceptor isolation
 
-Untrusted interceptors (any interceptor not registered via a `trusted: true` plugin) receive:
+Untrusted interceptors (any interceptor not registered by a plugin installed with `NoJS.use(plugin, { trusted: true })`) receive:
 - Redacted request headers
 - Redacted response headers
 - Proxy-wrapped response objects
-- Redacted URL query parameters
+- Redacted URL query parameters (response interceptors by default; request interceptors too with `strictRedaction`)
+
+---
+
+## Opt-in Hardening Flags
+
+Stricter behaviors are opt-in, so apps built on v1.21.1 keep working unchanged. Every flag defaults to `false` and can be set with `NoJS.config()`. Most take effect immediately, before or after `init()`; `strictPersist` and `strictDirectives` apply to the restores and directive registrations made after they are set, and `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale (pass it there, or set it with `config()` before that call):
+
+| Flag | Hardening when `true` |
+|------|----------------------|
+| `scopeHeaders` | Global `config({ headers })` go only to trusted origins (page, `baseApiUrl`, nearest `base`). Default: every request, cross-origin included |
+| `strictRedaction` | String-level URL redaction (fragment dropped) for untrusted interceptors and event payloads; `csrf.header` withheld; request-sensitive response headers stripped |
+| `strictDirectives` | Reject plugin directive names covered by core wildcards |
+| `strictDevtools` | Devtools events and context registry limited to local hosts; snapshots, `get:config` and devtools fetch URLs redacted |
+| `strictPersist` | Skip restored `$` keys with reserved names unless declared or listed in `persist-fields` |
+| `strictJsonld` | Always JSON-escape `page-jsonld` placeholders inside JSON strings |
+| `templates.pageRelative` | Resolve `<template src>` against the page, not `base` / `baseApiUrl` |
+| `i18n.escapeParams` | HTML-escape `t-*` params in `t-html` |
+| `i18n.strictLocale` | Ignore a persisted locale not in `supportedLocales` |
+
+For a production app that loads third-party plugins or handles tokens in URLs, consider enabling `scopeHeaders`, `strictRedaction` and `strictDevtools` at least. See [Configuration](config.md#opt-in-hardening-flags).
 
 ---
 

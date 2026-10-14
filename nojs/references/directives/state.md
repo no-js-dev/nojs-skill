@@ -121,8 +121,8 @@ Stores can also be pre-initialized via `NoJS.config()`. **Important:** stores cr
 
 <!-- Login form writes to store -->
 <form post="/api/login" then="$store.auth.user = result.user; $store.auth.token = result.token">
-  <input model="email" type="email" placeholder="Email" />
-  <input model="password" type="password" placeholder="Password" />
+  <input name="email" type="email" placeholder="Email" />
+  <input name="password" type="password" placeholder="Password" />
   <button>Login</button>
 </form>
 
@@ -273,6 +273,10 @@ When specified, only the listed fields are saved to and restored from storage. A
   <!-- Only theme and sidebar are persisted; tempData always starts as null -->
 </div>
 ```
+
+An empty `persist-fields` (`persist-fields=""` or a bare `persist-fields` attribute) behaves like omitting it: **all** fields are persisted, and a console warning is logged once per element (`persist-fields is empty: all fields will be persisted. ...`). List the fields or remove the attribute.
+
+On restore, stored keys are set back on the state, including `$` keys such as a `get` result stored with `as="$items"`. Keys containing `.`, keys starting with `__`, and `__proto__` / `constructor` / `prototype` are ignored, and `persist-fields` / `persist-schema` still filter what is restored. A whitespace-only `persist-fields=" "` persists nothing and logs no warning. To stop stored data from shadowing built-ins, opt in to `NoJS.config({ strictPersist: true })`: a stored `$` key with a reserved name (`$store`, `$route`, `$router`, `$refs`, `$parent`, `$i18n`, `$watch`, `$set`, `$notify`, `$form`, `$sse`, or a plugin global) is then skipped unless the state declares it or `persist-fields` lists it. App names such as `$items` still restore.
 
 > **Sensitive key warning:** State keys whose names contain `token`, `password`, `secret`, `key`, `auth`, `credential`, or `session` trigger a console warning when persisted, suggesting the use of `persist-fields` to exclude them.
 
