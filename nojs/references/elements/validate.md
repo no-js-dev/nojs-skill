@@ -50,7 +50,7 @@ Requires No.JS >= 1.13.0. The Validation module is included in NoJS Elements. Wh
 
 ## Basic Usage
 
-Add `validate` to a `<form>` element. Add `validate` with pipe-separated (`|`) rules on each field, and use native HTML attributes (`minlength`, `maxlength`, `pattern`, `type`) for length, format and type checks. Validation reads each field's value directly, so `model` is not needed; leave it off fields that rely on native attributes (`minlength`, `pattern`), because with NoJS Elements 1.21.1 a `model` binding inside `<form validate>` can hide those native errors.
+Add `validate` to a `<form>` element. Add `validate` with pipe-separated (`|`) rules on each field, and use native HTML attributes (`minlength`, `maxlength`, `pattern`, `type`) for length, format and type checks. Validation reads each field's value directly, so `model` is not needed; leave it off fields that rely on native attributes (`minlength`, `pattern`), because a `model` binding inside `<form validate>` can hide those native errors (seen in Chromium and WebKit).
 
 ```html
 <form validate post="/api/signup" success="#signed-up">
@@ -102,7 +102,7 @@ Add validation rules to individual fields using pipe-separated syntax. Rules sep
 | `max:n` | Maximum **numeric** value. Not a length check |
 | `custom:name` / `name` | A validator registered with `NoJS.validator()` (see [Custom Validators](#custom-validators)) |
 
-Any other rule name in `validate=""` (for example `minlength:8`, `pattern:...`, `match:...`, `number`, `alpha`) is not a built-in rule and is silently ignored. You cannot add these names yourself either: `required`, `email`, `url`, `min`, `max`, `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric` are reserved by Core, and `NoJS.validator()` refuses to register them (it logs a warning and does nothing). Register custom rules under another name, such as `samePassword`. For length, format and type checks, use the native attributes; NoJS Elements reads them through the browser's validity state, and `error-{rule}` uses the native rule name:
+Any other rule name in `validate=""` (for example `minlength:8`, `pattern:...`, `match:...`, `number`, `alpha`) is not a built-in rule and is silently ignored unless you register a validator with that name. Only `required`, `email`, `url`, `min` and `max` are reserved: `NoJS.validator()` refuses to override them and logs a warning. Every other name is free, including `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric`; once you register one, `validate="minlength:8"` runs your function. For length, format and type checks you can also use the native attributes; NoJS Elements reads them through the browser's validity state, and `error-{rule}` uses the native rule name:
 
 | Native attribute | `error-{rule}` attribute |
 |------------------|--------------------------|
@@ -183,7 +183,7 @@ Skip validation when a field is irrelevant using `validate-if`:
 </form>
 ```
 
-When `validate-if` evaluates to `false`, the field is treated as valid and its errors are cleared. Read other fields through `$form.values` instead of a `model` binding: with NoJS Elements 1.21.1, `<select model>` inside `<form validate>` does not keep the selected value.
+When `validate-if` evaluates to `false`, the field is treated as valid and its errors are cleared. Read other fields through `$form.values` instead of a `model` binding: in a `<form validate>` without `validate-on`, `<select model>` does not keep the selected value (NoJS Elements releases up to v1.21.1 have the same problem with `validate-on`).
 
 ---
 
@@ -265,7 +265,7 @@ Use a `<template>` for rich error display, referenced with `error="#templateId"`
          error="#username-errors" />
 
   <template id="username-errors">
-    <div class="error-box" if="$error">
+    <div class="error-box" show="$error">
       <span bind="$error"></span>
     </div>
   </template>
@@ -273,6 +273,8 @@ Use a `<template>` for rich error display, referenced with `error="#templateId"`
 ```
 
 The template receives `$error` (the message) and `$rule` (the failing rule name). It is rendered right after the `<template>` element (not after the field), inside a wrapper with `aria-live="polite"`, when the error becomes visible, and it is removed when the field becomes valid.
+
+NoJS Elements also inserts a second copy of the template right after the field, while the field is invalid. That copy comes from the standalone renderer, which runs on form fields too, and it has no `$error`. Put `show="$error"` (or `if="$error"`) on the template's root element so that copy stays hidden or empty; static markup in the template would show twice. `if` keeps the root element in the page (only its content goes), so prefer `show` when the root element has its own styling, such as a border.
 
 ### Error Class
 
@@ -315,14 +317,17 @@ Register custom validators with `NoJS.validator()`. NoJS Elements reads the regi
 <script src="https://cdn.no-js.dev/"></script>
 <script>
   NoJS.validator('samePassword', (value, values) =>
-    value === values.password || 'Passwords do not match');
+    value === (values.password ?? value) || 'Passwords do not match');
   NoJS.validator('startsWith', (value, prefix, values) =>
     value.startsWith(prefix) || 'Must start with ' + prefix);
 </script>
 <script src="https://cdn-elements.no-js.dev/"></script>
 
-<input name="confirmPassword" type="password" validate="required|samePassword" />
-<input name="code" validate="required|startsWith:A" />
+<form validate>
+  <input name="password" type="password" validate="required" />
+  <input name="confirmPassword" type="password" validate="required|samePassword" />
+  <input name="code" validate="required|startsWith:A" />
+</form>
 ```
 
 ### Validator Function Signature
@@ -332,6 +337,7 @@ Register custom validators with `NoJS.validator()`. NoJS Elements reads the regi
 ```
 
 - `params` are the colon-separated arguments (`startsWith:A` passes `"A"`); `values` maps every field name in the form to its value
+- `values` can be an empty object: inside a form, a field with `validate=""` is also checked by the field-level handler on every `input` event, and that handler passes `{}`. Guard every read from `values` (`values.password ?? value`, `values.password?.trim()`); an unguarded `values.password.trim()` throws on every keystroke
 - Return a string for invalid, with that string as the message
 - Return `true` for valid. Any falsy return (`false`, `null`, `undefined`, `""`, `0`) also counts as valid, so returning `false` does not fail the field: return a message string instead
 - Validators must be synchronous: a returned Promise is treated as an error (the message shows as `[object Promise]`). Async validators are not supported, and `$form.pending` is always `false`
@@ -550,7 +556,7 @@ Show and validate fields based on user selection.
 
 Validation integrates with the full NoJS directive system:
 
-- **`model`** -- optional two-way binding; validation reads each field's value directly. With NoJS Elements 1.21.1, `model` combined with `validate-on` clears typed values, so leave `model` off fields that use `validate-on`
+- **`model`** -- optional two-way binding; validation reads each field's value directly. NoJS Elements releases up to v1.21.1 clear typed values when `model` is combined with `validate-on` (fixed on main by Elements #103), so leaving `model` off validated fields is the safe choice
 - **`state`** -- reactive state for form data
 - **`if` / `show`** -- conditionally display error messages and conditional fields
 - **`bind`** -- display error messages and field state

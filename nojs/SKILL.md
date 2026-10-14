@@ -595,7 +595,7 @@ NoJS.REPLACE                   // Interceptor sentinel: replace response data
 
 ```html
 <!-- Requires NoJS Elements plugin -->
-<!-- No model= on validated inputs: with Elements, model + validate-on clears typed values -->
+<!-- No model= on validated inputs: Elements up to v1.21.1 clears typed values when model is combined with validate-on -->
 <!-- Rules are separated with |; lengths use the native minlength attribute -->
 <form validate post="/api/login" into="auth">
   <input name="email" type="email" validate="required|email" validate-on="blur"

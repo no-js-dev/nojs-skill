@@ -99,22 +99,22 @@ Access individual field validation state through `$form.fields`:
 
 ## Conditional Validation
 
-Validate fields only when related conditions are true:
+Validate fields only when related conditions are true. Read the other field through `$form.values`: a `<select model>` inside `<form validate>` does not keep its value.
 
 ```html
 <form validate>
-  <select model="contactMethod" name="contactMethod">
+  <select name="contactMethod">
     <option value="email">Email</option>
     <option value="phone">Phone</option>
   </select>
 
   <input name="email" type="email"
-         validate-if="contactMethod === 'email'"
+         validate-if="$form.values.contactMethod === 'email'"
          required
          error-required="Email is required when email contact is selected" />
 
   <input name="phone" type="tel"
-         validate-if="contactMethod === 'phone'"
+         validate-if="$form.values.contactMethod === 'phone'"
          required
          pattern="[0-9]{10,}"
          error-required="Phone number is required"
@@ -412,7 +412,7 @@ A wizard-style form where each step validates independently before proceeding. U
 </template>
 ```
 
-One `<form>` holds all three steps, so the final submit sends every field (`name`, `email`, `address`, `city`, `cardNumber`, `expiry`) as one JSON object. Each **Next** button checks only its own step's fields through `$form.fields.<name>.valid`. Statement handlers do not support `if (...)`, so the step change is a plain assignment guarded by `bind-disabled`. Fields have no `model`, because with NoJS Elements 1.21.1 `model` plus `validate-on` clears typed values; validation reads the field values directly.
+One `<form>` holds all three steps, so the final submit sends every field (`name`, `email`, `address`, `city`, `cardNumber`, `expiry`) as one JSON object. Each **Next** button checks only its own step's fields through `$form.fields.<name>.valid`. Statement handlers do not support `if (...)`, so the step change is a plain assignment guarded by `bind-disabled`. Fields have no `model`, because NoJS Elements releases up to v1.21.1 clear typed values when `model` is combined with `validate-on`; validation reads the field values directly.
 
 ---
 

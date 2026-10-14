@@ -219,9 +219,9 @@ Register a custom form validator.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | string | Validator name used in `validate="name"` |
-| `fn` | function | Validation function `(value, ...params, values)`. Returns a string (the error message) for invalid; `true` or any falsy value (including `false`) counts as valid. Must be synchronous |
+| `fn` | function | Validation function `(value, ...params, values)`. Returns a string (the error message) for invalid; `true` or any falsy value (including `false`) counts as valid. Must be synchronous. `values` can be `{}` (field-level checks), so guard reads from it |
 
-Built-in validator names are protected: `required`, `email`, `url`, `min`, `max`, `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha`, `alphanumeric`. Registering one of them logs a warning and does nothing.
+Only `required`, `email`, `url`, `min` and `max` are protected: registering one of them logs a warning and does nothing. Every other name can be registered, including `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric`, and then runs from `validate="..."`.
 
 Validators are run by NoJS Elements, which reads the registered validators when it installs: register them in a script between the core and the Elements `<script>` tags (see `references/elements/validate.md`).
 

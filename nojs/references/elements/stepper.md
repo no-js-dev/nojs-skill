@@ -110,14 +110,17 @@ Available inside any element within the stepper container.
 
 | Event | `$event.detail` | Description |
 |-------|-----------------|-------------|
-| `stepper:change` | `{ from, to, step }` | Fired when the active step changes |
-| `stepper:complete` | `{ steps }` | Fired when the user advances past the last step |
+| `nojs:stepper-change` | `{ current, total }` | Fired when the active step changes (`current` is the new 0-based index) |
+| `nojs:stepper-complete` | `{ current, total }` | Fired when `$stepper.next()` is called on the last step |
 | `stepper:validation-blocked` | `{ step, form }` | Fired when forward navigation is blocked by validation |
 
+Listen with the full event name after `on:`:
+
 ```html
-<div stepper
-     on:stepper:change="console.log('Changed:', $event.detail)"
-     on:stepper:complete="submitForm()">
+<div state="{ current: 0, finished: false }"
+     stepper
+     on:nojs:stepper-change="current = $event.detail.current"
+     on:nojs:stepper-complete="finished = true">
   <!-- steps -->
 </div>
 ```
@@ -237,12 +240,15 @@ Steps can be visited in any order by clicking the step indicator.
 Combines form validation, expression validation, and event handlers for a complete checkout flow.
 
 ```html
-<div stepper stepper-indicator
-     on:stepper:change="console.log('Step changed:', $event.detail)"
-     on:stepper:complete="submitForm()">
+<div state="{ paymentMethod: '', current: 0, done: false }"
+     stepper stepper-indicator
+     on:nojs:stepper-change="current = $event.detail.current"
+     on:nojs:stepper-complete="done = true">
   <div step step-label="Payment" stepper-validate step-validate="paymentMethod !== ''">
     <form validate>
-      <select name="method" model="paymentMethod" validate="required">
+      <!-- on:change instead of model: <select model> inside <form validate> does not keep its value -->
+      <select name="method" validate="required"
+              on:change="paymentMethod = $event.target.value">
         <option value="">Select method</option>
         <option value="card">Credit Card</option>
         <option value="paypal">PayPal</option>
@@ -254,6 +260,7 @@ Combines form validation, expression validation, and event handlers for a comple
     <p>Payment: <span bind="paymentMethod"></span></p>
     <button type="button" on:click="$stepper.prev()">Back</button>
     <button type="button" on:click="$stepper.next()">Submit</button>
+    <p show="done">Order placed.</p>
   </div>
 </div>
 ```
@@ -265,9 +272,9 @@ Combines form validation, expression validation, and event handlers for a comple
 The stepper works with any NoJS directive inside its steps:
 
 ```html
-<div state="{ user: {}, loading: false }"
+<div state="{ user: {}, submitted: false }"
      stepper stepper-indicator
-     on:stepper:complete="loading = true; post('/api/register', user)">
+     on:nojs:stepper-complete="submitted = true">
   <div step step-label="Info" stepper-validate>
     <form validate>
       <input name="name" model="user.name" validate="required" placeholder="Name" />
@@ -279,10 +286,8 @@ The stepper works with any NoJS directive inside its steps:
     <p>Name: <span bind="user.name"></span></p>
     <p>Email: <span bind="user.email"></span></p>
     <button type="button" on:click="$stepper.prev()">Back</button>
-    <button type="button" on:click="$stepper.next()" bind-disabled="loading">
-      <span if="!loading">Submit</span>
-      <span if="loading">Submitting...</span>
-    </button>
+    <button type="button" on:click="$stepper.next()" bind-disabled="submitted">Submit</button>
+    <p show="submitted">Thanks, <span bind="user.name"></span>!</p>
   </div>
 </div>
 ```
@@ -293,4 +298,4 @@ The stepper works with any NoJS directive inside its steps:
 - Use `bind` / `bind-html` for dynamic content within steps
 - Use `if` / `show` for conditional content per step
 - Use `state` on the stepper or a parent to share data across steps
-- Use `on:stepper:complete` to handle form submission
+- Use `on:nojs:stepper-complete` to handle the final submission

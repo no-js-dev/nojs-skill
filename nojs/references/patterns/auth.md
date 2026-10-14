@@ -76,38 +76,38 @@ A login form with built-in validation, loading states, and success/error templat
 
 ## Registration Form
 
-Registration with confirm-password matching and strong validation.
+Registration with confirm-password matching and strong validation. The password match is a custom validator, so it counts toward `$form.valid` and the submit button stays disabled while the passwords differ (auto-disable overrides `bind-disabled`, so a `bind-disabled` check alone would not block the submit). Register the validator between the core and the Elements `<script>` tags.
 
 ```html
-<div state="{ name: '', email: '', password: '', confirmPassword: '' }">
-  <h2>Register</h2>
-  <form post="/api/register" validate
-        success="#registerSuccess"
-        error="#registerError">
-    <input model="name" name="name" type="text" placeholder="Full Name"
-           required minlength="2"
-           error-required="Name is required" />
-    <input model="email" name="email" type="email" placeholder="Email"
-           required
-           error-required="Email is required"
-           error-email="Please enter a valid email" />
-    <input model="password" name="password" type="password" placeholder="Password"
-           required minlength="8"
-           pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-           error-required="Password is required"
-           error-pattern="Must contain uppercase, lowercase, and a number" />
-    <input model="confirmPassword" name="confirmPassword" type="password"
-           placeholder="Confirm Password" required
-           error-required="Please confirm your password" />
-    <p show="confirmPassword && password !== confirmPassword" class="error">
-      Passwords do not match
-    </p>
-    <button type="submit"
-            bind-disabled="!$form.valid || password !== confirmPassword">
-      Create Account
-    </button>
-  </form>
-</div>
+<script src="https://cdn.no-js.dev/"></script>
+<script>
+  NoJS.validator('samePassword', (value, values) =>
+    value === (values.password ?? value) || 'Passwords do not match');
+</script>
+<script src="https://cdn-elements.no-js.dev/"></script>
+
+<h2>Register</h2>
+<form post="/api/register" validate
+      success="#registerSuccess"
+      error="#registerError">
+  <input name="name" type="text" placeholder="Full Name"
+         required minlength="2"
+         error-required="Name is required" />
+  <input name="email" type="email" placeholder="Email"
+         required
+         error-required="Email is required"
+         error-email="Please enter a valid email" />
+  <input name="password" type="password" placeholder="Password"
+         required minlength="8"
+         pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+         error-required="Password is required"
+         error-pattern="Must contain uppercase, lowercase, and a number" />
+  <input name="confirmPassword" type="password"
+         placeholder="Confirm Password" required validate="samePassword"
+         error-required="Please confirm your password" />
+  <p class="error" bind="$form.errors.confirmPassword"></p>
+  <button type="submit">Create Account</button>
+</form>
 
 <template id="registerSuccess" var="result">
   <p>Account created! Check your email for verification.</p>
