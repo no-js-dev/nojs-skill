@@ -96,7 +96,7 @@ CDN auto-initializes on `DOMContentLoaded`.
 | `watch` | `watch="prop"` | Execute side effects on change |
 | `persist` | `persist="localStorage"` | Persist state to storage (`localStorage` or `sessionStorage`) |
 | `persist-key` | `persist-key="myKey"` | Custom storage key |
-| `persist-fields` | `persist-fields="theme,lang"` | Persist only specific fields (empty or bare attribute = all fields, with a warning) |
+| `persist-fields` | `persist-fields="theme,lang"` | Persist only specific fields (`persist-fields=""` or a bare attribute = all fields, with a warning; a whitespace-only value persists nothing) |
 | `persist-schema` | `persist-schema` | Validate restored keys against initial state |
 
 ```html
@@ -359,7 +359,7 @@ Reserved properties (`locale`, `locales`, `t`, `setLocale`) cannot be used as tr
 <button on:click="$i18n.setLocale('pt')">Portugues</button>
 ```
 
-`$i18n.[path]` works in: `state`, `store`, `computed`, `watch`, `foreach`, `bind`, `if`/`show`/`hide`.
+`$i18n.[path]` works in: `state`, `store`, `computed`, `watch`, `foreach`, `bind`, `if`/`show`/`hide`. `state` and `store` initializers run once, so values read there are a snapshot and do not follow later locale changes; use `bind` for text that must.
 
 ### Animations
 
@@ -553,9 +553,9 @@ Certain directive combinations on the same element produce unexpected behavior. 
 | `strictPersist` | `false` | Opt-in: skip restored `$` keys with reserved names unless declared/listed |
 | `strictJsonld` | `false` | Opt-in: always JSON-escape `page-jsonld` placeholders inside strings |
 | `templates.pageRelative` | `false` | Opt-in: resolve `<template src>` against the page, not `base` / `baseApiUrl` |
-| `i18n.escapeParams` / `i18n.strictLocale` | `false` / `false` | Opt-in: HTML-escape `t-html` params / ignore a persisted locale not in `supportedLocales` |
+| `i18n.escapeParams` / `i18n.strictLocale` | `false` / `false` | Opt-in: HTML-escape `t-html` params / ignore a persisted locale not in a non-empty `supportedLocales` (read only by `NoJS.i18n()`) |
 
-All opt-in flags default to `false` (v1.21.1 behavior) and can be set before or after `init()`. See [core/config.md](references/core/config.md#opt-in-hardening-flags).
+All opt-in flags default to `false` (v1.21.1 behavior) and can be set with `NoJS.config()`. Most take effect immediately, before or after `init()`; `strictPersist` and `strictDirectives` apply to the restores and directive registrations made after they are set, and `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale (pass it there, or set it with `config()` before that call). See [core/config.md](references/core/config.md#opt-in-hardening-flags).
 
 ```javascript
 NoJS.config({
@@ -595,13 +595,14 @@ NoJS.REPLACE                   // Interceptor sentinel: replace response data
 
 ```html
 <!-- Requires NoJS Elements plugin -->
-<form validate post="/api/login" into="auth" state="{ email: '', password: '' }">
-  <input name="email" model="email" type="email" validate="required,email" validate-on="blur"
+<!-- No model= on validated inputs: with Elements, model + validate-on clears typed values -->
+<form validate post="/api/login" into="auth">
+  <input name="email" type="email" validate="required,email" validate-on="blur"
          error-required="Email is required" error-email="Enter a valid email">
   <span if="$form.fields.email.errors.length"
         bind="$form.fields.email.errors[0]" style="color:red"></span>
 
-  <input name="password" model="password" type="password" validate="required,min:8">
+  <input name="password" type="password" validate="required,min:8">
   <span if="$form.fields.password.errors.length"
         bind="$form.fields.password.errors[0]" style="color:red"></span>
 

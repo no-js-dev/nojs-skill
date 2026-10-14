@@ -125,7 +125,7 @@ Fetch data via HTTP GET request.
 </div>
 ```
 
-**URL placeholders** -- each `{expression}` value is encoded with `encodeURIComponent`, so `/` becomes `%2F`. Build multi-segment paths outside the braces: `get="'/files/' + path"`. In the path part of the URL, a value that is exactly `.` or `..` is escaped as `%252E` / `%252E%252E` (with a console warning) so URL parsers cannot collapse it as a dot-segment and send the request elsewhere: `get="/users/{id}/avatar"` with `id = '..'` requests `/users/%252E%252E/avatar`. Query-string and fragment values are not affected.
+**URL placeholders** -- each `{expression}` value is encoded with `encodeURIComponent`, so `/` becomes `%2F`. URL attributes are never evaluated as expressions, so build multi-segment paths with one placeholder per segment: `get="/files/{dir}/{name}"`. In the path part of the URL, a value that is exactly `.` or `..` is escaped as `%252E` / `%252E%252E` (with a console warning) so URL parsers cannot collapse it as a dot-segment and send the request elsewhere: `get="/users/{id}/avatar"` with `id = '..'` requests `/users/%252E%252E/avatar`. Query-string and fragment values are not affected.
 
 ### `post`
 
@@ -208,15 +208,14 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
 **Trigger:**
 
 - On a `<form>`, intercepts the `submit` event and serializes fields via `FormData` (same as `post`).
-- On any other element, **auto-fires on mount** and **re-fires reactively** when reactive variables in its URL or `body` change (same on-mount/reactive behavior as `get`).
+- On any other element, **auto-fires on mount** and **re-fires reactively** when a placeholder in its URL changes (same as `get`). A change to state used only in `body` does not re-fire; call `el.refresh()` (for example `$refs.x.refresh()` from a later event) or put the value in the URL.
 
 **Trigger modes (non-form elements):** control *when* the request fires with `query-trigger` — the QUERY-side counterparts of `get-trigger`:
 
 | Attribute | Description |
 |-----------|-------------|
-| `query-trigger` | When the request fires: `visible` (on IntersectionObserver entry), `scroll`, `hover` (first `mouseenter`), `button` (renders a trigger button), or `none` (suppress auto-fire; use `.refresh()`). Absent = fires on mount |
-| `query-trigger-label` | Custom label for the auto-generated button when `query-trigger="button"`. Default: `"Load More"` |
-| `query-threshold` | IntersectionObserver `rootMargin` for `visible`/`scroll` triggers (e.g. `"200px"`) |
+| `query-trigger` | When the request fires: `visible` (on IntersectionObserver entry), `hover` (first `mouseenter`), or `none` (suppress auto-fire; use `.refresh()`). Absent = fires on mount. `scroll` and `button` need `get-insert`, which is GET-only, so on `query` they warn and fall back (`scroll` to `visible`, `button` to firing on mount); `query-trigger-label` has no effect |
+| `query-threshold` | IntersectionObserver `rootMargin` for the `visible` trigger (e.g. `"200px"`) |
 
 **Body-aware caching:** when `cached` is set, the cache key incorporates the serialized request body (not just the URL), so two QUERY requests to the same endpoint with different filter bodies cache independently.
 
@@ -243,11 +242,12 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
   </div>
 </form>
 
-<!-- Non-form: auto-fires on mount, re-fires when filter state changes -->
-<div state="{ region: 'us', tag: '' }">
-  <div query="/products/search"
+<!-- Non-form: fires when visible; re-fires when region (a URL placeholder) changes.
+     tag is body-only: changing it alone does not re-fire (use $refs.x.refresh()). -->
+<div state="{ region: 'us', tag: 'new' }">
+  <div query="/products/search?region={region}"
        headers='{"Content-Type": "application/x-www-form-urlencoded"}'
-       body="region={region}&tag={tag}"
+       body="tag={tag}"
        query-trigger="visible"
        query-threshold="200px"
        as="products"

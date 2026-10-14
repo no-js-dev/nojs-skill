@@ -248,7 +248,8 @@ The published value is a **JSON copy** of the object you pass:
 - changing the original object afterwards does not change the global;
 - methods are dropped and `Date` values become ISO strings;
 - own `__proto__` keys are dropped;
-- a value that cannot be serialized to JSON (circular reference, `BigInt`) gets a **shallow copy** instead: top-level properties (methods included) are copied, nested objects stay shared with the original;
+- a value that cannot be serialized to JSON (circular reference, `BigInt`) gets a **shallow copy** instead: its own enumerable properties are copied (functions stored on the object included, methods inherited from a class prototype lost), nested objects stay shared with the original;
+- an **array** becomes a plain object with index keys (`Array.isArray` is false and `$tags.length` is empty; the same happened in v1.21.1). Wrap arrays in an object (`{ items: [...] }`) or use `byRef`;
 - a value that is already a reactive context is published as is.
 
 Because the global is a reactive context, it has `$watch`, `$set` and `$notify`:

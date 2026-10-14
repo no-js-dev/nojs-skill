@@ -383,7 +383,7 @@ Set a global reactive variable accessible in all expressions as `$name`.
 | `value` | any | The value (primitives and objects both work) |
 | `options` | object | Optional. `{ byRef: true }` publishes the object itself |
 
-**Default (copy):** an object value is published as a JSON copy wrapped in a reactive context, with `$watch`, `$set` and `$notify`. Methods are dropped, `Date` becomes an ISO string, and later changes to the original object do not reach the global. A value that cannot be serialized (circular, `BigInt`) gets a shallow copy instead. Globals are app-wide: a write from any scope updates every binding that reads `$name`.
+**Default (copy):** an object value is published as a JSON copy wrapped in a reactive context, with `$watch`, `$set` and `$notify`. Methods are dropped, `Date` becomes an ISO string, and later changes to the original object do not reach the global. A value that cannot be serialized (circular, `BigInt`) gets a shallow copy of its own enumerable properties instead. An **array** value becomes a plain object with index keys (`Array.isArray` is false and `$tags.length` is empty; the same happened in v1.21.1). Wrap arrays in an object, for example `NoJS.global('tagList', { items: ['a', 'b'] })` and `each="t in $tagList.items"`, or publish with `{ byRef: true }`. Globals are app-wide: a write from any scope updates every binding that reads `$name`.
 
 **`{ byRef: true }`:** publishes the object itself (methods, `Date`, `Map`, identity kept) after a full check that rejects forbidden keys and nested `eval`/`Function`. Plain objects have no `$watch`/`$set`; call `NoJS.notify()` after mutating them from JavaScript.
 

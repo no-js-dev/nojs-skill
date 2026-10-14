@@ -253,13 +253,13 @@ NoJS.config({
 | `i18n.cache` | boolean | `true` | Cache loaded locale JSON files to avoid duplicate fetches |
 | `i18n.persist` | boolean | `false` | Persist the selected locale to `localStorage` so it survives page reloads |
 | `i18n.escapeParams` | boolean | `false` | Opt-in. HTML-escape `t-*` param values in `t-html` translations. By default params are inserted raw and the combined result is sanitized. Changing it after `init()` re-renders active translations |
-| `i18n.strictLocale` | boolean | `false` | Opt-in. Ignore a persisted `nojs-locale` that is not in `supportedLocales`. By default it is restored |
+| `i18n.strictLocale` | boolean | `false` | Opt-in. Ignore a persisted `nojs-locale` that is not in a non-empty `supportedLocales`. By default it is restored. Read only by the `NoJS.i18n()` call that restores the locale: pass it in that call, or set it with `config()` before it; setting it afterwards has no effect |
 
 ---
 
 ## Opt-in Hardening Flags
 
-Stricter security behaviors are opt-in, so apps built on v1.21.1 keep working unchanged. Every flag defaults to `false` (v1.21.1 behavior) and can be set with `NoJS.config()` before or after `init()`.
+Stricter security behaviors are opt-in, so apps built on v1.21.1 keep working unchanged. Every flag defaults to `false` (v1.21.1 behavior) and can be set with `NoJS.config()`. Most take effect immediately, before or after `init()`; `strictPersist` and `strictDirectives` apply to the restores and directive registrations made after they are set, and `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale (pass it there, or set it with `config()` before that call).
 
 | Flag | Default | When `true` |
 |------|---------|-------------|
@@ -271,7 +271,7 @@ Stricter security behaviors are opt-in, so apps built on v1.21.1 keep working un
 | `strictJsonld` | `false` | `page-jsonld` placeholders inside JSON strings are always JSON-escaped. By default the v1.21.1 output is kept whenever it is valid JSON |
 | `templates.pageRelative` | `false` | `<template src>` resolves against the page instead of through `base` / `baseApiUrl` |
 | `i18n.escapeParams` | `false` | `t-*` params in `t-html` translations are HTML-escaped |
-| `i18n.strictLocale` | `false` | A persisted `nojs-locale` not in `supportedLocales` is ignored on restore |
+| `i18n.strictLocale` | `false` | A persisted `nojs-locale` not in a non-empty `supportedLocales` is ignored when `NoJS.i18n()` restores it |
 
 ```javascript
 NoJS.config({

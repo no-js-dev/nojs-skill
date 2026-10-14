@@ -387,7 +387,7 @@ Untrusted interceptors (any interceptor not registered by a plugin installed wit
 
 ## Opt-in Hardening Flags
 
-Stricter behaviors are opt-in, so apps built on v1.21.1 keep working unchanged. Every flag defaults to `false` and can be set with `NoJS.config()` before or after `init()`:
+Stricter behaviors are opt-in, so apps built on v1.21.1 keep working unchanged. Every flag defaults to `false` and can be set with `NoJS.config()`. Most take effect immediately, before or after `init()`; `strictPersist` and `strictDirectives` apply to the restores and directive registrations made after they are set, and `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale (pass it there, or set it with `config()` before that call):
 
 | Flag | Hardening when `true` |
 |------|----------------------|
