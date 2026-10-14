@@ -65,7 +65,7 @@ When `validate-if` evaluates to `false`, the field is treated as valid and exclu
 
 ## Custom Validators
 
-Register custom validation functions with `NoJS.validator()`:
+Register custom validation functions with `NoJS.validator()`, in a script between the core and the NoJS Elements `<script>` tags (Elements reads the validators when it installs, so later registrations are ignored). Return a message string to fail; `true` or any falsy value counts as valid:
 
 ```html
 <script>
