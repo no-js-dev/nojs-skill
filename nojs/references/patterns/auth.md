@@ -41,7 +41,7 @@ A login form with built-in validation, loading states, and success/error templat
     <div class="field">
       <label>Email</label>
       <input model="email" type="email" name="email"
-             validate="required,email"
+             validate="required|email"
              error-required="Email is required"
              error-email="Invalid email address">
     </div>

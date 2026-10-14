@@ -596,15 +596,14 @@ NoJS.REPLACE                   // Interceptor sentinel: replace response data
 ```html
 <!-- Requires NoJS Elements plugin -->
 <!-- No model= on validated inputs: with Elements, model + validate-on clears typed values -->
+<!-- Rules are separated with |; lengths use the native minlength attribute -->
 <form validate post="/api/login" into="auth">
-  <input name="email" type="email" validate="required,email" validate-on="blur"
+  <input name="email" type="email" validate="required|email" validate-on="blur"
          error-required="Email is required" error-email="Enter a valid email">
-  <span if="$form.fields.email.errors.length"
-        bind="$form.fields.email.errors[0]" style="color:red"></span>
+  <span if="$form.errors.email" bind="$form.errors.email" style="color:red"></span>
 
-  <input name="password" type="password" validate="required,min:8">
-  <span if="$form.fields.password.errors.length"
-        bind="$form.fields.password.errors[0]" style="color:red"></span>
+  <input name="password" type="password" minlength="8" validate="required">
+  <span if="$form.errors.password" bind="$form.errors.password" style="color:red"></span>
 
   <button type="submit">Log In</button>
   <p show="$form.submitting">Logging in...</p>
