@@ -148,7 +148,8 @@ Full create/read/update/delete pattern with inline form switching:
       <!-- Create -->
       <button if="!editing"
               call="/api/users" method="post"
-              body='{"name": "{name}", "email": "{email}"}'
+              headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+              body="name={name}&email={email}"
               then="showForm = false"
               bind-disabled="!$form.valid">
         Create
@@ -157,7 +158,8 @@ Full create/read/update/delete pattern with inline form switching:
       <!-- Update -->
       <button if="editing"
               call="/api/users/{editing.id}" method="put"
-              body='{"name": "{name}", "email": "{email}"}'
+              headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+              body="name={name}&email={email}"
               then="showForm = false"
               bind-disabled="!$form.valid">
         Save

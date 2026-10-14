@@ -76,7 +76,8 @@ A global store cart with add/remove and computed total:
   <div class="cart-summary" show="$store.cart.items.length > 0">
     <strong>Total: <span bind="$store.cart.total | currency"></span></strong>
     <button call="/api/checkout" method="post"
-            body='{"items": $store.cart.items}'
+            headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+            body="items={$store.cart.items | json}"
             then="$store.cart.items = []; $store.cart.total = 0"
             redirect="/checkout/success">
       Checkout

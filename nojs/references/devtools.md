@@ -1,6 +1,6 @@
 # No.JS DevTools Reference
 
-Runtime inspection, mutation, and monitoring API for No.JS applications. DevTools provides zero-overhead tooling that is only active when explicitly enabled and running on a local hostname.
+Runtime inspection, mutation, and monitoring API for No.JS applications. DevTools is only active when explicitly enabled. The `window.__NOJS_DEVTOOLS__` API is installed only on a local hostname; see [Local-Hostname Restriction](#local-hostname-restriction) for what still runs elsewhere and how `strictDevtools` changes it.
 
 ## Contents
 
@@ -54,7 +54,7 @@ A confirmation message appears in the console when DevTools is successfully init
 
 ## Local-Hostname Restriction
 
-DevTools is silently disabled on non-local hostnames to prevent accidental exposure in production. The following hostnames are considered local:
+The `window.__NOJS_DEVTOOLS__` API and its `nojs:devtools:cmd` command listener are installed only on local hostnames. The following hostnames are considered local:
 
 | Hostname | Description |
 |----------|-------------|
@@ -65,13 +65,26 @@ DevTools is silently disabled on non-local hostnames to prevent accidental expos
 | `*.localhost` | Subdomain localhost (e.g., `app.localhost`) |
 | `""` (empty string) | File protocol / no hostname |
 
-If `devtools: true` is set but the hostname is not local, the following warning is emitted and DevTools does not initialize:
+If `devtools: true` is set but the hostname is not local, the following warning is emitted and the API is not exposed:
 
 ```text
 [No.JS] devtools: true is ignored outside local environments. Remove devtools: true before deploying to production.
 ```
 
-**Important:** Always remove `devtools: true` from production builds. Even though the hostname guard prevents activation, the config flag itself signals intent and should not ship to production.
+**By default (v1.21.1 behavior), the restriction covers the API and the command listener only.** On any hostname, `devtools: true` still assigns `__devtoolsId`s, fills the context registry, and dispatches `nojs:devtools` events (context creation and updates, store creation, fetch URLs, route navigation) on `window`, where any script on the page can read them.
+
+Set `strictDevtools: true` to harden devtools:
+
+- `nojs:devtools` events and the context registry are also limited to local hosts, so `devtools: true` on a production hostname emits nothing;
+- store snapshots (`stores` getter, `inspect:store`) show keys containing `token`, `password`, `secret`, `key`, `auth`, `credential` or `session` as `[REDACTED]` (substring match, so `keyboard` and `author` are redacted too);
+- `get:config` and the `config` getter return `headers` as an object redacted per sensitive header, and `csrf.token` as `[REDACTED]`;
+- `fetch:success` / `fetch:error` devtools events carry the URL without its `#fragment` and with sensitive query values replaced by `[REDACTED]`.
+
+```js
+NoJS.config({ devtools: true, strictDevtools: true });
+```
+
+**Important:** Always remove `devtools: true` from production builds, or at least set `strictDevtools: true`.
 
 ---
 
@@ -95,7 +108,7 @@ dt.plugins  // Map — copy of installed plugins (name -> { plugin, options })
 dt.globals  // Object — copy of plugin globals
 ```
 
-Store snapshots are serialized safely: functions are excluded, circular references are stringified, and proxy references are recursively unwrapped. Sensitive config values (`headers`, `csrf.token`) are redacted in the `get:config` command response but visible in the `config` getter.
+Store snapshots are serialized safely: functions are excluded, circular references are stringified, and proxy references are recursively unwrapped. By default, store snapshots show every key, the `config` getter returns `headers` and `csrf` as configured, and the `get:config` command returns `headers` as the string `'[REDACTED]'` with `csrf.token` redacted. With `strictDevtools: true`, snapshots redact sensitive keys and both `config` and `get:config` return per-key redacted headers.
 
 ### inspect(selector)
 
@@ -301,7 +314,7 @@ Response shape: `{ command, result, timestamp }`.
 | `inspect:tree` | `{ selector }` | Walk directive tree from root (default: `document.body`) |
 | `mutate:context` | `{ id, key, value }` | Set a value on a context by devtools ID |
 | `mutate:store` | `{ name, key, value }` | Set a value on a named store |
-| `get:config` | (none) | Return framework config (headers/CSRF token redacted) |
+| `get:config` | (none) | Return framework config (`headers` as `'[REDACTED]'`, CSRF token redacted; per-key redaction with `strictDevtools`) |
 | `get:routes` | (none) | Return registered route definitions |
 | `get:stats` | (none) | Return framework statistics |
 | `highlight:element` | `{ selector }` | Show visual overlay on element |

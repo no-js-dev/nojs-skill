@@ -18,6 +18,7 @@ Plugins extend NoJS with custom directives, filters, validators, interceptors, a
   - [dispose(app)](#disposeapp)
 - [Reactive Globals](#reactive-globals)
   - [NoJS.global(name, value)](#nojsglobalname-value)
+  - [byRef](#byref)
   - [Naming Conventions](#naming-conventions)
   - [Reserved Names](#reserved-names)
   - [Reactivity](#reactivity)
@@ -138,14 +139,12 @@ A plugin object may have the following properties:
 | `install` | function | Yes | Called immediately when `NoJS.use()` is invoked |
 | `init` | function | No | Called after `NoJS.init()` completes |
 | `dispose` | function | No | Called during `NoJS.dispose()` (reverse order) |
-| `trusted` | boolean | No | Grant trusted interceptor access (bypasses header redaction) |
 
 ### TypeScript Definitions
 
 ```typescript
 interface NoJSPlugin {
   name: string;
-  trusted?: boolean;
   install(app: NoJSInstance, options?: any): void;
   init?(app: NoJSInstance): void;
   dispose?(app: NoJSInstance): void | Promise<void>;
@@ -209,6 +208,7 @@ Set a global reactive variable accessible in all expressions as `$name`.
 |-----------|------|-------------|
 | `name` | string | Variable name (without `$` prefix) |
 | `value` | any | The value (primitives and objects both work) |
+| `options` | object | Optional. `{ byRef: true }` publishes the object itself instead of a reactive copy (see [byRef](#byref)) |
 
 ```javascript
 NoJS.global('theme', 'dark');
@@ -235,13 +235,51 @@ The following names cannot be used as global variable names:
 
 ### Reactivity
 
-Object values assigned via `NoJS.global()` become deeply reactive. Property changes automatically trigger re-evaluation of dependent expressions.
+Object values assigned via `NoJS.global()` are wrapped in a reactive context. Property changes automatically trigger re-evaluation of dependent expressions.
 
 ```javascript
 NoJS.global('counter', { value: 0 });
 // Later:
 // Changing $counter.value in an expression re-renders all dependents
 ```
+
+The published value is a **JSON copy** of the object you pass:
+
+- changing the original object afterwards does not change the global;
+- methods are dropped and `Date` values become ISO strings;
+- own `__proto__` keys are dropped;
+- a value that cannot be serialized to JSON (circular reference, `BigInt`) gets a **shallow copy** instead: top-level properties (methods included) are copied, nested objects stay shared with the original;
+- a value that is already a reactive context is published as is.
+
+Because the global is a reactive context, it has `$watch`, `$set` and `$notify`:
+
+```javascript
+app.global('cart', { count: 0 });
+const cart = app.evaluate('$cart', app.createContext({}));
+cart.$watch(() => console.log('cart changed'));
+cart.$set('count', 3); // updates every $cart binding
+```
+
+**App-wide updates.** Every binding that reads `$name`, in any scope, updates when the global changes: a template write from any scope (`$cart.count++`, `$cart.$set('count', 1)`), a write from plugin JavaScript through the reactive global (`cart.count = 2`), or a new `NoJS.global()` call for the same name. After mutating a nested object from JavaScript (`cart.items.push(x)`), call `cart.$notify()` or `NoJS.notify()`. Update cycles through a global are bounded by the batch drain cap (100 rounds, then one warning).
+
+### byRef
+
+Pass `{ byRef: true }` to publish the object itself (methods, `Date`, `Map`, identity kept):
+
+```javascript
+const session = { user: 'guest', since: new Date(), login(name) { this.user = name; } };
+app.global('session', session, { byRef: true });
+
+session.user = 'Ada';
+app.notify(); // a plain object has no $watch/$set -- flush the DOM yourself
+```
+
+```html
+<span bind="$session.user"></span>
+<button on:click="$session.login('ada')">Log in</button>
+```
+
+A `byRef` value is checked in full: values containing `__proto__`, `constructor` or `prototype` keys, or `eval`/`Function` at any depth, are rejected with a warning. Only `byRef === true` opts in.
 
 ### Ownership Tracking
 
@@ -313,14 +351,25 @@ NoJS.interceptor('response', (response) => {
 
 By default, interceptors receive redacted headers and proxy-wrapped responses to prevent credential leakage. Trusted plugins bypass these restrictions.
 
+What untrusted interceptors see by default (v1.21.1 behavior):
+
+- **Request interceptors**: request options with the sensitive headers below stripped, and the **raw URL** (query and fragment included).
+- **Response interceptors**: a response proxy with the sensitive response headers below stripped, and a URL whose `token`, `key`, `secret`, `auth`, `password`, `credential` query values are replaced (re-serialized by the `URL` API, so they read `%5BREDACTED%5D`).
+- `fetch:success`, `fetch:error` and `error` event payloads carry the raw URL.
+
+With `NoJS.config({ strictRedaction: true })`:
+
+- request interceptors, response interceptors and the event payloads all get the same string-level redacted URL: the `#fragment` is dropped and sensitive query values become `[REDACTED]`;
+- the header named in `csrf.header` is withheld from untrusted request interceptors, which can no longer override it;
+- response headers that are sensitive as request headers (`authorization`, `cookie`, `x-auth-*`, `x-api-*`, the `csrf.header` name) are also stripped.
+
 ### Granting Trusted Access
 
-Set `trusted: true` on the plugin object **before** calling `NoJS.use()`:
+Pass `{ trusted: true }` as the `NoJS.use()` options. Trust is fixed when `NoJS.use()` runs; a `trusted` property on the plugin object itself is ignored:
 
 ```javascript
 const AuthPlugin = {
   name: 'auth',
-  trusted: true,
   install(app) {
     app.interceptor('request', (url, opts) => {
       // Can see and modify Authorization, Cookie, etc.
@@ -331,7 +380,7 @@ const AuthPlugin = {
   }
 };
 
-NoJS.use(AuthPlugin);
+NoJS.use(AuthPlugin, { trusted: true });
 ```
 
 ### Redacted Request Headers
@@ -414,6 +463,10 @@ NoJS.directive('tooltip', { init(el, v) { /* ... */ } });
 NoJS.directive('bind', { init(el, v) { /* ... */ } }); // warning, ignored
 ```
 
+**Names under core wildcards.** A name that a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`) would otherwise handle, such as `on:clickoutside`, `class-x` or `bind-chart`, is accepted. The exact name wins for that attribute only; every other `on:*` / `bind-*` / `class-*` / `style-*` attribute keeps the core handler. Debug mode logs `Directive "bind-chart" shadows core "bind-*" for that attribute.`
+
+Set `NoJS.config({ strictDirectives: true })` **before** the directive is registered to reject wildcard-covered names too (warning, ignored). The flag is read at each `NoJS.directive()` call.
+
 ---
 
 ## Security
@@ -424,7 +477,7 @@ Global names and spread operations filter `__proto__`, `constructor`, and `proto
 
 ### Dangerous Function Blocking
 
-Values passed to `NoJS.global()` are checked against a set of dangerous function references (`eval`, `Function`). Matching values are rejected.
+Values passed to `NoJS.global()` are checked against dangerous references: `eval`, `Function` (including bound copies), and the real `window`, `document` and `globalThis` objects. Matching values are rejected.
 
 ### Plugin Name Validation
 
@@ -442,7 +495,7 @@ Globals and interceptors registered during `NoJS.use()` are tagged with the plug
 Untrusted interceptors receive:
 - Redacted request headers
 - Proxy-wrapped response objects (preventing mutation)
-- Redacted URL query parameters
+- Redacted URL query parameters (response interceptors by default; request interceptors too with `strictRedaction`)
 - Redacted response headers
 
 See the [Security Reference](security.md) for complete details.
@@ -519,7 +572,6 @@ NoJS.use(AnalyticsPlugin, { trackingId: 'UA-XXXXX', sampleRate: 0.5 });
 ```javascript
 const AuthPlugin = {
   name: 'auth',
-  trusted: true,
   install(app) {
     app.interceptor('request', (url, opts) => {
       const token = app.store.auth?.token;
@@ -542,7 +594,7 @@ const AuthPlugin = {
   }
 };
 
-NoJS.use(AuthPlugin);
+NoJS.use(AuthPlugin, { trusted: true });
 ```
 
 ### Offline Guard Plugin

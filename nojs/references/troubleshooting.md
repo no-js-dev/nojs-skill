@@ -379,7 +379,7 @@ For conditionals, ensure the `else` element directly follows its `if`/`else-if` 
 [No.JS] Cannot override core directive "<name>".
 ```
 
-**Cause:** Attempted to register a custom directive using a name reserved by the framework (e.g., `state`, `bind`, `if`). Core directives are frozen after framework initialization.
+**Cause:** Attempted to register a custom directive using a name reserved by the framework (e.g., `state`, `bind`, `if`). Core directives are frozen as soon as the framework loads. With `strictDirectives: true`, names covered by a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`) are rejected with the same message.
 
 **Fix:** Choose a different name for your custom directive:
 

@@ -1,6 +1,6 @@
 # No.JS Configuration Reference
 
-Complete reference for all `NoJS.config()` options. Call `NoJS.config()` before `NoJS.init()` -- configuration is locked after initialization.
+Complete reference for all `NoJS.config()` options. `NoJS.config()` can be called before or after `NoJS.init()`. Only the sanitization keys (`sanitize`, `dangerouslyDisableSanitize`, `sanitizeHtml`) are locked after initialization; changing them later logs a warning and is ignored.
 
 ## Contents
 
@@ -14,6 +14,7 @@ Complete reference for all `NoJS.config()` options. Call `NoJS.config()` before 
 - [Development Options](#development-options)
 - [Router Options](#router-options)
 - [i18n Options](#i18n-options)
+- [Opt-in Hardening Flags](#opt-in-hardening-flags)
 - [Stores](#stores)
 - [Merging Behavior](#merging-behavior)
 
@@ -30,7 +31,7 @@ NoJS.config({
 });
 ```
 
-Config must be called before `NoJS.init()`. Calling it after initialization throws an error.
+`NoJS.config()` works before or after `NoJS.init()`. After init, `sanitize`, `dangerouslyDisableSanitize` and `sanitizeHtml` are locked (a warning is logged and the value is ignored) until `NoJS.dispose()`.
 
 ---
 
@@ -51,7 +52,7 @@ Options controlling the behavior of fetch directives (`get`, `post`, `put`, `del
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `baseApiUrl` | string | `""` | Default base URL prepended to all fetch directive URLs |
-| `headers` | object | `{}` | Default headers included in all HTTP requests |
+| `headers` | object | `{}` | Default headers included in all HTTP requests, cross-origin ones included. Set `scopeHeaders: true` to limit them to trusted origins |
 | `timeout` | number | `10000` | Request timeout in milliseconds |
 | `retries` | number | `0` | Number of automatic retries on failed requests |
 | `retryDelay` | number | `1000` | Delay between retries in milliseconds |
@@ -132,6 +133,7 @@ NoJS.config({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `templates.cache` | boolean | `true` | Cache loaded remote templates to avoid duplicate fetches |
+| `templates.pageRelative` | boolean | `false` | Opt-in. Resolve `<template src>` against the page, ignoring `base` and `baseApiUrl`. By default, `src` is resolved like an HTTP directive URL (nearest `base` attribute, else `baseApiUrl`, else as written). See [Opt-in Hardening Flags](#opt-in-hardening-flags) |
 
 ---
 
@@ -250,6 +252,38 @@ NoJS.config({
 | `i18n.supportedLocales` | string[] | `[]` | Locales eligible for browser detection under `loadPath`. On first visit `detectBrowser` adopts the browser language (or its prefix, e.g. `pt` from `pt-BR`) only when present in this list. Locale priority: persisted `nojs-locale` > detection > `defaultLocale` |
 | `i18n.cache` | boolean | `true` | Cache loaded locale JSON files to avoid duplicate fetches |
 | `i18n.persist` | boolean | `false` | Persist the selected locale to `localStorage` so it survives page reloads |
+| `i18n.escapeParams` | boolean | `false` | Opt-in. HTML-escape `t-*` param values in `t-html` translations. By default params are inserted raw and the combined result is sanitized. Changing it after `init()` re-renders active translations |
+| `i18n.strictLocale` | boolean | `false` | Opt-in. Ignore a persisted `nojs-locale` that is not in `supportedLocales`. By default it is restored |
+
+---
+
+## Opt-in Hardening Flags
+
+Stricter security behaviors are opt-in, so apps built on v1.21.1 keep working unchanged. Every flag defaults to `false` (v1.21.1 behavior) and can be set with `NoJS.config()` before or after `init()`.
+
+| Flag | Default | When `true` |
+|------|---------|-------------|
+| `scopeHeaders` | `false` | Global `config({ headers })` are sent only to trusted origins (the page, `baseApiUrl`, the nearest `base` attribute). By default they are sent with every request, cross-origin included (debug mode logs a one-time hint per foreign origin) |
+| `strictRedaction` | `false` | Untrusted interceptors and `fetch:success` / `fetch:error` / `error` payloads get string-level redacted URLs (the `#fragment` is dropped; values of `token`, `key`, `secret`, `auth`, `password`, `credential` query params become `[REDACTED]`). The `csrf.header` name is withheld from untrusted request interceptors and cannot be overridden by them. Response headers that are sensitive as request headers (`authorization`, `x-api-*`, ...) are stripped from the response proxy |
+| `strictDirectives` | `false` | `NoJS.directive()` / `app.directive()` reject names covered by a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`). The registry freezes when No.JS loads, so the flag applies to every registration made while it is set. Set it before plugins register directives |
+| `strictDevtools` | `false` | `nojs:devtools` events and the context registry are also limited to local hosts; store snapshots redact sensitive keys; `get:config` and the `config` getter return per-key redacted headers; devtools fetch URLs are redacted |
+| `strictPersist` | `false` | On `persist` restore, a stored `$` key with a reserved name (`$store`, `$route`, `$router`, `$refs`, `$parent`, `$i18n`, `$watch`, `$set`, `$notify`, `$form`, `$sse`, or a plugin global) is skipped unless the state declares it or `persist-fields` lists it |
+| `strictJsonld` | `false` | `page-jsonld` placeholders inside JSON strings are always JSON-escaped. By default the v1.21.1 output is kept whenever it is valid JSON |
+| `templates.pageRelative` | `false` | `<template src>` resolves against the page instead of through `base` / `baseApiUrl` |
+| `i18n.escapeParams` | `false` | `t-*` params in `t-html` translations are HTML-escaped |
+| `i18n.strictLocale` | `false` | A persisted `nojs-locale` not in `supportedLocales` is ignored on restore |
+
+```javascript
+NoJS.config({
+  scopeHeaders: true,
+  strictRedaction: true,
+  strictDevtools: true,
+  templates: { pageRelative: true },
+  i18n: { escapeParams: true }
+});
+```
+
+Related per-call opt-in: `NoJS.global(name, value, { byRef: true })` publishes the object itself instead of a reactive JSON copy. See [Plugin System](plugins.md#nojsglobalname-value).
 
 ---
 
