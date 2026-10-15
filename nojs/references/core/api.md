@@ -12,7 +12,7 @@ Complete reference for the NoJS JavaScript API surface. All methods, getters, se
 - [NoJS.i18n(options)](#nojsi18noptions) -- Configure internationalization
 - [NoJS.on(event, callback)](#nojsonevent-callback) -- Subscribe to lifecycle events
 - [NoJS.use(plugin, options?)](#nojsuseplugin-options) -- Install plugins
-- [NoJS.global(name, value, options?)](#nojsglobalname-value) -- Set global reactive variables
+- [NoJS.global(name, value)](#nojsglobalname-value) -- Set global reactive variables
 - [NoJS.dispose()](#nojsdispose) -- Tear down and clean up the framework
 - [NoJS.CANCEL](#nojscancel) -- Cancel sentinel for interceptors
 - [NoJS.RESPOND](#nojsrespond) -- Short-circuit response sentinel
@@ -35,7 +35,7 @@ Complete reference for the NoJS JavaScript API surface. All methods, getters, se
 
 ## NoJS.config(options)
 
-Configure global framework settings. Can be called before or after `NoJS.init()`. After init, only `sanitize`, `dangerouslyDisableSanitize` and `sanitizeHtml` are locked: changing them logs a warning and is ignored (the lock resets on `NoJS.dispose()`).
+Configure global framework settings. Call before `NoJS.init()` or the DOM ready event. Config is locked after initialization -- calling `NoJS.config()` after `NoJS.init()` throws.
 
 ```javascript
 NoJS.config({
@@ -60,20 +60,11 @@ NoJS.config({
   stores: {
     auth: { user: null, token: null },
     cart: { items: [] }
-  },
-
-  // Opt-in hardening flags (all default false = v1.21.1 behavior)
-  scopeHeaders: false,
-  strictRedaction: false,
-  strictDirectives: false,
-  strictDevtools: false,
-  strictPersist: false,
-  strictJsonld: false
-  // plus templates.pageRelative, i18n.escapeParams, i18n.strictLocale
+  }
 });
 ```
 
-For the full options table with types, defaults, and detailed descriptions, see the [Configuration Reference](config.md). The hardening flags are described in [Opt-in Hardening Flags](config.md#opt-in-hardening-flags).
+For the full options table with types, defaults, and detailed descriptions, see the [Configuration Reference](config.md).
 
 ---
 
@@ -116,8 +107,6 @@ Register a custom directive for use in HTML attributes.
 |-----------|------|-------------|
 | `name` | string | Directive name (used as `name="..."` in HTML) |
 | `handler` | object\|function | Directive handler |
-
-Core directive names are frozen as soon as No.JS loads: registering one logs a warning and is ignored. A name covered by a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`), such as `on:clickoutside` or `bind-chart`, is accepted and wins for that exact attribute only. With `NoJS.config({ strictDirectives: true })` set before the call, such names are rejected too.
 
 ### Handler shape
 
@@ -219,11 +208,9 @@ Register a custom form validator.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | string | Validator name used in `validate="name"` |
-| `fn` | function | Validation function `(value, ...params, values)`. Returns a string (the error message) for invalid; `true` or any falsy value (including `false`) counts as valid. Must be synchronous. `values` can be `{}` (field-level checks), so guard reads from it |
+| `fn` | function | Validation function. Receives the input value, returns `true` (valid) or a string (error message) |
 
-Only `required`, `email`, `url`, `min` and `max` are protected: registering one of them logs a warning and does nothing. Every other name can be registered, including `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric`, and then runs from `validate="..."`.
-
-Validators are run by NoJS Elements, which reads the registered validators when it installs: register them in a script between the core and the Elements `<script>` tags (see `references/elements/validate.md`).
+Built-in validator names are protected: `required`, `email`, `url`, `min`, `max`, `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha`, `alphanumeric`.
 
 ```javascript
 NoJS.validator('username', (value) => {
@@ -262,8 +249,6 @@ Configure internationalization settings. Can be called before or after `init()`.
 | `fallbackLocale` | string | Fallback locale when a key is missing |
 | `detectBrowser` | boolean | Auto-detect locale from `navigator.language` |
 | `supportedLocales` | string[] | Locales eligible for browser detection. When set with `loadPath`, `detectBrowser` adopts the browser language (or its prefix, e.g. `pt` from `pt-BR`) only if present in this list |
-| `escapeParams` | boolean | Default `false`: `t-*` params in `t-html` are inserted raw and the result is sanitized. `true`: params are HTML-escaped. Changing it after `init()` re-renders active translations |
-| `strictLocale` | boolean | Default `false`: a persisted `nojs-locale` is restored even if it is not in `supportedLocales`. `true`: such a value is ignored |
 
 ```javascript
 NoJS.i18n({
@@ -383,11 +368,6 @@ Set a global reactive variable accessible in all expressions as `$name`.
 |-----------|------|-------------|
 | `name` | string | Variable name (without `$` prefix) |
 | `value` | any | The value (primitives and objects both work) |
-| `options` | object | Optional. `{ byRef: true }` publishes the object itself |
-
-**Default (copy):** an object value is published as a JSON copy wrapped in a reactive context, with `$watch`, `$set` and `$notify`. Methods are dropped, `Date` becomes an ISO string, and later changes to the original object do not reach the global. A value that cannot be serialized (circular, `BigInt`) gets a shallow copy of its own enumerable properties instead. An **array** value becomes a plain object with index keys (`Array.isArray` is false and `$tags.length` is empty; the same happened in v1.21.1). Wrap arrays in an object, for example `NoJS.global('tagList', { items: ['a', 'b'] })` and `each="t in $tagList.items"`, or publish with `{ byRef: true }`. Globals are app-wide: a write from any scope updates every binding that reads `$name`.
-
-**`{ byRef: true }`:** publishes the object itself (methods, `Date`, `Map`, identity kept) after a full check that rejects forbidden keys and nested `eval`/`Function`. Plain objects have no `$watch`/`$set`; call `NoJS.notify()` after mutating them from JavaScript.
 
 ```javascript
 NoJS.global('theme', 'dark');
@@ -404,7 +384,7 @@ NoJS.global('user', { name: 'Erick', role: 'admin' });
 
 **Forbidden keys**: `__proto__`, `constructor`, `prototype` -- blocked to prevent prototype pollution.
 
-**Security**: Values that reference `eval` or `Function` (including bound copies), or the real `window`, `document` or `globalThis`, are rejected.
+**Security**: Values that reference `eval` or `Function` are rejected.
 
 **Ownership tracking**: When called during plugin installation, the global is tracked as owned by that plugin and is cleaned up during `NoJS.dispose()`.
 
@@ -507,7 +487,7 @@ NoJS.interceptor('response', (response) => {
 
 ### Plugin tracking and header redaction
 
-When registered during `NoJS.use()`, the interceptor is tracked with the plugin name. Untrusted interceptors (those not registered by a plugin installed with `NoJS.use(plugin, { trusted: true })`) receive redacted request and response headers.
+When registered during `NoJS.use()`, the interceptor is tracked with the plugin name. Untrusted interceptors (those not registered via a trusted plugin) receive redacted request and response headers.
 
 ### Sensitive header redaction
 
@@ -515,9 +495,7 @@ When registered during `NoJS.use()`, the interceptor is tracked with the plugin 
 
 **Redacted response headers**: `set-cookie`, `x-csrf-token`, `x-auth-token`, `www-authenticate`, `proxy-authenticate`.
 
-**URL query param redaction**: By default, only the URL passed to untrusted **response** interceptors is redacted: values of parameters matching `token|key|secret|auth|password|credential` (case-insensitive) are replaced (URL-API serialized, `%5BREDACTED%5D`). Request interceptors and `fetch:success` / `fetch:error` / `error` payloads get the raw URL.
-
-**`strictRedaction: true`**: request and response interceptors and the event payloads get a string-level redacted URL (fragment dropped, values become `[REDACTED]`); the `csrf.header` is withheld from untrusted request interceptors and cannot be overridden; request-sensitive headers (`authorization`, `x-api-*`, ...) are also stripped from responses.
+**URL query param redaction**: Parameters matching `token|key|secret|auth|password|credential` (case-insensitive) are replaced with `[REDACTED]`.
 
 ### Interceptor timeout
 
@@ -867,7 +845,7 @@ NoJS can process directives inside Shadow DOM when `processTree()` is called on 
   });
 
   NoJS.validator('username', (value) => {
-    return /^[a-zA-Z0-9_]{3,20}$/.test(value) || 'Use 3-20 letters, numbers or underscores';
+    return /^[a-zA-Z0-9_]{3,20}$/.test(value);
   });
 
   NoJS.interceptor('request', (url, opts) => {

@@ -379,7 +379,7 @@ For conditionals, ensure the `else` element directly follows its `if`/`else-if` 
 [No.JS] Cannot override core directive "<name>".
 ```
 
-**Cause:** Attempted to register a custom directive using a name reserved by the framework (e.g., `state`, `bind`, `if`). Core directives are frozen as soon as the framework loads. With `strictDirectives: true`, names covered by a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`) are rejected with the same message.
+**Cause:** Attempted to register a custom directive using a name reserved by the framework (e.g., `state`, `bind`, `if`). Core directives are frozen after framework initialization.
 
 **Fix:** Choose a different name for your custom directive:
 
@@ -980,18 +980,7 @@ Fields without `name` are excluded from `$form.values`, `$form.errors`, and `$fo
 **Fix:** Avoid mixing auto-disable with custom `disabled` expressions on submit buttons. Use `$form.valid` explicitly if needed:
 
 ```html
-<button type="submit" bind-disabled="!$form.valid">Submit</button>
-```
-
-The buttons are also disabled while `$form.submitting` is `true`. A form with its own request (`post`, `put`, ...) resets it when the request finishes, but a form handled only by `on:submit` stays in the submitting state after a valid submit. End it as the last statement of the handler:
-
-```html
-<div state="{ draft: null }">
-  <form validate on:submit.prevent="draft = $form.values; $form.endSubmit()">
-    <input name="title" validate="required" />
-    <button type="submit">Save</button>
-  </form>
-</div>
+<button type="submit" bind-disabled="!$form.valid || $form.pending">Submit</button>
 ```
 
 ### Validation Errors Not Showing Until Interaction

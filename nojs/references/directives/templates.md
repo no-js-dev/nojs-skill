@@ -204,28 +204,6 @@ Load templates from external HTML files. Resolved recursively.
 </template>
 ```
 
-### How `src` is resolved
-
-A `./` path inside a remote template resolves against that template's folder. Every other `src` is resolved like an HTTP directive URL:
-
-| `src` | Result |
-|-------|--------|
-| `https://…`, `http://…`, `//…` | Fetched as written |
-| `/x.tpl`, `x.tpl`, top-level `./x.tpl` | Prefixed with the nearest ancestor `base` attribute, else `baseApiUrl`, else fetched as written (relative to the page) |
-
-```html
-<script>NoJS.config({ baseApiUrl: '/api' });</script>
-<!-- fetches /api/parts/header.tpl -->
-<template src="parts/header.tpl"></template>
-```
-
-This applies to route templates (`<template route src>`) and file-based routing too. Two cases do not see a `base` you might expect (same as v1.21.1):
-
-- **Nested in a remote template:** a plain or `/` src inside a remote template ignores `base` on the element that included it (the content is loaded outside the page) and falls back to `baseApiUrl`, else the page. Use `./` to load files next to the parent template, or an absolute URL.
-- **File-based route templates** are appended to `<body>`, so only `<body base="...">` or `baseApiUrl` applies, not a `base` on the `route-view` element.
-
-To keep templates on the page origin while HTTP directives use `base` / `baseApiUrl`, opt in to page-relative resolution with `NoJS.config({ templates: { pageRelative: true } })`. In debug mode, a one-time hint names this flag the first time `base` / `baseApiUrl` changes a template URL.
-
 ### Edge Cases
 
 - Remote templates are cached after the first fetch. Subsequent uses do not trigger additional network requests.
@@ -329,8 +307,7 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
   </div>
 
   <button call="/api/items" method="post"
-          headers='{"Content-Type": "application/x-www-form-urlencoded"}'
-          body="name=New%20Item"
+          body="{ name: 'New Item' }"
           then="items.push(result)"
           loading="#spinner">
     Add Item

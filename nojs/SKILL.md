@@ -96,7 +96,7 @@ CDN auto-initializes on `DOMContentLoaded`.
 | `watch` | `watch="prop"` | Execute side effects on change |
 | `persist` | `persist="localStorage"` | Persist state to storage (`localStorage` or `sessionStorage`) |
 | `persist-key` | `persist-key="myKey"` | Custom storage key |
-| `persist-fields` | `persist-fields="theme,lang"` | Persist only specific fields (`persist-fields=""` or a bare attribute = all fields, with a warning; a whitespace-only value persists nothing) |
+| `persist-fields` | `persist-fields="theme,lang"` | Persist only specific fields |
 | `persist-schema` | `persist-schema` | Validate restored keys against initial state |
 
 ```html
@@ -208,7 +208,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 | `debounce` | `debounce="300"` | Debounce reactive URL refetches (ms) |
 | `skeleton` | `skeleton="skelId"` | Show/hide a placeholder element during loading |
 | `headers`/`params` | `headers='{"Auth":"x"}'` | Per-request headers (JSON) / query parameters |
-| `body` | `body="key={expr}"` | Request body string; `{expr}` values are URL-encoded. Not a JSON template: for JSON, use a `<form>` with `name`d fields |
+| `body` | `body='{"key":"val"}'` | Request body (JSON) |
 | `retry`/`retry-delay` | `retry="3"` | Retry attempts and delay between retries (ms) |
 | `confirm` | `confirm="Sure?"` | Browser confirmation before request |
 | `redirect` | `redirect="/home"` | SPA redirect on success |
@@ -227,10 +227,10 @@ URLs support interpolation: `get="/users/{userId}"`. Reactive expressions in URL
 <template id="loadTpl"><p>Loading...</p></template>
 <template id="errTpl"><p>Failed to load.</p></template>
 
-<!-- POST from form: named fields are sent as a JSON object -->
-<form post="/login" into="auth">
-  <input name="email" type="email"><input name="password" type="password">
-  <button type="submit">Login</button>
+<!-- POST from form -->
+<form on:submit.prevent state="{ email: '', pass: '' }">
+  <input model="email"><input model="pass" type="password">
+  <button post="/login" body='{"email":"{email}","password":"{pass}"}' into="auth">Login</button>
 </form>
 
 <!-- Infinite scroll -->
@@ -306,7 +306,7 @@ Programmatic: `NoJS.router.push('/path')`, `NoJS.router.replace('/path')`, `NoJS
 
 ### Templates
 
-`use="tplId"` (instantiate), `var="name"` (template variable), `<slot>` (caller content insertion), `src="/path.tpl"` (remote load; resolved through the nearest `base` / `baseApiUrl` like HTTP URLs, or against the page with `templates: { pageRelative: true }`), `include="#id"` (clone inline template), `loading="tplId"` (load placeholder), `lazy` / `lazy="ondemand"` (deferred loading).
+`use="tplId"` (instantiate), `var="name"` (template variable), `<slot>` (caller content insertion), `src="/path.tpl"` (remote load), `include="#id"` (clone inline template), `loading="tplId"` (load placeholder), `lazy` / `lazy="ondemand"` (deferred loading).
 
 ```html
 <template id="card"><div class="card"><h3 bind="title"></h3><slot></slot></div></template>
@@ -328,7 +328,7 @@ Programmatic: `NoJS.router.push('/path')`, `NoJS.router.replace('/path')`, `NoJS
 
 ### i18n (Internationalization)
 
-`t="key"` (translate), `t-name="expr"` (interpolation param), `t-html` (render as sanitized HTML; `t-*` params are inserted raw unless `i18n.escapeParams: true`), `i18n-ns="namespace"` (lazy-load namespace). Pluralization: `"1 item | {count} items"` in locale files.
+`t="key"` (translate), `t-name="expr"` (interpolation param), `t-html` (render as HTML), `i18n-ns="namespace"` (lazy-load namespace). Pluralization: `"1 item | {count} items"` in locale files.
 
 **`$i18n` reactive proxy:** Access translations directly in any expression via dot-notation. The proxy is fully reactive -- locale changes auto-update all bindings.
 
@@ -359,7 +359,7 @@ Reserved properties (`locale`, `locales`, `t`, `setLocale`) cannot be used as tr
 <button on:click="$i18n.setLocale('pt')">Portugues</button>
 ```
 
-`$i18n.[path]` works in: `state`, `store`, `computed`, `watch`, `foreach`, `bind`, `if`/`show`/`hide`. `state` and `store` initializers run once, so values read there are a snapshot and do not follow later locale changes; use `bind` for text that must.
+`$i18n.[path]` works in: `state`, `store`, `computed`, `watch`, `foreach`, `bind`, `if`/`show`/`hide`.
 
 ### Animations
 
@@ -546,16 +546,6 @@ Certain directive combinations on the same element produce unexpected behavior. 
 | `exprCacheSize` | `500` | Max LRU cache entries for expression ASTs |
 | `maxEventListeners` | `100` | Max listeners per event on the bus |
 | `appId` | `""` | Application identifier (exposed via devtools) |
-| `scopeHeaders` | `false` | Opt-in: send global `headers` only to trusted origins (page, `baseApiUrl`, nearest `base`) |
-| `strictRedaction` | `false` | Opt-in: stricter URL/header redaction for untrusted interceptors and fetch event payloads |
-| `strictDirectives` | `false` | Opt-in: reject plugin directive names covered by `on:*` / `bind-*` / `class-*` / `style-*` |
-| `strictDevtools` | `false` | Opt-in: devtools events local-host only, redacted snapshots and config |
-| `strictPersist` | `false` | Opt-in: skip restored `$` keys with reserved names unless declared/listed |
-| `strictJsonld` | `false` | Opt-in: always JSON-escape `page-jsonld` placeholders inside strings |
-| `templates.pageRelative` | `false` | Opt-in: resolve `<template src>` against the page, not `base` / `baseApiUrl` |
-| `i18n.escapeParams` / `i18n.strictLocale` | `false` / `false` | Opt-in: HTML-escape `t-html` params / ignore a persisted locale not in a non-empty `supportedLocales` (read only by `NoJS.i18n()`) |
-
-All opt-in flags default to `false` (v1.21.1 behavior) and can be set with `NoJS.config()`. Most take effect immediately, before or after `init()`; `strictPersist` and `strictDirectives` apply to the restores and directive registrations made after they are set, and `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale (pass it there, or set it with `config()` before that call). See [core/config.md](references/core/config.md#opt-in-hardening-flags).
 
 ```javascript
 NoJS.config({
@@ -571,7 +561,7 @@ NoJS.config({
 ```javascript
 NoJS.init(root?)               // Initialize (auto-called by CDN)
 NoJS.use(plugin, options?)     // Register plugin
-NoJS.global(name, value, opts?) // Reactive global ($name); JSON copy by default, { byRef: true } publishes the object itself
+NoJS.global(name, value)       // Register reactive global ($name in expressions)
 NoJS.dispose()                 // Full teardown
 NoJS.directive(name, { priority, init(el, attr, value) })
 NoJS.filter(name, fn)          // Custom filter
@@ -595,17 +585,18 @@ NoJS.REPLACE                   // Interceptor sentinel: replace response data
 
 ```html
 <!-- Requires NoJS Elements plugin -->
-<!-- No model= on validated inputs: Elements up to v1.21.1 clears typed values when model is combined with validate-on -->
-<!-- Rules are separated with |; lengths use the native minlength attribute -->
-<form validate post="/api/login" into="auth">
-  <input name="email" type="email" validate="required|email" validate-on="blur"
+<form validate on:submit.prevent state="{ email: '', password: '' }">
+  <input model="email" type="email" validate="required,email" validate-on="blur"
          error-required="Email is required" error-email="Enter a valid email">
-  <span if="$form.errors.email" bind="$form.errors.email" style="color:red"></span>
+  <span if="$form.fields.email.errors.length"
+        bind="$form.fields.email.errors[0]" style="color:red"></span>
 
-  <input name="password" type="password" minlength="8" validate="required">
-  <span if="$form.errors.password" bind="$form.errors.password" style="color:red"></span>
+  <input model="password" type="password" validate="required,min:8">
+  <span if="$form.fields.password.errors.length"
+        bind="$form.fields.password.errors[0]" style="color:red"></span>
 
-  <button type="submit">Log In</button>
+  <button type="submit" post="/api/login"
+          body='{"email":"{email}","password":"{password}"}' into="auth">Log In</button>
   <p show="$form.submitting">Logging in...</p>
 </form>
 ```
