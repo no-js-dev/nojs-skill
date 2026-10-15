@@ -587,9 +587,9 @@ NoJS.notify()                  // Flush UI updates after external mutation
 NoJS.router                    // push(), replace(), back(), forward()
 NoJS.locale                    // Get/set current locale
 NoJS.version                   // current framework version string
-NoJS.CANCEL                    // Interceptor sentinel: cancel request
-NoJS.RESPOND                   // Interceptor sentinel: short-circuit with response
-NoJS.REPLACE                   // Interceptor sentinel: replace response data
+NoJS.CANCEL                    // Interceptor sentinel: return { [NoJS.CANCEL]: true } to cancel
+NoJS.RESPOND                   // Interceptor sentinel: return { [NoJS.RESPOND]: data } to short-circuit
+NoJS.REPLACE                   // Interceptor sentinel: return { [NoJS.REPLACE]: data } to replace response data
 ```
 
 ## 8. Common Patterns

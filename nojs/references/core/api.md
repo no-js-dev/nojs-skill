@@ -417,11 +417,11 @@ await NoJS.dispose();
 
 ## NoJS.CANCEL
 
-Sentinel symbol. Return from a request interceptor to abort the request entirely.
+Sentinel symbol. Return an object keyed by it, `{ [NoJS.CANCEL]: true }`, from a request interceptor to abort the request entirely (the fetch fails with an `AbortError`). Returning the bare symbol does not cancel.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
-  if (isOffline()) return NoJS.CANCEL;
+  if (isOffline()) return { [NoJS.CANCEL]: true };
   return opts;
 });
 ```
@@ -432,12 +432,12 @@ Read-only, non-configurable property.
 
 ## NoJS.RESPOND
 
-Sentinel symbol. Return `{ __nojs__: NoJS.RESPOND, body: data }` from a request interceptor to short-circuit with mock data (no network request is made).
+Sentinel symbol. Return `{ [NoJS.RESPOND]: data }` from a request interceptor to short-circuit: `data` is used as the response and no network request is made.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
   if (url.includes('/cached')) {
-    return { __nojs__: NoJS.RESPOND, body: getCachedData(url) };
+    return { [NoJS.RESPOND]: getCachedData(url) };
   }
   return opts;
 });
@@ -447,12 +447,12 @@ NoJS.interceptor('request', (url, opts) => {
 
 ## NoJS.REPLACE
 
-Sentinel symbol. Return `{ __nojs__: NoJS.REPLACE, body: data }` from a response interceptor to replace the response body.
+Sentinel symbol. Return `{ [NoJS.REPLACE]: data }` from a response interceptor to replace the parsed response body with `data`.
 
 ```javascript
 NoJS.interceptor('response', (response) => {
   if (response.url.includes('/transform')) {
-    return { __nojs__: NoJS.REPLACE, body: transformData(response) };
+    return { [NoJS.REPLACE]: transformData(response) };
   }
   return response;
 });

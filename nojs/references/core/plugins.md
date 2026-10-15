@@ -262,11 +262,11 @@ Sentinel symbols control interceptor flow. They are read-only, non-configurable 
 
 ### NoJS.CANCEL
 
-Return from a request interceptor to abort the request entirely. No network call is made. The request fails with an `AbortError`.
+Return `{ [NoJS.CANCEL]: true }` from a request interceptor to abort the request entirely (returning the bare symbol does not cancel). No network call is made. The request fails with an `AbortError`.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
-  if (isMaintenanceMode()) return NoJS.CANCEL;
+  if (isMaintenanceMode()) return { [NoJS.CANCEL]: true };
   return opts;
 });
 ```
@@ -275,25 +275,25 @@ Cancelled requests are never retried, regardless of the `retries` config.
 
 ### NoJS.RESPOND
 
-Return `{ __nojs__: NoJS.RESPOND, body: data }` from a request interceptor to short-circuit with mock data. No network request is made.
+Return `{ [NoJS.RESPOND]: data }` from a request interceptor to short-circuit with mock data. No network request is made.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
   const cached = getFromCache(url);
-  if (cached) return { __nojs__: NoJS.RESPOND, body: cached };
+  if (cached) return { [NoJS.RESPOND]: cached };
   return opts;
 });
 ```
 
 ### NoJS.REPLACE
 
-Return `{ __nojs__: NoJS.REPLACE, body: data }` from a response interceptor to replace the response body.
+Return `{ [NoJS.REPLACE]: data }` from a response interceptor to replace the parsed response body.
 
 ```javascript
 NoJS.interceptor('response', (response) => {
   if (response.url.includes('/v1/')) {
     const transformed = migrateV1ToV2(response.data);
-    return { __nojs__: NoJS.REPLACE, body: transformed };
+    return { [NoJS.REPLACE]: transformed };
   }
   return response;
 });
@@ -586,7 +586,7 @@ const OfflinePlugin = {
   name: 'offline-guard',
   install(app) {
     app.interceptor('request', (url, opts) => {
-      if (!navigator.onLine) return NoJS.CANCEL;
+      if (!navigator.onLine) return { [NoJS.CANCEL]: true };
       return opts;
     });
 

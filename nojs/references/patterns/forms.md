@@ -361,7 +361,7 @@ A wizard-style form where each step validates independently before proceeding. U
            error-required="Email is required"
            error-email="Enter a valid email" />
     <button type="button"
-            on:click="if ($form.valid) step = 2"
+            on:click="step = $form.valid ? 2 : step"
             bind-disabled="!$form.valid">
       Next
     </button>
@@ -378,7 +378,7 @@ A wizard-style form where each step validates independently before proceeding. U
     <div class="form-actions">
       <button type="button" on:click="step = 1">Back</button>
       <button type="button"
-              on:click="if ($form.valid) step = 3"
+              on:click="step = $form.valid ? 3 : step"
               bind-disabled="!$form.valid">
         Next
       </button>
