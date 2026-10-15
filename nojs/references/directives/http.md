@@ -125,59 +125,48 @@ Fetch data via HTTP GET request.
 </div>
 ```
 
-**URL placeholders** -- each `{expression}` value is encoded with `encodeURIComponent`, so `/` becomes `%2F`. URL attributes are never evaluated as expressions, so build multi-segment paths with one placeholder per segment: `get="/files/{dir}/{name}"`. In the path part of the URL, a value that is exactly `.` or `..` is escaped as `%252E` / `%252E%252E` (with a console warning) so URL parsers cannot collapse it as a dot-segment and send the request elsewhere: `get="/users/{id}/avatar"` with `id = '..'` requests `/users/%252E%252E/avatar`. Query-string and fragment values are not affected.
-
 ### `post`
 
 Submit data via HTTP POST request.
 
-**Syntax:** `<form post="/endpoint">` (named fields) or `<element post="/endpoint" body="key={expression}">`
+**Syntax:** `<element post="/endpoint" body="{expression}">`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event. On any other element, attaches a `click` listener. When the host element is a `<form>`, fields are auto-serialized via `FormData` (overrides `body` if both are present).
 
 ```html
-<!-- Form: every field with a name is sent as a JSON object -->
-<form post="/login" as="result"
+<form post="/login" body="{ email, password }" as="result"
       success="#loginSuccess" error="#loginError" loading="#loginLoading">
-  <input name="email" model="email">
-  <input name="password" model="password" type="password">
+  <input model="email">
+  <input model="password" type="password">
   <button>Login</button>
 </form>
 
-<!-- Non-form: triggers on click; send a URL-encoded body -->
-<button post="/api/action"
-        headers='{"Content-Type": "application/x-www-form-urlencoded"}'
-        body="id={item.id}">Do it</button>
+<!-- Non-form: triggers on click -->
+<button post="/api/action" body="{ id: item.id }">Do it</button>
 ```
-
-> **`body` is not a JSON template.** `{…}` in `body` is a URL placeholder: the value is `encodeURIComponent`-ed, and a JSON object's own `{` is read as a placeholder too. `body='{"email":"{email}"}'`, `body='{"role":"admin"}'` and `body="{ email, password }"` are all sent mangled. Send JSON from a `<form>` with `name`d fields; on other elements use a URL-encoded body as above. See [`body`](#body).
 
 ### `put`
 
 Update data via HTTP PUT request (full replacement).
 
-**Syntax:** `<form put="/endpoint">` (named fields) or `<element put="/endpoint" body="key={expression}">`
+**Syntax:** `<element put="/endpoint" body="{expression}">`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event and auto-serializes fields via `FormData` (same as `post`). On any other element, attaches a `click` listener.
 
 ```html
-<form put="/users/{user.id}">
-  <input name="name" model="user.name">
-  <select name="role" model="selectedRole">...</select>
-  <button>Save</button>
+<form put="/users/{user.id}" body='{"name": "{user.name}", "role": "{selectedRole}"}'>
+  ...
 </form>
 
 <!-- Non-form: triggers on click -->
-<button put="/users/{user.id}"
-        headers='{"Content-Type": "application/x-www-form-urlencoded"}'
-        body="role=admin">Promote</button>
+<button put="/users/{user.id}" body="{ role: 'admin' }">Promote</button>
 ```
 
 ### `patch`
 
 Partial update via HTTP PATCH request.
 
-**Syntax:** `<form patch="/endpoint">` (named fields) or `<element patch="/endpoint" body="key={expression}">`
+**Syntax:** `<element patch="/endpoint" body="{expression}">`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event and auto-serializes fields via `FormData` (same as `post`). On any other element, attaches a `click` listener.
 
@@ -201,21 +190,22 @@ Delete data via HTTP DELETE request.
 
 Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008.html)).
 
-**Syntax:** `<form query="/endpoint" as="dataVar">` (named fields) or `<element query="/endpoint" body="key={expression}" as="dataVar">`
+**Syntax:** `<element query="/endpoint" body="{expression}" as="dataVar">`
 
 `QUERY` is a **safe, idempotent, cacheable** method that — unlike `get` — **carries a request body**. Use it for complex read operations whose criteria don't fit cleanly in a URL query string: rich search, faceted filtering, or long structured filter payloads. Semantically it is a **read**, not a mutation: it never changes server state, so it is safe to retry, cache, and re-fire reactively.
 
 **Trigger:**
 
 - On a `<form>`, intercepts the `submit` event and serializes fields via `FormData` (same as `post`).
-- On any other element, **auto-fires on mount** and **re-fires reactively** when a placeholder in its URL changes (same as `get`). A change to state used only in `body` does not re-fire; call `el.refresh()` (for example `$refs.x.refresh()` from a later event) or put the value in the URL.
+- On any other element, **auto-fires on mount** and **re-fires reactively** when reactive variables in its URL or `body` change (same on-mount/reactive behavior as `get`).
 
 **Trigger modes (non-form elements):** control *when* the request fires with `query-trigger` — the QUERY-side counterparts of `get-trigger`:
 
 | Attribute | Description |
 |-----------|-------------|
-| `query-trigger` | When the request fires: `visible` (on IntersectionObserver entry), `hover` (first `mouseenter`), or `none` (suppress auto-fire; use `.refresh()`). Absent = fires on mount. `scroll` and `button` need `get-insert`, which is GET-only, so on `query` they warn and fall back (`scroll` to `visible`, `button` to firing on mount); `query-trigger-label` has no effect |
-| `query-threshold` | IntersectionObserver `rootMargin` for the `visible` trigger (e.g. `"200px"`) |
+| `query-trigger` | When the request fires: `visible` (on IntersectionObserver entry), `scroll`, `hover` (first `mouseenter`), `button` (renders a trigger button), or `none` (suppress auto-fire; use `.refresh()`). Absent = fires on mount |
+| `query-trigger-label` | Custom label for the auto-generated button when `query-trigger="button"`. Default: `"Load More"` |
+| `query-threshold` | IntersectionObserver `rootMargin` for `visible`/`scroll` triggers (e.g. `"200px"`) |
 
 **Body-aware caching:** when `cached` is set, the cache key incorporates the serialized request body (not just the URL), so two QUERY requests to the same endpoint with different filter bodies cache independently.
 
@@ -225,13 +215,13 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
 
 ```html
 <!-- Complex search/filter as a safe, body-carrying read -->
-<form query="/orders" as="result">
-  <select name="status">
+<form query="/orders" body="{ status, minTotal, sort }" as="result">
+  <select model="status">
     <option value="open">Open</option>
     <option value="closed">Closed</option>
   </select>
-  <input name="minTotal" type="number">
-  <select name="sort">
+  <input model="minTotal" type="number">
+  <select model="sort">
     <option value="date">Newest</option>
     <option value="total">Total</option>
   </select>
@@ -242,12 +232,10 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
   </div>
 </form>
 
-<!-- Non-form: fires when visible; re-fires when region (a URL placeholder) changes.
-     tag is body-only: changing it alone does not re-fire (use $refs.x.refresh()). -->
-<div state="{ region: 'us', tag: 'new' }">
-  <div query="/products/search?region={region}"
-       headers='{"Content-Type": "application/x-www-form-urlencoded"}'
-       body="tag={tag}"
+<!-- Non-form: auto-fires on mount, re-fires when filter state changes -->
+<div state="{ region: 'us', tags: [] }">
+  <div query="/products/search"
+       body="{ region, tags }"
        query-trigger="visible"
        query-threshold="200px"
        as="products"
@@ -263,7 +251,7 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
 
 | Attribute | Description |
 |-----------|-------------|
-| `body` | Request body string. Each `{expression}` is replaced with its `encodeURIComponent`-ed value (not a JSON template; see [`body`](#body)). For `<form>` elements on **any** method (POST, PUT, PATCH, DELETE), fields are auto-serialized via `FormData` and override `body` |
+| `body` | Request body (JSON string with `{variable}` interpolation). For `<form>` elements on **any** method (POST, PUT, PATCH, DELETE), fields are auto-serialized via `FormData` and override `body` |
 | `success` | Template ID to render on success. Variable name resolved via [Template var Priority](#template-var-priority) |
 | `error` | Template ID to render on error. Variable name resolved via [Template var Priority](#template-var-priority) |
 | `loading` | Template ID to show during request |
@@ -298,17 +286,9 @@ Default value is `"data"`. The response data becomes available in the context un
 
 Request body for POST/PUT/PATCH/DELETE requests, and for the safe `query` read.
 
-**Syntax:** `<element post="/api" body="key={value}">`
+**Syntax:** `<element post="/api" body="{ key: value }">`
 
-A string in which each `{expression}` is replaced with its value encoded by `encodeURIComponent` (the same encoding as URLs, without the URL dot-segment rule). If the result parses as JSON it is sent with `Content-Type: application/json`; otherwise it is sent as is, so set the content type with `headers`. Because a JSON object's own `{` also starts a placeholder, a JSON object in `body` (static or with placeholders) is **not** sent as JSON.
-
-| Goal | Pattern that works |
-|------|--------------------|
-| Dynamic JSON object | `<form post="/api">` with `name`d fields: they are sent as a JSON object (values are strings) |
-| Dynamic body on a non-form element | `headers='{"Content-Type": "application/x-www-form-urlencoded"}' body="email={email}&role={role}"` |
-| Structured value in a URL-encoded field | `body="items={$store.cart.items \| json}"` (the server parses the `items` field as JSON) |
-
-Inputs need a `name` attribute to be serialized; `model` alone is not enough. For `<form>` elements on any method, fields are always auto-serialized via `FormData` (overrides `body`). `query` is the one **read** method that carries a `body` — see [`query`](#query).
+Accepts a JSON string with `{variable}` interpolation. For `<form>` elements on any method, fields are always auto-serialized via `FormData` (overrides `body`). `query` is the one **read** method that carries a `body` — see [`query`](#query).
 
 ### `headers`
 
@@ -435,7 +415,7 @@ The variable name exposed inside `success` and `error` templates follows a prior
   <p bind="user.name"></p>
 </template>
 
-<form post="/login" success="#ok"><input name="email"><button>Go</button></form>
+<div post="/login" body="{ email }" success="#ok">...</div>
 ```
 
 ### Trigger Behavior

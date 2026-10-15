@@ -50,22 +50,20 @@ Requires No.JS >= 1.13.0. The Validation module is included in NoJS Elements. Wh
 
 ## Basic Usage
 
-Add `validate` to a `<form>` element. Add `validate` with pipe-separated (`|`) rules on each field, and use native HTML attributes (`minlength`, `maxlength`, `pattern`, `type`) for length, format and type checks. Validation reads each field's value directly, so `model` is not needed; leave it off fields that rely on native attributes (`minlength`, `pattern`), because a `model` binding inside `<form validate>` can hide those native errors (seen in Chromium and WebKit).
+Add `validate` to a `<form>` element. Add `validate` with pipe-separated rules on each field.
 
 ```html
-<form validate post="/api/signup" success="#signed-up">
-  <input name="email" type="email"
+<form validate on:submit.prevent="handleSubmit()">
+  <input name="email" model="email" type="email"
          validate="required|email"
          placeholder="Email address" />
 
-  <input name="password" type="password"
-         minlength="8" validate="required"
+  <input name="password" model="password" type="password"
+         validate="required|min:8"
          placeholder="Password" />
 
   <button type="submit">Sign Up</button>
 </form>
-
-<template id="signed-up"><p>Welcome aboard!</p></template>
 ```
 
 ---
@@ -75,7 +73,7 @@ Add `validate` to a `<form>` element. Add `validate` with pipe-separated (`|`) r
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `validate` | boolean attr | -- | Enables validation on the form |
-| `validate-on` | space-separated list of `input`, `focusout` / `blur`, `submit` | see [Validation Triggers](#validation-triggers) | When errors become visible (form-wide default) |
+| `validate-on` | `"input"` \| `"change"` \| `"focusout"` \| `"submit"` | `"input,change,focusout"` | When to trigger validation and show errors (form-wide default) |
 
 ---
 
@@ -83,12 +81,12 @@ Add `validate` to a `<form>` element. Add `validate` with pipe-separated (`|`) r
 
 ### `validate` Attribute
 
-Add validation rules to individual fields using pipe-separated syntax. Rules separated with a comma are read as one unknown rule and ignored:
+Add validation rules to individual fields using pipe-separated syntax:
 
 ```html
-<input name="email" validate="required|email" />
-<input name="qty" type="number" validate="required|min:1|max:50" />
-<input name="code" pattern="[A-Z].*" validate="required" />
+<input validate="required|email" />
+<input validate="required|min:3|max:50" />
+<input validate="required|pattern:^[A-Z]" />
 ```
 
 ### Built-in Validators
@@ -98,21 +96,16 @@ Add validation rules to individual fields using pipe-separated syntax. Rules sep
 | `required` | Field must not be empty |
 | `email` | Must be a valid email address |
 | `url` | Must be a valid URL |
-| `min:n` | Minimum **numeric** value (`Number(value) < n` fails). Not a length check |
-| `max:n` | Maximum **numeric** value. Not a length check |
-| `custom:name` / `name` | A validator registered with `NoJS.validator()` (see [Custom Validators](#custom-validators)) |
-
-Any other rule name in `validate=""` (for example `minlength:8`, `pattern:...`, `match:...`, `number`, `alpha`) is not a built-in rule and is silently ignored unless you register a validator with that name. Only `required`, `email`, `url`, `min` and `max` are reserved: `NoJS.validator()` refuses to override them and logs a warning. Every other name is free, including `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric`; once you register one, `validate="minlength:8"` runs your function. For length, format and type checks you can also use the native attributes; NoJS Elements reads them through the browser's validity state, and `error-{rule}` uses the native rule name:
-
-| Native attribute | `error-{rule}` attribute |
-|------------------|--------------------------|
-| `required` | `error-required` |
-| `minlength="n"` / `maxlength="n"` | `error-minlength` / `error-maxlength` |
-| `pattern="regex"` | `error-pattern` |
-| `type="email"` / `type="url"` | `error-email` / `error-url` |
-| `min="n"` / `max="n"` / `step="n"` (number inputs) | `error-min` / `error-max` / `error-step` |
-
-Browsers stop the user from typing past `maxlength` and do not flag values set from script, so in practice `error-maxlength` never appears; `maxlength` simply caps the input.
+| `min:n` | Minimum length (string) or minimum value (number) |
+| `max:n` | Maximum length (string) or maximum value (number) |
+| `minlength:n` | Minimum character length |
+| `maxlength:n` | Maximum character length |
+| `pattern:regex` | Must match the regular expression |
+| `match:fieldName` | Must match another field's value (password confirmation) |
+| `number` | Must be a valid number |
+| `integer` | Must be an integer |
+| `alpha` | Letters only |
+| `alphanumeric` | Letters and numbers only |
 
 ### Field Attributes
 
@@ -122,8 +115,8 @@ Browsers stop the user from typing past `maxlength` and do not flag values set f
 | `validate-on` | string | form default | Per-field override for when validation runs |
 | `validate-if` | expression | -- | Skip validation when expression is falsy |
 | `error-{rule}` | string | -- | Custom error message for a specific rule |
-| `error` | string \| `#templateId` | -- | One message for every rule, or `#templateId` to render an [error template](#error-templates) |
 | `error-class` | string | -- | CSS class applied to the field when invalid |
+| `error-template` | template ID | -- | Template to render for error display |
 | `as` | string | -- | Expose field validation state as a named variable |
 
 ---
@@ -146,17 +139,16 @@ Control when validation runs and errors become visible using `validate-on`.
 </form>
 ```
 
-| Trigger | Error becomes visible |
-|---------|-----------------------|
-| `input` | As soon as the field has been edited |
-| `focusout` / `blur` | After the field loses focus |
-| `submit` | After the field loses focus, or when the form is submitted |
+| Trigger | Behavior |
+|---------|----------|
+| `input` | Validates on every keystroke |
+| `change` | Validates when the field value is committed (select change, checkbox toggle) |
+| `focusout` / `blur` | Validates when the field loses focus |
+| `submit` | Validates only on form submission |
 
-Combine triggers with spaces (`validate-on="input focusout"`). The value is split on whitespace, so a comma-separated value such as `"input,focusout"` is one unknown trigger and errors never become visible. `change` is not a supported trigger either: a field with `validate-on="change"` never shows its errors.
+The default triggers are `input`, `change`, and `focusout`. When `validate-on` is set on the form, it applies to all fields unless overridden per-field.
 
-Without any `validate-on` on the form or its fields, the form listens for `input`, `change` and `focusout`, and a field's error becomes visible once the field has been edited or has lost focus. As soon as the form or any field has `validate-on`, a field without its own value uses the form's value, or `input focusout` when the form has none.
-
-Regardless of the `validate-on` setting, `$form.valid` always reflects real-time validity (for submit button state). The trigger only controls when `$form.errors`, `error-class` and error templates show the error. A submit attempt marks every field as touched.
+Regardless of the `validate-on` setting, `$form.valid` always reflects real-time validity (for submit button state). The trigger only controls when error messages and `error-class` become visible.
 
 ---
 
@@ -166,24 +158,24 @@ Skip validation when a field is irrelevant using `validate-if`:
 
 ```html
 <form validate>
-  <select name="method">
+  <select model="contactMethod" name="method">
     <option value="email">Email</option>
     <option value="phone">Phone</option>
   </select>
 
-  <input name="email"
+  <input name="email" model="email"
          validate="required|email"
-         validate-if="$form.values.method === 'email'"
+         validate-if="contactMethod === 'email'"
          placeholder="Email" />
 
-  <input name="phone"
-         pattern="\+?[0-9]{10,}" validate="required"
-         validate-if="$form.values.method === 'phone'"
+  <input name="phone" model="phone"
+         validate="required|pattern:^\\+?[0-9]{10,}"
+         validate-if="contactMethod === 'phone'"
          placeholder="Phone number" />
 </form>
 ```
 
-When `validate-if` evaluates to `false`, the field is treated as valid and its errors are cleared. Read other fields through `$form.values` instead of a `model` binding: in a `<form validate>` without `validate-on`, `<select model>` does not keep the selected value (NoJS Elements releases up to v1.21.1 have the same problem with `validate-on`).
+When `validate-if` evaluates to `false`, the field is treated as valid and its errors are cleared.
 
 ---
 
@@ -195,15 +187,14 @@ Available inside any element within a `<form validate>`. Provides reactive acces
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `$form.valid` | boolean | `true` when all fields pass validation (use `!$form.valid` for the invalid case) |
-| `$form.dirty` | boolean | `true` when any field value has changed |
+| `$form.valid` | boolean | `true` when all fields pass validation |
+| `$form.invalid` | boolean | `true` when any field fails validation |
+| `$form.dirty` | boolean | `true` when any field value has changed from its initial value |
+| `$form.pristine` | boolean | `true` when no field values have changed |
 | `$form.touched` | boolean | `true` when any field has been interacted with |
-| `$form.submitting` | boolean | `true` from a valid submit until the form's own request (`post`, `put`, ...) finishes, or until you call `$form.endSubmit()` |
-| `$form.pending` | boolean | Always `false`: async validators are not supported |
-| `$form.errors` | object | Map of field names to their current error message (only fields the user has interacted with) |
-| `$form.firstError` | string \| null | The first visible error message |
-| `$form.errorCount` | number | Number of visible errors |
-| `$form.values` | object | Map of field names to their values |
+| `$form.untouched` | boolean | `true` when no fields have been interacted with |
+| `$form.submitting` | boolean | `true` while the form is being submitted (async submit) |
+| `$form.errors` | object | Map of field names to their current error messages |
 | `$form.fields` | object | Map of field names to per-field state objects |
 
 ### Methods
@@ -211,7 +202,6 @@ Available inside any element within a `<form validate>`. Provides reactive acces
 | Method | Description |
 |--------|-------------|
 | `$form.reset()` | Reset all fields to their initial values and clear validation state |
-| `$form.endSubmit()` | Set `$form.submitting` back to `false` (needed for forms handled only by `on:submit`, see [Submit Handling](#submit-handling)) |
 
 ### Per-Field State
 
@@ -220,18 +210,19 @@ Access individual field state via `$form.fields.<name>`:
 | Property | Type | Description |
 |----------|------|-------------|
 | `$form.fields.<name>.valid` | boolean | Field passes all rules |
+| `$form.fields.<name>.invalid` | boolean | Field fails at least one rule |
 | `$form.fields.<name>.error` | string \| null | First error message, or `null` if valid |
-| `$form.fields.<name>.dirty` | boolean | Value has changed |
+| `$form.fields.<name>.errors` | string[] | All error messages |
+| `$form.fields.<name>.dirty` | boolean | Value has changed from initial |
+| `$form.fields.<name>.pristine` | boolean | Value unchanged |
 | `$form.fields.<name>.touched` | boolean | Field has been interacted with |
-| `$form.fields.<name>.value` | string | Current value |
-
-`$form.fields.<name>` does not exist until the form has evaluated that field, so prefer `show` (or `bind`) over `if` for expressions that read it; an `if` whose first evaluation fails does not re-render later.
+| `$form.fields.<name>.untouched` | boolean | Field has not been interacted with |
 
 ```html
 <form validate>
   <input name="email" validate="required|email" />
-  <span show="$form.fields.email?.touched && $form.fields.email?.error"
-        bind="$form.fields.email?.error"
+  <span if="$form.fields.email?.touched && $form.fields.email?.error"
+        bind="$form.fields.email.error"
         style="color: red"></span>
 </form>
 ```
@@ -242,11 +233,11 @@ Access individual field state via `$form.fields.<name>`:
 
 ### Inline Error Messages
 
-Validation does not insert any error text by itself. When an interacted field is invalid, it only gets `aria-invalid="true"` (plus `error-class`, if set). Show the message yourself with `$form.errors`, `$form.fields.<name>.error`, an `as` variable, or an [error template](#error-templates). The message is the one from the first failing rule.
+By default, validation errors are shown as inline text below the field. The first failing rule's message is displayed.
 
 ### Custom Error Messages
 
-Override default messages with `error-{rule}` attributes, or set one message for every rule with `error="..."`:
+Override default messages with `error-{rule}` attributes:
 
 ```html
 <input name="email"
@@ -257,24 +248,20 @@ Override default messages with `error-{rule}` attributes, or set one message for
 
 ### Error Templates
 
-Use a `<template>` for rich error display, referenced with `error="#templateId"`:
+Use a `<template>` for rich error display:
 
 ```html
-<form validate>
-  <input name="username" minlength="3" validate="required"
-         error="#username-errors" />
+<input name="username" validate="required|min:3"
+       error-template="username-errors" />
 
-  <template id="username-errors">
-    <div class="error-box" show="$error">
-      <span bind="$error"></span>
-    </div>
-  </template>
-</form>
+<template id="username-errors">
+  <div class="error-box" if="$err">
+    <span bind="$err.message"></span>
+  </div>
+</template>
 ```
 
-The template receives `$error` (the message) and `$rule` (the failing rule name). It is rendered right after the `<template>` element (not after the field), inside a wrapper with `aria-live="polite"`, when the error becomes visible, and it is removed when the field becomes valid.
-
-NoJS Elements also inserts a second copy of the template right after the field, while the field is invalid. That copy comes from the standalone renderer, which runs on form fields too, and it has no `$error`. Put `show="$error"` (or `if="$error"`) on the template's root element so that copy stays hidden or empty; static markup in the template would show twice. `if` keeps the root element in the page (only its content goes), so prefer `show` when the root element has its own styling, such as a border.
+The template receives `$err` with `$err.message` (the error string) and `$err.rule` (the failing rule name).
 
 ### Error Class
 
@@ -294,53 +281,46 @@ The class is added when the field is invalid AND the error is visible (respects 
 Use the `as` attribute to expose a field's validation state as a named variable in the parent scope:
 
 ```html
-<form validate>
-  <input name="password" type="password" minlength="8" validate="required" as="pw" />
-  <div show="pw.dirty && !pw.valid" class="hint">
-    Password must be at least 8 characters
-  </div>
-  <div show="pw.valid" class="success">
-    Password strength: OK
-  </div>
-</form>
+<input name="password" validate="required|min:8" as="pw" />
+<div if="pw.touched && pw.invalid" class="hint">
+  Password must be at least 8 characters
+</div>
+<div if="pw.valid" class="success">
+  Password strength: OK
+</div>
 ```
-
-`as` works on fields inside a `<form validate>`. The exposed object has the per-field state properties (`valid`, `error`, `dirty`, `touched`, `value`); there is no `invalid` property, so use `!pw.valid`.
 
 ---
 
 ## Custom Validators
 
-Register custom validators with `NoJS.validator()`. NoJS Elements reads the registered validators when it installs, so register them in a script **between** the core and the Elements `<script>` tags; a validator registered later is ignored:
+Register custom validators with `NoJS.validator()`:
 
 ```html
-<script src="https://cdn.no-js.dev/"></script>
 <script>
-  NoJS.validator('samePassword', (value, values) =>
-    value === (values.password ?? value) || 'Passwords do not match');
-  NoJS.validator('startsWith', (value, prefix, values) =>
-    value.startsWith(prefix) || 'Must start with ' + prefix);
+  NoJS.validator('unique-email', async (value, param, field) => {
+    if (!value) return true;
+    const res = await fetch(`/api/check-email?email=${value}`);
+    const data = await res.json();
+    return data.available || 'This email is already taken';
+  });
 </script>
-<script src="https://cdn-elements.no-js.dev/"></script>
 
-<form validate>
-  <input name="password" type="password" validate="required" />
-  <input name="confirmPassword" type="password" validate="required|samePassword" />
-  <input name="code" validate="required|startsWith:A" />
-</form>
+<input name="email" validate="required|email|unique-email" />
 ```
 
 ### Validator Function Signature
 
 ```
-(value: string, ...params: string[], values: object) => true | string
+(value: string, param: string | undefined, field: HTMLElement) => boolean | string | Promise<boolean | string>
 ```
 
-- `params` are the colon-separated arguments (`startsWith:A` passes `"A"`); `values` maps every field name in the form to its value
-- `values` can be an empty object: inside a form, a field with `validate=""` is also checked by the field-level handler on every `input` event, and that handler passes `{}`. Guard every read from `values` (`values.password ?? value`, `values.password?.trim()`); an unguarded `values.password.trim()` throws on every keystroke
-- Return a string for invalid, with that string as the message
-- Return `true` for valid. Any falsy return (`false`, `null`, `undefined`, `""`, `0`) also counts as valid, so returning `false` does not fail the field: return a message string instead
-- Validators must be synchronous: a returned Promise is treated as an error (the message shows as `[object Promise]`). Async validators are not supported, and `$form.pending` is always `false`
+- Return `true` for valid
+- Return `false` for invalid (uses default message)
+- Return a string for invalid with custom message
+- Return a Promise for async validation
+
+The `param` argument receives the value after the colon (e.g., `min:8` passes `"8"` as param).
 
 ---
 
@@ -356,7 +336,11 @@ Submit buttons inside a `<form validate>` are automatically disabled when `$form
 </form>
 ```
 
-Every submit button in the form (`button` without `type="button"`, and `input[type="submit"]`) is managed this way, and `bind-disabled` does not opt a button out. Buttons with `type="button"` are left alone. The buttons are also disabled while `$form.submitting` is `true`.
+To opt out, bind the `disabled` attribute explicitly:
+
+```html
+<button type="submit" bind-disabled="false">Always Enabled</button>
+```
 
 ---
 
@@ -365,14 +349,15 @@ Every submit button in the form (`button` without `type="button"`, and `input[ty
 Use `validate` on a single field outside a `<form>` for isolated validation:
 
 ```html
-<input name="search" validate="required" error="#search-error" />
+<input name="search" validate="required|min:3"
+       error-template="search-error" />
 
 <template id="search-error">
-  <span bind="err.message" class="error"></span>
+  <span if="$err" bind="$err.message" class="error"></span>
 </template>
 ```
 
-In standalone mode, validation runs on `input` events and checks only the rules in `validate=""`; native attributes such as `minlength` or `pattern` are not checked outside a form. The template is rendered right after the field while it is invalid and receives `err.message` (note: `err`, not `$error` or `$form`).
+In standalone mode, validation runs on `input` events. The error template receives `$err.message` (note: `$err`, not `$form`).
 
 ---
 
@@ -382,28 +367,17 @@ When a `<form validate>` is submitted:
 
 1. All fields are marked as touched (making all errors visible)
 2. If any field is invalid, submission is blocked
-3. If all fields are valid, `$form.submitting` becomes `true` and the `on:submit` handler (or the form's `post` / `put` / ... request) runs
-4. When the form's own request (`post`, `put`, ...) finishes, `$form.submitting` goes back to `false`. A form handled only by `on:submit` stays in the submitting state, with its submit buttons disabled, until you call `$form.endSubmit()`. Put it after the rest of the handler: if an earlier statement fails, the statement stops and `endSubmit()` never runs
+3. If all fields are valid, the `on:submit` handler executes
+4. `$form.submitting` is set to `true` during async submit, then `false` when complete
 
 ```html
-<form validate post="/api/register" success="#registered">
-  <input name="email" validate="required|email" />
+<form validate on:submit.prevent="submitRegistration()">
+  <input name="email" model="email" validate="required|email" />
   <button type="submit">
     <span hide="$form.submitting">Register</span>
     <span show="$form.submitting">Submitting...</span>
   </button>
 </form>
-
-<template id="registered"><p>Thanks for registering!</p></template>
-
-<!-- Handled by on:submit only: end the submitting state yourself -->
-<div state="{ draft: null }">
-  <form validate on:submit.prevent="draft = $form.values; $form.endSubmit()">
-    <input name="title" validate="required" />
-    <button type="submit">Save</button>
-  </form>
-  <p show="draft">Draft saved: <span bind="draft.title"></span></p>
-</div>
 ```
 
 ---
@@ -420,10 +394,10 @@ The validation module does not inject global CSS classes. Styling is controlled 
 
 ## Accessibility
 
-- Invalid fields get `aria-invalid="true"`. With `validate-on`, it can appear while the user types, before the error is visible, because a field's own `validate=""` rules also set it on every `input` event
-- Error templates are rendered inside a wrapper with `aria-live="polite"`, so screen readers announce them
-- `aria-describedby` and `role="alert"` are not set for you; add them to your own error markup if needed
-- Native HTML5 constraint validation attributes (`required`, `type="email"`, etc.) are preserved alongside NoJS validation; the form gets `novalidate`, so the browser's own popups do not appear
+- Error messages are associated with fields via `aria-describedby`
+- Invalid fields get `aria-invalid="true"`
+- Error messages use `role="alert"` for screen reader announcements
+- Native HTML5 constraint validation attributes (`required`, `type="email"`, etc.) are preserved alongside NoJS validation
 
 ---
 
@@ -431,57 +405,55 @@ The validation module does not inject global CSS classes. Styling is controlled 
 
 ### Registration Form
 
-Complete registration form with multiple validation rules, custom messages, and submit handling. The form posts its named fields, and `$form.submitting` goes back to `false` when the request finishes.
+Complete registration form with multiple validation rules, custom messages, and submit handling.
 
 ```html
-<form validate post="/api/register" success="#welcome">
-  <div>
-    <label>Username</label>
-    <input name="username"
-           minlength="3" maxlength="20" pattern="[A-Za-z0-9]+"
-           validate="required"
-           error-required="Username is required"
-           error-minlength="At least 3 characters"
-           error-pattern="Letters and numbers only"
-           error-class="input-error"
-           placeholder="Choose a username" />
-    <span show="$form.fields.username?.touched && $form.fields.username?.error"
-          bind="$form.fields.username?.error" class="error-text"></span>
-  </div>
+<div state="{ username: '', email: '', password: '', confirmPassword: '' }">
+  <form validate on:submit.prevent="register()">
+    <div>
+      <label>Username</label>
+      <input name="username" model="username"
+             validate="required|min:3|max:20|alphanumeric"
+             error-required="Username is required"
+             error-min="At least 3 characters"
+             error-class="input-error"
+             placeholder="Choose a username" />
+      <span if="$form.fields.username?.touched && $form.fields.username?.error"
+            bind="$form.fields.username.error" class="error-text"></span>
+    </div>
 
-  <div>
-    <label>Email</label>
-    <input name="email" type="email"
-           validate="required|email"
-           error-class="input-error"
-           placeholder="your@email.com" />
-    <span show="$form.fields.email?.touched && $form.fields.email?.error"
-          bind="$form.fields.email?.error" class="error-text"></span>
-  </div>
+    <div>
+      <label>Email</label>
+      <input name="email" model="email" type="email"
+             validate="required|email"
+             error-class="input-error"
+             placeholder="your@email.com" />
+      <span if="$form.fields.email?.touched && $form.fields.email?.error"
+            bind="$form.fields.email.error" class="error-text"></span>
+    </div>
 
-  <div>
-    <label>Password</label>
-    <input name="password" type="password"
-           minlength="8" validate="required"
-           error-class="input-error"
-           placeholder="At least 8 characters" />
-  </div>
+    <div>
+      <label>Password</label>
+      <input name="password" model="password" type="password"
+             validate="required|min:8"
+             error-class="input-error"
+             placeholder="At least 8 characters" />
+    </div>
 
-  <div>
-    <label>Confirm Password</label>
-    <!-- samePassword: a custom validator, see Custom Validators -->
-    <input name="confirmPassword" type="password"
-           validate="required|samePassword"
-           error-class="input-error" />
-  </div>
+    <div>
+      <label>Confirm Password</label>
+      <input name="confirmPassword" model="confirmPassword" type="password"
+             validate="required|match:password"
+             error-match="Passwords do not match"
+             error-class="input-error" />
+    </div>
 
-  <button type="submit">
-    <span hide="$form.submitting">Create Account</span>
-    <span show="$form.submitting">Creating...</span>
-  </button>
-</form>
-
-<template id="welcome"><p>Account created. Welcome!</p></template>
+    <button type="submit">
+      <span hide="$form.submitting">Create Account</span>
+      <span show="$form.submitting">Creating...</span>
+    </button>
+  </form>
+</div>
 ```
 
 ### Multi-Step Form with Stepper
@@ -495,8 +467,8 @@ Combine validation with the stepper element for multi-step wizards.
       <form validate>
         <input name="email" model="email" type="email"
                validate="required|email" placeholder="Email" />
-        <span show="$form.fields.email?.touched && $form.fields.email?.error"
-              bind="$form.fields.email?.error" style="color: red"></span>
+        <span if="$form.fields.email?.touched && $form.fields.email?.error"
+              bind="$form.fields.email.error" style="color: red"></span>
       </form>
       <button type="button" on:click="$stepper.next()">Next</button>
     </div>
@@ -524,29 +496,28 @@ Combine validation with the stepper element for multi-step wizards.
 Show and validate fields based on user selection.
 
 ```html
-<div state="{ account: null }">
-  <form validate on:submit.prevent="account = $form.values; $form.endSubmit()">
-    <select name="accountType">
+<div state="{ accountType: 'personal', companyName: '', taxId: '' }">
+  <form validate on:submit.prevent="createAccount()">
+    <select name="accountType" model="accountType">
       <option value="personal">Personal</option>
       <option value="business">Business</option>
     </select>
 
-    <div show="$form.values.accountType === 'business'">
-      <input name="companyName"
-             minlength="2" validate="required"
-             validate-if="$form.values.accountType === 'business'"
+    <div show="accountType === 'business'">
+      <input name="companyName" model="companyName"
+             validate="required|min:2"
+             validate-if="accountType === 'business'"
              placeholder="Company name" />
 
-      <input name="taxId"
-             pattern="[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2}" validate="required"
-             validate-if="$form.values.accountType === 'business'"
+      <input name="taxId" model="taxId"
+             validate="required|pattern:^[0-9]{2}\\.[0-9]{3}\\.[0-9]{3}\\/[0-9]{4}\\-[0-9]{2}$"
+             validate-if="accountType === 'business'"
              error-pattern="Enter a valid CNPJ"
              placeholder="Tax ID (CNPJ)" />
     </div>
 
     <button type="submit">Create Account</button>
   </form>
-  <p show="account">Created: <span bind="account.accountType"></span></p>
 </div>
 ```
 
@@ -556,14 +527,14 @@ Show and validate fields based on user selection.
 
 Validation integrates with the full NoJS directive system:
 
-- **`model`** -- optional two-way binding; validation reads each field's value directly. NoJS Elements releases up to v1.21.1 clear typed values when `model` is combined with `validate-on` (fixed on main by Elements #103), so leaving `model` off validated fields is the safe choice
+- **`model`** -- two-way binding on form fields (required for validation to track values)
 - **`state`** -- reactive state for form data
 - **`if` / `show`** -- conditionally display error messages and conditional fields
 - **`bind`** -- display error messages and field state
 - **`on:submit.prevent`** -- handle form submission
 - **`validate-if`** -- skip validation based on reactive expressions
 - **`each`** -- render dynamic field lists with per-field validation
-- **`get` / `post`** -- submit the form (`<form validate post="...">`)
+- **`get` / `post`** -- async data fetching for custom async validators
 - **`class-*`** -- apply conditional CSS classes based on `$form` state
 
 ```html
@@ -572,7 +543,7 @@ Validation integrates with the full NoJS directive system:
   { name: 'lastName', label: 'Last Name', rules: 'required' },
   { name: 'email', label: 'Email', rules: 'required|email' }
 ] }">
-  <form validate post="/api/profile" success="#profile-saved">
+  <form validate on:submit.prevent="save()">
     <div each="field in fields" key="field.name">
       <label bind="field.label"></label>
       <input bind-name="field.name"
@@ -582,8 +553,6 @@ Validation integrates with the full NoJS directive system:
     <button type="submit">Save</button>
   </form>
 </div>
-
-<template id="profile-saved"><p>Profile saved.</p></template>
 ```
 
 ---

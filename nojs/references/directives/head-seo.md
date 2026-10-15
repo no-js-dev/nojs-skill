@@ -125,9 +125,7 @@ The `data-nojs` marker on the generated `<script>` tag distinguishes it from han
 ### Edge Cases
 
 - Placeholders use `{expression}` syntax (single curly braces), not template literals.
-- Each placeholder is replaced with its value as text. When the result is valid JSON it is used as-is (v1.21.1 output); only `<` inside values is written as `\u003c`, so a value cannot close the `<script>`.
-- When the result would not be valid JSON, a placeholder inside a JSON string (`"name":"{product.name}"`) is escaped as JSON string content, and a placeholder outside a string (`"price":{product.price}`, `"offers":{offersJson}`) is inserted as-is.
-- By default a quoted value can still change the JSON structure (e.g. `x","@type":"Organization` adds a key). For untrusted data (URL params, user input), keep it in quoted placeholders and set `NoJS.config({ strictJsonld: true })`, which always escapes quoted values as data. Raw (unquoted) placeholders are inserted as-is even then.
+- The JSON must be valid after interpolation. Ensure string values are properly quoted.
 - Multiple `page-jsonld` directives can coexist; each manages its own `<script>` tag.
 
 ### Complete Example
