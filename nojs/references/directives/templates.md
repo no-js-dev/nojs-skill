@@ -204,6 +204,48 @@ Load templates from external HTML files. Resolved recursively.
 </template>
 ```
 
+### How `src` is resolved
+
+A `./` path inside a remote template resolves against that template's folder. Every other `src` is resolved the same way as an HTTP directive URL:
+
+| `src` | Result |
+|-------|--------|
+| `https://…`, `http://…`, `//…` | Fetched as written |
+| `/x.tpl`, `x.tpl`, top-level `./x.tpl` | Prefixed with the nearest ancestor `base` attribute, else `baseApiUrl`, else fetched as written (relative to the page) |
+
+```html
+<script>NoJS.config({ baseApiUrl: '/api' });</script>
+
+<!-- fetches /api/parts/header.tpl -->
+<template src="parts/header.tpl"></template>
+
+<div base="https://cdn.example.com">
+  <!-- fetches https://cdn.example.com/parts/nav.tpl -->
+  <template src="/parts/nav.tpl"></template>
+</div>
+```
+
+This also applies to route templates (`<template route src>`) and file-based routing. Two cases do not see a `base` you might expect (same as v1.21.1):
+
+- **Nested in a remote content include:** a plain or `/`-rooted `src` inside a remote (non-route) template ignores `base` on the element that included it, because the content is loaded outside the page, and falls back to `baseApiUrl`, else the page. Use `./` to load files next to the parent template, or an absolute URL. Route templates are different: their nested `<template src>` load after the route is inserted into `route-view`, so a `base` on `route-view` or its ancestors applies.
+- **File-based route templates** are appended to `<body>`, so only a `base` on `<body>` or `<html>`, or `baseApiUrl`, applies, not a `base` on the `route-view` element.
+
+To keep templates on the page origin while HTTP directives use `base` / `baseApiUrl`, opt in to page-relative resolution. With `templates.pageRelative: true`, `base` and `baseApiUrl` are ignored for every template `src`; absolute URLs and `./` paths inside a remote template behave the same in both modes:
+
+```html
+<script>
+  NoJS.config({
+    baseApiUrl: 'https://api.example.com/v1',
+    templates: { pageRelative: true }
+  });
+</script>
+
+<!-- fetches /templates/header.html from the page origin -->
+<template src="/templates/header.html"></template>
+```
+
+In debug mode, a one-time hint names this flag the first time `base` / `baseApiUrl` changes a template URL, and a failed load whose URL was changed that way says so in its `Failed to load template:` warning.
+
 ### Edge Cases
 
 - Remote templates are cached after the first fetch. Subsequent uses do not trigger additional network requests.
@@ -242,7 +284,7 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
 | `method` | string | HTTP method. Default: `"get"` |
 | `as` | string | Name for response data in context. Default: `"data"` |
 | `into` | string | Write response to a named global store |
-| `body` | string | Request body (JSON with `{variable}` interpolation) |
+| `body` | string | Request body string; each `{expression}` is replaced with its `encodeURIComponent`-ed value (not a JSON template, see [http.md](http.md#body)) |
 | `loading` | string | Template ID shown during request |
 | `success` | string | Template ID rendered on success |
 | `error` | string | Template ID rendered on error |
@@ -307,7 +349,8 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
   </div>
 
   <button call="/api/items" method="post"
-          body="{ name: 'New Item' }"
+          headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+          body="name=New%20Item"
           then="items.push(result)"
           loading="#spinner">
     Add Item

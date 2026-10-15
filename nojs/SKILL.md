@@ -152,6 +152,8 @@ CDN auto-initializes on `DOMContentLoaded`.
 
 Companions: `key="item.id"` (diffing), `filter="item.active"`, `sort="item.name"` (prefix `-` for desc), `limit="10"`, `offset="5"`, `index="i"` (custom index var), `else="tplId"` (empty-state fallback).
 
+Loops re-render on reassignment and on in-place mutation (`push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `items[0] = x`); keyed loops move existing rows instead of recreating them.
+
 Loop context variables: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`.
 
 ```html
@@ -208,7 +210,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 | `debounce` | `debounce="300"` | Debounce reactive URL refetches (ms) |
 | `skeleton` | `skeleton="skelId"` | Show/hide a placeholder element during loading |
 | `headers`/`params` | `headers='{"Auth":"x"}'` | Per-request headers (JSON) / query parameters |
-| `body` | `body='{"key":"val"}'` | Request body (JSON) |
+| `body` | `body="key={expr}"` | Request body string; `{expr}` values are URL-encoded. Not a JSON template: for JSON, use a `<form>` with `name`d fields |
 | `retry`/`retry-delay` | `retry="3"` | Retry attempts and delay between retries (ms) |
 | `confirm` | `confirm="Sure?"` | Browser confirmation before request |
 | `redirect` | `redirect="/home"` | SPA redirect on success |
@@ -217,7 +219,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 
 **Pagination**: `get-trigger="scroll"` (infinite) or `"button"` (load more), `get-insert="append"`, `get-page="1"` (offset) or `get-cursor` + `get-cursor-field` (cursor), `get-threshold="200"` (scroll px). Observer root is the nearest scrollable ancestor (`overflow-y: auto|scroll`), falling back to the viewport; `get-threshold` is relative to that container. A not-yet-overflowing container triggers loads until content fills it (fill-until-overflow).
 
-URLs support interpolation: `get="/users/{userId}"`. Reactive expressions in URLs automatically re-fetch.
+URLs support interpolation: `get="/users/{userId}"`. Reactive expressions in URLs automatically re-fetch. Placeholder values are `encodeURIComponent`-ed; a path value that is exactly `.` or `..` is escaped to `%252E` (with a warning) so it cannot re-target the request to a parent path. Global `config({ headers })` go to every origin unless `scopeHeaders: true`.
 
 ```html
 <!-- GET with loading/error templates -->
@@ -227,10 +229,10 @@ URLs support interpolation: `get="/users/{userId}"`. Reactive expressions in URL
 <template id="loadTpl"><p>Loading...</p></template>
 <template id="errTpl"><p>Failed to load.</p></template>
 
-<!-- POST from form -->
-<form on:submit.prevent state="{ email: '', pass: '' }">
-  <input model="email"><input model="pass" type="password">
-  <button post="/login" body='{"email":"{email}","password":"{pass}"}' into="auth">Login</button>
+<!-- POST from form: named fields are sent as a JSON object -->
+<form post="/login" into="auth">
+  <input name="email" type="email"><input name="password" type="password">
+  <button type="submit">Login</button>
 </form>
 
 <!-- Infinite scroll -->
@@ -306,7 +308,7 @@ Programmatic: `NoJS.router.push('/path')`, `NoJS.router.replace('/path')`, `NoJS
 
 ### Templates
 
-`use="tplId"` (instantiate), `var="name"` (template variable), `<slot>` (caller content insertion), `src="/path.tpl"` (remote load), `include="#id"` (clone inline template), `loading="tplId"` (load placeholder), `lazy` / `lazy="ondemand"` (deferred loading).
+`use="tplId"` (instantiate), `var="name"` (template variable), `<slot>` (caller content insertion), `src="/path.tpl"` (remote load; resolved through the nearest `base` / `baseApiUrl` like HTTP URLs, or against the page with `templates: { pageRelative: true }`), `include="#id"` (clone inline template), `loading="tplId"` (load placeholder), `lazy` / `lazy="ondemand"` (deferred loading).
 
 ```html
 <template id="card"><div class="card"><h3 bind="title"></h3><slot></slot></div></template>
@@ -328,7 +330,7 @@ Programmatic: `NoJS.router.push('/path')`, `NoJS.router.replace('/path')`, `NoJS
 
 ### i18n (Internationalization)
 
-`t="key"` (translate), `t-name="expr"` (interpolation param), `t-html` (render as HTML), `i18n-ns="namespace"` (lazy-load namespace). Pluralization: `"1 item | {count} items"` in locale files.
+`t="key"` (translate), `t-name="expr"` (interpolation param), `t-html` (render as sanitized HTML; `t-*` params are inserted raw unless `i18n.escapeParams: true`), `i18n-ns="namespace"` (lazy-load namespace). Pluralization: `"1 item | {count} items"` in locale files.
 
 **`$i18n` reactive proxy:** Access translations directly in any expression via dot-notation. The proxy is fully reactive -- locale changes auto-update all bindings.
 
@@ -499,6 +501,7 @@ Browser globals (`window`, `document`, `location`, `history`, `navigator`) avail
 
 - Filters work only in expression context (`bind`, `class-*`, `style-*`), not in `on:*`/`watch` statement handlers
 - `if`/`new` statements unsupported -- use ternary or multi-statement assignments
+- Handler-local variables in `on:*`/`watch`: `const m = items.splice(0, 1)[0]; items.push(m)` -- `const`/`let` bindings are never written to state; reassigning a `const` throws and cancels the handler's state writes
 - Statement write-back: in `on:*`/`watch`, mutated variables auto-write-back to the owning context
 - AST caching: LRU-cached (configurable: `exprCacheSize`, default 500)
 
@@ -529,6 +532,7 @@ Certain directive combinations on the same element produce unexpected behavior. 
 | `cache.strategy` | `"none"` | `"none"` / `"memory"` / `"session"` / `"local"` |
 | `cache.ttl` | `300000` | Cache TTL (ms) |
 | `templates.cache` | `true` | Cache fetched remote templates |
+| `templates.pageRelative` | `false` | Opt-in: resolve `<template src>` against the page, not `base` / `baseApiUrl` |
 | `router.useHash` | `false` | `true` = hash mode, `false` = history mode |
 | `router.base` | `"/"` | Router base path |
 | `router.scrollBehavior` | `"top"` | `"top"` / `"preserve"` / `"smooth"` |
@@ -537,15 +541,24 @@ Certain directive combinations on the same element produce unexpected behavior. 
 | `i18n.defaultLocale` / `fallbackLocale` | `"en"` / `"en"` | Default and fallback locale |
 | `i18n.loadPath` | `null` | External locale files: `"/locales/{locale}.json"` |
 | `i18n.ns` | `[]` | Namespaces to preload |
-| `i18n.detectBrowser` | `true` | Auto-detect browser locale |
+| `i18n.detectBrowser` | `false` | Auto-detect browser locale |
 | `i18n.supportedLocales` | `[]` | Locales eligible for `detectBrowser` under `loadPath`. First-visit priority: persisted `nojs-locale` > detection (browser lang or prefix in list) > `defaultLocale` |
 | `i18n.persist` | `false` | Persist selected locale to localStorage |
+| `i18n.escapeParams` / `i18n.strictLocale` | `false` / `false` | Opt-in: HTML-escape `t-html` params / ignore a persisted locale not in a non-empty `supportedLocales` (read only by `NoJS.i18n()`) |
 | `stores` | `{}` | Pre-initialize global stores before DOM processing |
 | `debug` / `devtools` | `false` / `false` | Logging and browser devtools panel |
 | `sanitize` | `true` | Sanitize `bind-html` content |
 | `exprCacheSize` | `500` | Max LRU cache entries for expression ASTs |
 | `maxEventListeners` | `100` | Max listeners per event on the bus |
 | `appId` | `""` | Application identifier (exposed via devtools) |
+| `scopeHeaders` | `false` | Opt-in: send global `headers` only to trusted origins (page, `baseApiUrl`, nearest `base`) |
+| `strictRedaction` | `false` | Opt-in: redact URLs (fragment dropped, sensitive query values `[REDACTED]`) for untrusted interceptors, fetch event payloads and failure warnings; withhold `csrf.header` |
+| `strictDirectives` | `false` | Opt-in: reject plugin directive names covered by `on:*` / `bind-*` / `class-*` / `style-*` |
+| `strictDevtools` | `false` | Opt-in: devtools events local-host only; snapshots, config and fetch URLs redacted |
+| `strictJsonld` | `false` | Opt-in: always JSON-escape `page-jsonld` placeholders inside strings |
+| `strictBindings` | `false` | Opt-in: reject `bind-on*` handler attributes, sanitize `bind-srcdoc` like `bind-html`. Set before `init()`; cannot be turned off after |
+
+All opt-in flags default to `false` (v1.21.1 behavior). Most take effect immediately, before or after `init()`; `strictDirectives` applies to registrations made after it is set (the core registry freezes at load), `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale, and `strictBindings` is read when each binding initializes. See [core/config.md](references/core/config.md#opt-in-hardening-flags).
 
 ```javascript
 NoJS.config({
@@ -559,13 +572,13 @@ NoJS.config({
 ### Public API Summary
 
 ```javascript
-NoJS.init(root?)               // Initialize (auto-called by CDN)
-NoJS.use(plugin, options?)     // Register plugin
+NoJS.init(root?)               // Initialize (auto-called by CDN); a throwing directive is isolated, init() rejects with it at the end
+NoJS.use(plugin, options?)     // Register plugin; { trusted: true } = unredacted interceptors
 NoJS.global(name, value)       // Register reactive global ($name in expressions)
 NoJS.dispose()                 // Full teardown
-NoJS.directive(name, { priority, init(el, attr, value) })
+NoJS.directive(name, { priority, init(el, attr, value) }) // core names frozen at load
 NoJS.filter(name, fn)          // Custom filter
-NoJS.validator(name, fn)       // Custom validator
+NoJS.validator(name, fn)       // Custom validator (required/email/url/min/max reserved)
 NoJS.i18n({ ... })             // Configure i18n
 NoJS.on(event, callback)       // Global event bus
 NoJS.interceptor(type, fn)     // 'request' | 'response' interceptor
@@ -574,9 +587,9 @@ NoJS.notify()                  // Flush UI updates after external mutation
 NoJS.router                    // push(), replace(), back(), forward()
 NoJS.locale                    // Get/set current locale
 NoJS.version                   // current framework version string
-NoJS.CANCEL                    // Interceptor sentinel: cancel request
-NoJS.RESPOND                   // Interceptor sentinel: short-circuit with response
-NoJS.REPLACE                   // Interceptor sentinel: replace response data
+NoJS.CANCEL                    // Interceptor sentinel: return { [NoJS.CANCEL]: true } to cancel
+NoJS.RESPOND                   // Interceptor sentinel: return { [NoJS.RESPOND]: data } to short-circuit
+NoJS.REPLACE                   // Interceptor sentinel: return { [NoJS.REPLACE]: data } to replace response data
 ```
 
 ## 8. Common Patterns
@@ -584,19 +597,17 @@ NoJS.REPLACE                   // Interceptor sentinel: replace response data
 ### Form validation with error display
 
 ```html
-<!-- Requires NoJS Elements plugin -->
-<form validate on:submit.prevent state="{ email: '', password: '' }">
-  <input model="email" type="email" validate="required,email" validate-on="blur"
+<!-- Requires NoJS Elements plugin. Rules are separated with |; lengths use the native minlength attribute -->
+<!-- The form's named fields are sent as a JSON object (body= is not a JSON template) -->
+<form validate post="/api/login" into="auth">
+  <input name="email" type="email" validate="required|email" validate-on="blur"
          error-required="Email is required" error-email="Enter a valid email">
-  <span if="$form.fields.email.errors.length"
-        bind="$form.fields.email.errors[0]" style="color:red"></span>
+  <span if="$form.errors.email" bind="$form.errors.email" style="color:red"></span>
 
-  <input model="password" type="password" validate="required,min:8">
-  <span if="$form.fields.password.errors.length"
-        bind="$form.fields.password.errors[0]" style="color:red"></span>
+  <input name="password" type="password" minlength="8" validate="required">
+  <span if="$form.errors.password" bind="$form.errors.password" style="color:red"></span>
 
-  <button type="submit" post="/api/login"
-          body='{"email":"{email}","password":"{password}"}' into="auth">Log In</button>
+  <button type="submit">Log In</button>
   <p show="$form.submitting">Logging in...</p>
 </form>
 ```

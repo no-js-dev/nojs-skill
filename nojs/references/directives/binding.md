@@ -128,6 +128,28 @@ For URL-bearing attributes (`href`, `src`, `action`, `formaction`, `poster`, `da
 <input bind-value="username" />
 ```
 
+### Event-Handler Attributes and `bind-srcdoc` (`strictBindings`)
+
+By default (v1.21.1 behavior) `bind-*` writes any attribute name, and two cases are not sanitized:
+
+- **Inline handlers.** `bind-onclick="handler"` sets an `onclick` attribute whose value comes from state and runs as code on click. If that value can come from an API response, the URL or a persisted store, it is an XSS vector. Use `on:` directives instead (`on:click="save()"`).
+- **`bind-srcdoc`.** `srcdoc` renders a whole HTML document inside an `<iframe>`. The bound value is written as-is, so scripts and `on*` handlers in it run inside the frame. Only bind trusted markup, or isolate the frame with the `sandbox` attribute.
+
+Set `NoJS.config({ strictBindings: true })` **before `NoJS.init()`** to harden both:
+
+- Any `bind-on*` name without a hyphen (`bind-onclick`, `bind-onerror`, `bind-OnMouseOver`, ...) is never set, and a `[No.JS] [Security] bind-onclick rejected: event-handler attributes are not bindable — use on:click instead.` warning names the element. Names with a hyphen (`bind-onboarding-step`, `bind-on-label`) are not event handlers and still bind.
+- `bind-srcdoc` values go through the same sanitizer as `bind-html` before they are set, and again on every change: only the sanitized `<body>` content is kept, so `<head>` content, blocked tags (`<script>`, `<style>`, nested `<iframe>`, ...), `on*` attributes and `javascript:` URLs are removed. A custom `sanitizeHtml` function is used instead when set.
+
+The flag is read when each binding initializes. Once `true`, it cannot be turned off after `init()` (`config.strictBindings cannot be turned off after init()`).
+
+```html
+<script>NoJS.config({ strictBindings: true });</script>
+
+<button bind-onclick="handlerFromApi">Rejected (warning)</button>
+<button on:click="save()">Use on:* instead</button>
+<iframe sandbox bind-srcdoc="previewHtml"></iframe>  <!-- sanitized like bind-html -->
+```
+
 ### Edge Cases
 
 - `bind-class` and `bind-style` set the entire attribute value. For conditional class toggling, use `class-*` or `class-map` instead.

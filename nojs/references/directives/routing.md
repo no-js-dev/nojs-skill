@@ -222,6 +222,21 @@ The router collects all `[route]` links, determines the most aggressive `lazy` l
 | `$route.hash` | URL hash (e.g. `"#section"`) |
 | `$route.matched` | `true` if an explicit route matched, `false` for wildcard/fallback |
 
+In history mode (the default), the query string and hash are kept on the first page load and on Back/Forward, so `$route.query` and `$route.hash` are filled in and the URL is not rewritten without them. A query value that contains `?` (e.g. `?next=/a?b=1`) is kept whole.
+
+### Removing One-Time Tokens from the URL
+
+Because the query is kept, a callback URL such as `/auth/callback?token=abc123` (magic link, OAuth `?code=`) stays in the address bar and in the browser history until you replace it. Read the value, then replace the history entry with a **different** path:
+
+```html
+<!-- /auth/callback?token=abc123 (assumes an "auth" store) -->
+<template route="/auth/callback">
+  <div on:init="$store.auth.token = $route.query.token; $router.replace('/dashboard')"></div>
+</template>
+```
+
+`$router.replace()` swaps the current history entry, so Back does not return to the URL that carried the token. Replacing with the same path without the query renders the route again, and `$route.query.token` is then empty.
+
 ### Programmatic Navigation
 
 ```html
@@ -318,6 +333,8 @@ Programmatic navigation is asynchronous:
 <button on:click="await $router.push('/users/42')">Navigate</button>
 ```
 
+If a newer navigation starts before the current one has rendered (for example while a `lazy="ondemand"` or file-based template is still loading), only the newer page renders: the stale render is dropped instead of overwriting the newer page, `<head>` or route listeners. The earlier Promise still resolves, without rendering its page. A navigation blocked by a `guard` (without `redirect`) or a hash-only change does not count as a newer navigation and does not cancel the one in progress.
+
 ### Automatic 404 Fallback
 
 If no `route="*"` wildcard is defined, No.JS automatically shows a minimal 404 message. Define your own for a custom fallback:
@@ -372,7 +389,9 @@ Set `<head>` metadata declaratively on each `<template route>`. Updated on every
 | `page-title` | Sets `document.title`. Value is a No.JS expression (single-quoted strings: `'About \| Site'`) |
 | `page-description` | Creates/updates `<meta name="description">` |
 | `page-canonical` | Creates/updates `<link rel="canonical">` |
-| `page-jsonld` | Creates/updates `<script type="application/ld+json" data-nojs>`. Value is a JSON string with `{placeholder}` interpolation |
+| `page-jsonld` | Creates/updates `<script type="application/ld+json" data-nojs>`. Value is a JSON string with `{placeholder}` interpolation (same escaping rules as the [`page-jsonld` directive](head-seo.md#page-jsonld)) |
+
+> **Untrusted data in `page-jsonld`:** route params and `$route.query` come from the URL, so anyone can craft them. By default a value in a quoted placeholder can end the JSON string and add or override keys, exactly as in v1.21.1 (`?q=x","@type":"Organization` turns `"name":"{$route.query.q}"` into an extra `"@type"` key), and a value with `"`, `\` or a line break makes the output invalid JSON. Set `NoJS.config({ strictJsonld: true })` to always escape quoted values as data. Placeholders outside a string (`"position":{$route.params.n}`) are inserted as-is in both modes, so never put URL data in them unserialized.
 
 ```html
 <!-- Static title -->

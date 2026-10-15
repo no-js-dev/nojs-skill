@@ -320,9 +320,9 @@ The directive watches all ancestor contexts in the parent chain, plus global rea
 ```html
 <!-- Pattern: cookie-based auth then SSE -->
 <div state="{ authenticated: false }">
-  <form post="/auth/login" body="{ email, password }"
+  <form post="/auth/login"
         then="authenticated = true" show="!authenticated">
-    <input model="email"><input model="password" type="password">
+    <input name="email"><input name="password" type="password">
     <button>Login</button>
   </form>
 

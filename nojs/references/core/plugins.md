@@ -138,14 +138,14 @@ A plugin object may have the following properties:
 | `install` | function | Yes | Called immediately when `NoJS.use()` is invoked |
 | `init` | function | No | Called after `NoJS.init()` completes |
 | `dispose` | function | No | Called during `NoJS.dispose()` (reverse order) |
-| `trusted` | boolean | No | Grant trusted interceptor access (bypasses header redaction) |
+
+Trusted interceptor access is not a plugin property: pass `{ trusted: true }` as the `NoJS.use()` options (see [Granting Trusted Access](#granting-trusted-access)).
 
 ### TypeScript Definitions
 
 ```typescript
 interface NoJSPlugin {
   name: string;
-  trusted?: boolean;
   install(app: NoJSInstance, options?: any): void;
   init?(app: NoJSInstance): void;
   dispose?(app: NoJSInstance): void | Promise<void>;
@@ -166,7 +166,7 @@ The `app` parameter is the NoJS instance, providing access to all public API met
 
 ```javascript
 install(app, options) {
-  app.directive('my-dir', { init(el, val, ctx) { /* ... */ } });
+  app.directive('my-dir', { init(el, name, value) { /* ... */ } });
   app.filter('my-filter', (v) => v.toUpperCase());
   app.validator('my-rule', (v) => v.length >= 3 || 'Too short');
   app.global('$myGlobal', { count: 0 });
@@ -262,11 +262,11 @@ Sentinel symbols control interceptor flow. They are read-only, non-configurable 
 
 ### NoJS.CANCEL
 
-Return from a request interceptor to abort the request entirely. No network call is made. The request fails with an `AbortError`.
+Return `{ [NoJS.CANCEL]: true }` from a request interceptor to abort the request entirely (returning the bare symbol does not cancel). No network call is made. The request fails with an `AbortError`.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
-  if (isMaintenanceMode()) return NoJS.CANCEL;
+  if (isMaintenanceMode()) return { [NoJS.CANCEL]: true };
   return opts;
 });
 ```
@@ -275,25 +275,25 @@ Cancelled requests are never retried, regardless of the `retries` config.
 
 ### NoJS.RESPOND
 
-Return `{ __nojs__: NoJS.RESPOND, body: data }` from a request interceptor to short-circuit with mock data. No network request is made.
+Return `{ [NoJS.RESPOND]: data }` from a request interceptor to short-circuit with mock data. No network request is made.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
   const cached = getFromCache(url);
-  if (cached) return { __nojs__: NoJS.RESPOND, body: cached };
+  if (cached) return { [NoJS.RESPOND]: cached };
   return opts;
 });
 ```
 
 ### NoJS.REPLACE
 
-Return `{ __nojs__: NoJS.REPLACE, body: data }` from a response interceptor to replace the response body.
+Return `{ [NoJS.REPLACE]: data }` from a response interceptor to replace the parsed response body.
 
 ```javascript
 NoJS.interceptor('response', (response) => {
   if (response.url.includes('/v1/')) {
     const transformed = migrateV1ToV2(response.data);
-    return { __nojs__: NoJS.REPLACE, body: transformed };
+    return { [NoJS.REPLACE]: transformed };
   }
   return response;
 });
@@ -313,14 +313,27 @@ NoJS.interceptor('response', (response) => {
 
 By default, interceptors receive redacted headers and proxy-wrapped responses to prevent credential leakage. Trusted plugins bypass these restrictions.
 
+What untrusted interceptors see by default (v1.21.1 behavior):
+
+- **Request interceptors**: request options with the sensitive headers below stripped, and the **raw URL** (query and fragment included).
+- **Response interceptors**: a response proxy with the sensitive response headers below stripped, and a URL whose `token`, `key`, `secret`, `auth`, `password`, `credential` query values (substring match) are replaced; the URL is re-serialized by the `URL` API, so they read `%5BREDACTED%5D`.
+- The `url` in `fetch:success`, `fetch:error` and `error` event payloads, and the request failure warnings, are the raw URL.
+
+With `NoJS.config({ strictRedaction: true })`:
+
+- request interceptors, response interceptors (URL argument and the proxy's `url`), the event payloads and the failure warnings all get the same string-level redacted URL: the `#fragment` is dropped and the values of sensitive query parameters become a literal `[REDACTED]`. Names are matched by word (`token`, `access_token`, `api_key`, `password`, `session`, `auth`, ...), so `author`, `keyword` or `sort_key` stay intact;
+- the header named in `csrf.header` is withheld from untrusted request interceptors, which can no longer read or override it (a trusted plugin still sees it and can rotate it);
+- response headers that are sensitive as request headers (`authorization`, `cookie`, `x-auth-*`, `x-api-*`, the `csrf.header` name) are also stripped from the response proxy.
+
+Devtools `fetch:success` / `fetch:error` events are not affected by `strictRedaction`; they are redacted only with `strictDevtools`.
+
 ### Granting Trusted Access
 
-Set `trusted: true` on the plugin object **before** calling `NoJS.use()`:
+Pass `{ trusted: true }` as the `NoJS.use()` options. Trust is read from the options given to `NoJS.use()`; a `trusted` property on the plugin object itself is ignored. NoJS logs a warning naming the plugin when trust is granted:
 
 ```javascript
 const AuthPlugin = {
   name: 'auth',
-  trusted: true,
   install(app) {
     app.interceptor('request', (url, opts) => {
       // Can see and modify Authorization, Cookie, etc.
@@ -331,7 +344,7 @@ const AuthPlugin = {
   }
 };
 
-NoJS.use(AuthPlugin);
+NoJS.use(AuthPlugin, { trusted: true });
 ```
 
 ### Redacted Request Headers
@@ -346,6 +359,7 @@ Sensitive headers stripped from request options for untrusted interceptors:
 - `set-cookie`
 - `x-csrf-token`
 - Any header matching `/^x-(auth|api)-/i`
+- The `csrf.header` name (only with `strictRedaction: true`)
 
 ### Redacted Response Headers
 
@@ -356,6 +370,7 @@ Sensitive headers stripped from the response proxy for untrusted interceptors:
 - `x-auth-token`
 - `www-authenticate`
 - `proxy-authenticate`
+- With `strictRedaction: true`, also every header that is sensitive as a request header (list above)
 
 ---
 
@@ -400,19 +415,39 @@ dispose(app) {
 
 ## Directive Registry Freezing
 
-After all core directives are registered (during module loading), the directive registry is frozen. This means:
+The directive registry is frozen as soon as No.JS loads (when the core module finishes registering its directives), not at `NoJS.init()`. This means:
 
 - Plugins **can** register NEW directive names via `NoJS.directive()`
 - Plugins **cannot** override or replace built-in directive names
-- Attempting to re-register a core directive name logs a warning and is ignored
+- Attempting to re-register a core directive name logs `Cannot override core directive "<name>".` and is ignored
 
 ```javascript
 // OK: new directive name
-NoJS.directive('tooltip', { init(el, v) { /* ... */ } });
+NoJS.directive('tooltip', { init(el, name, value) { /* ... */ } });
 
 // Blocked: "bind" is a core directive
-NoJS.directive('bind', { init(el, v) { /* ... */ } }); // warning, ignored
+NoJS.directive('bind', { init(el, name, value) { /* ... */ } }); // warning, ignored
 ```
+
+### Names under core wildcards
+
+A plugin can register a name that a core wildcard directive (`on:*`, `bind-*`, `class-*`, `style-*`) would otherwise handle, such as `on:clickoutside`, `class-x` or `bind-chart`. The exact name wins for that attribute only; every other `on:*`, `bind-*`, `class-*` and `style-*` attribute still uses the core handler. Debug mode logs:
+
+```
+[No.JS] Directive "bind-chart" shadows core "bind-*" for that attribute.
+```
+
+### `strictDirectives`
+
+Set `strictDirectives: true` to reject those names as well: any name matched by a core wildcard is then treated like a core directive (warning, ignored), so the core handler keeps sanitizing `bind-href`, `bind-src` and the rest.
+
+```javascript
+NoJS.config({ strictDirectives: true }); // before any NoJS.directive() or NoJS.use()
+
+app.directive('bind-chart', { /* ... */ }); // covered by core bind-* -- warning, ignored
+```
+
+Because the registry is frozen at load, the flag applies to every registration made while it is set, including those made before `init()`, and never to names registered before it was set. Default: `false`.
 
 ---
 
@@ -442,7 +477,7 @@ Globals and interceptors registered during `NoJS.use()` are tagged with the plug
 Untrusted interceptors receive:
 - Redacted request headers
 - Proxy-wrapped response objects (preventing mutation)
-- Redacted URL query parameters
+- Redacted URL query parameters (response interceptors by default; request interceptors too with `strictRedaction`)
 - Redacted response headers
 
 See the [Security Reference](security.md) for complete details.
@@ -519,7 +554,6 @@ NoJS.use(AnalyticsPlugin, { trackingId: 'UA-XXXXX', sampleRate: 0.5 });
 ```javascript
 const AuthPlugin = {
   name: 'auth',
-  trusted: true,
   install(app) {
     app.interceptor('request', (url, opts) => {
       const token = app.store.auth?.token;
@@ -542,7 +576,7 @@ const AuthPlugin = {
   }
 };
 
-NoJS.use(AuthPlugin);
+NoJS.use(AuthPlugin, { trusted: true });
 ```
 
 ### Offline Guard Plugin
@@ -552,7 +586,7 @@ const OfflinePlugin = {
   name: 'offline-guard',
   install(app) {
     app.interceptor('request', (url, opts) => {
-      if (!navigator.onLine) return NoJS.CANCEL;
+      if (!navigator.onLine) return { [NoJS.CANCEL]: true };
       return opts;
     });
 
@@ -573,8 +607,8 @@ const FeatureFlagsPlugin = {
     app.global('flags', flags);
 
     app.directive('feature', {
-      init(el, value, ctx) {
-        const flagName = el.getAttribute('feature');
+      init(el, name, value) {
+        const flagName = value;
         if (!flags[flagName]) {
           el.style.display = 'none';
           el.setAttribute('aria-hidden', 'true');
@@ -601,7 +635,7 @@ const LazyLoadPlugin = {
   name: 'lazy-load',
   install(app) {
     app.directive('lazy-src', {
-      init(el, value, ctx) {
+      init(el, name, value) {
         const observer = new IntersectionObserver(([entry]) => {
           if (entry.isIntersecting) {
             el.src = value;
@@ -609,9 +643,9 @@ const LazyLoadPlugin = {
           }
         }, { rootMargin: '200px' });
         observer.observe(el);
-      },
-      destroy(el) {
-        el._observer?.disconnect();
+        // No destroy hook: register cleanup on the element
+        el.__disposers = el.__disposers || [];
+        el.__disposers.push(() => observer.disconnect());
       }
     });
   }
@@ -630,6 +664,6 @@ const LazyLoadPlugin = {
 2. **Clean up in `dispose()`** -- Remove intervals, observers, WebSocket connections, and event listeners
 3. **Use `init()` for DOM-dependent setup** -- Registration goes in `install()`, DOM operations go in `init()`
 4. **Keep plugins focused** -- One concern per plugin (auth, analytics, feature flags)
-5. **Use `trusted: true` sparingly** -- Only for plugins that genuinely need access to credentials
+5. **Use `NoJS.use(plugin, { trusted: true })` sparingly** -- Only for plugins that genuinely need access to credentials
 6. **Prefer `NoJS.global()` over direct store mutation** -- Globals have built-in security checks
 7. **Document your plugin's globals** -- Users need to know which `$variables` your plugin exposes

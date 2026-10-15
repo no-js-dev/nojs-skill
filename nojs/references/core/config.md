@@ -1,6 +1,6 @@
 # No.JS Configuration Reference
 
-Complete reference for all `NoJS.config()` options. Call `NoJS.config()` before `NoJS.init()` -- configuration is locked after initialization.
+Complete reference for all `NoJS.config()` options. `NoJS.config()` can be called before or after `NoJS.init()`. After initialization only the sanitization keys (`sanitize`, `dangerouslyDisableSanitize`, `sanitizeHtml`) are locked, and `strictBindings` cannot be turned off once it is `true`.
 
 ## Contents
 
@@ -14,6 +14,7 @@ Complete reference for all `NoJS.config()` options. Call `NoJS.config()` before 
 - [Development Options](#development-options)
 - [Router Options](#router-options)
 - [i18n Options](#i18n-options)
+- [Opt-in Hardening Flags](#opt-in-hardening-flags)
 - [Stores](#stores)
 - [Merging Behavior](#merging-behavior)
 
@@ -30,7 +31,7 @@ NoJS.config({
 });
 ```
 
-Config must be called before `NoJS.init()`. Calling it after initialization throws an error.
+`NoJS.config()` works before or after `NoJS.init()`; it never throws. After `init()` starts, changing `sanitize`, `dangerouslyDisableSanitize` or `sanitizeHtml` logs `config.<key> cannot be changed after init()` and the value is ignored, and setting `strictBindings` back from `true` logs `config.strictBindings cannot be turned off after init()`. Both locks reset on `NoJS.dispose()`.
 
 ---
 
@@ -51,7 +52,7 @@ Options controlling the behavior of fetch directives (`get`, `post`, `put`, `del
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `baseApiUrl` | string | `""` | Default base URL prepended to all fetch directive URLs |
-| `headers` | object | `{}` | Default headers included in all HTTP requests |
+| `headers` | object | `{}` | Default headers included in all HTTP requests, cross-origin requests included. Set `scopeHeaders: true` to send them only to trusted origins |
 | `timeout` | number | `10000` | Request timeout in milliseconds |
 | `retries` | number | `0` | Number of automatic retries on failed requests |
 | `retryDelay` | number | `1000` | Delay between retries in milliseconds |
@@ -70,7 +71,7 @@ Controls which requests include cookies and authorization headers.
 
 ### csrf
 
-When set, the specified token is automatically included as a header in every fetch request.
+When set, the token is sent in the configured header on mutating requests (`post`, `put`, `patch`, `delete`) to the page's own origin. `GET` and `QUERY` requests and cross-origin requests never receive it.
 
 ```javascript
 NoJS.config({
@@ -84,7 +85,7 @@ NoJS.config({
 | Property | Type | Description |
 |----------|------|-------------|
 | `token` | string | The CSRF token value |
-| `header` | string | The HTTP header name to send the token in |
+| `header` | string | The HTTP header name to send the token in (default `X-CSRF-Token`). Untrusted request interceptors can read and override it unless `strictRedaction: true` |
 
 ---
 
@@ -132,6 +133,7 @@ NoJS.config({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `templates.cache` | boolean | `true` | Cache loaded remote templates to avoid duplicate fetches |
+| `templates.pageRelative` | boolean | `false` | Opt-in. Resolve `<template src>` against the page and ignore the nearest `base` attribute and `baseApiUrl`. By default `src` is resolved like an HTTP directive URL (nearest `base`, else `baseApiUrl`, else as written). See [templates.md](../directives/templates.md#how-src-is-resolved) |
 
 ---
 
@@ -144,6 +146,7 @@ Control HTML sanitization for `bind-html` directives.
 | `sanitize` | boolean | `true` | Sanitize HTML content in `bind-html` using the built-in DOMParser-based sanitizer |
 | `dangerouslyDisableSanitize` | boolean | `false` | Explicit opt-out of all HTML sanitization. **Use with extreme caution** -- this exposes the application to XSS |
 | `sanitizeHtml` | function\|null | `null` | Custom sanitizer function to replace the built-in sanitizer |
+| `strictBindings` | boolean | `false` | Opt-in. Reject `bind-on*` event-handler attributes and sanitize `bind-srcdoc` like `bind-html`. See [Opt-in Hardening Flags](#opt-in-hardening-flags) |
 
 ### Custom sanitizer
 
@@ -182,7 +185,8 @@ NoJS.config({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `debug` | boolean | `false` | Enable verbose console logging with `[No.JS]` prefix |
-| `devtools` | boolean | `false` | Enable the browser devtools panel |
+| `devtools` | boolean | `false` | Enable the browser devtools panel. The `window.__NOJS_DEVTOOLS__` API is installed only on local hosts, but `nojs:devtools` events are dispatched on any host unless `strictDevtools: true`. See [devtools.md](../devtools.md) |
+| `strictDevtools` | boolean | `false` | Opt-in. Limit devtools events to local hosts and redact devtools snapshots, config and fetch URLs. See [Opt-in Hardening Flags](#opt-in-hardening-flags) |
 | `appId` | string | `""` | Application identifier shown in devtools |
 
 When `debug` is `true`, the framework logs directive processing, expression evaluation, store changes, route transitions, and interceptor execution.
@@ -249,7 +253,43 @@ NoJS.config({
 | `i18n.ns` | string[] | `[]` | Namespaces to load |
 | `i18n.supportedLocales` | string[] | `[]` | Locales eligible for browser detection under `loadPath`. On first visit `detectBrowser` adopts the browser language (or its prefix, e.g. `pt` from `pt-BR`) only when present in this list. Locale priority: persisted `nojs-locale` > detection > `defaultLocale` |
 | `i18n.cache` | boolean | `true` | Cache loaded locale JSON files to avoid duplicate fetches |
-| `i18n.persist` | boolean | `false` | Persist the selected locale to `localStorage` so it survives page reloads |
+| `i18n.persist` | boolean | `false` | Persist the selected locale to `localStorage` so it survives page reloads. The persisted value is restored even when it is not in `supportedLocales`, unless `i18n.strictLocale: true` |
+| `i18n.escapeParams` | boolean | `false` | Opt-in. HTML-escape `t-*` param values in `t-html` translations. By default params are inserted raw and the combined result is sanitized. Plain `t` is not affected. Changing it after `init()` re-renders active translations |
+| `i18n.strictLocale` | boolean | `false` | Opt-in. Ignore (and remove from `localStorage`) a persisted `nojs-locale` that is not listed in a non-empty `supportedLocales`. Read only by the `NoJS.i18n()` call that restores the locale: pass it in that call, or set it with `config()` before it |
+
+---
+
+## Opt-in Hardening Flags
+
+Stricter security behaviors are opt-in, so apps built on v1.21.1 keep working unchanged. Every flag defaults to `false` (v1.21.1 behavior) and is set with `NoJS.config()`. Most take effect immediately, before or after `init()`. Exceptions:
+
+- `strictDirectives` applies to the directive registrations made after it is set. The core registry is frozen as soon as No.JS loads, so set it before any `NoJS.directive()` or `NoJS.use()` call.
+- `i18n.strictLocale` applies only to the `NoJS.i18n()` call that restores the persisted locale.
+- `strictBindings` is read when each binding initializes, so set it before `NoJS.init()`. Once `true`, it cannot be turned off after `init()`.
+
+| Flag | Default | When `true` |
+|------|---------|-------------|
+| `scopeHeaders` | `false` | Global `config({ headers })` are sent only to trusted origins: the page, the `baseApiUrl` origin and the origin of the nearest `base` attribute. Per-request `headers` still apply to any origin. Default: global headers go with every request, cross-origin included |
+| `strictRedaction` | `false` | Untrusted request and response interceptors, `fetch:success` / `fetch:error` / `error` event payloads and request failure warnings get a string-level redacted URL: the `#fragment` is dropped and the values of sensitive query parameters become `[REDACTED]` (names matched by word, so `author` or `keyword` stay intact). The `csrf.header` name is withheld from untrusted interceptors and cannot be overridden by them. Response headers that are sensitive as request headers (`authorization`, `x-auth-*`, `x-api-*`, ...) are also stripped from the response proxy |
+| `strictDirectives` | `false` | `NoJS.directive()` / `app.directive()` reject names covered by a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`) with a warning |
+| `strictDevtools` | `false` | `nojs:devtools` events and context ids are also limited to local hosts. Devtools snapshots, `globals`, plugin `options` and `ctx:updated` values redact sensitive names (matched by word) at every depth; the `config` getter redacts headers per key; devtools fetch events redact tokens in URLs |
+| `strictJsonld` | `false` | `page-jsonld` placeholders inside JSON strings are always escaped as JSON string content, so a value cannot end the string or add keys, and a value with `"`, `\` or a line break no longer makes the output invalid JSON. `<` in values becomes `\u003c`. Default: the v1.21.1 output byte-for-byte |
+| `strictBindings` | `false` | `bind-on*` event-handler attributes (any `bind-on*` name without a hyphen: `bind-onclick`, `bind-onerror`, ...) are rejected with a `[Security]` warning; `bind-onboarding-step` still binds. `bind-srcdoc` values go through the `bind-html` sanitizer (or your `sanitizeHtml`) |
+| `templates.pageRelative` | `false` | `<template src>` resolves against the page and ignores `base` and `baseApiUrl` |
+| `i18n.escapeParams` | `false` | `t-*` params in `t-html` translations are HTML-escaped before interpolation |
+| `i18n.strictLocale` | `false` | A persisted `nojs-locale` not listed in a non-empty `supportedLocales` is ignored and removed when `NoJS.i18n()` restores it |
+
+```javascript
+NoJS.config({
+  scopeHeaders: true,
+  strictRedaction: true,
+  strictDevtools: true,
+  strictJsonld: true,
+  strictBindings: true,
+  templates: { pageRelative: true },
+  i18n: { escapeParams: true }
+});
+```
 
 ---
 
@@ -280,7 +320,7 @@ Stores are deeply reactive -- nested property assignments automatically trigger 
 
 ## Merging Behavior
 
-Nested option objects (`headers`, `cache`, `router`, `i18n`) are **merged** with existing values, not replaced. This allows incremental configuration:
+Nested option objects (`headers`, `cache`, `templates`, `router`, `i18n`) are **merged** with existing values, not replaced. This allows incremental configuration:
 
 ```javascript
 // First call sets defaults
