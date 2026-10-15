@@ -1,0 +1,14 @@
+{
+  "source": { "file": ".claude-plugin/plugin.json", "key": "version" },
+  "files": [
+    { "file": "nojs/SKILL.md", "pattern": "metadata:\n  version: {v}\n" },
+    { "file": "nojs/SKILL.md", "pattern": "| **Version** | {v} |" }
+  ],
+  "hooks": { "dir": ".githooks" },
+  "reviewAllowlist": [],
+  "scanExclude": [
+    "CHANGELOG.md",
+    ".github/reviews/",
+    "*.pen"
+  ]
+}
