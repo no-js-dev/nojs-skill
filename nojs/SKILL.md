@@ -701,7 +701,7 @@ All paths relative to `nojs/references/`:
 
 | Property | Value |
 |----------|-------|
-| **Version** | 1.20.0 |
+| **Version** | 1.21.1 |
 | **Website** | <https://no-js.dev/> |
 | **CDN (core)** | `https://cdn.no-js.dev/` |
 | **CDN (elements)** | `https://cdn-elements.no-js.dev/` |
