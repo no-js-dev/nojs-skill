@@ -35,7 +35,7 @@ Complete reference for the NoJS JavaScript API surface. All methods, getters, se
 
 ## NoJS.config(options)
 
-Configure global framework settings. Call before `NoJS.init()` or the DOM ready event. Config is locked after initialization -- calling `NoJS.config()` after `NoJS.init()` throws.
+Configure global framework settings. Can be called before or after `NoJS.init()` and never throws. After `init()` starts, only `sanitize`, `dangerouslyDisableSanitize` and `sanitizeHtml` are locked (changing them logs a warning and is ignored), and `strictBindings` cannot be turned off once it is `true`. Both locks reset on `NoJS.dispose()`.
 
 ```javascript
 NoJS.config({
@@ -60,11 +60,20 @@ NoJS.config({
   stores: {
     auth: { user: null, token: null },
     cart: { items: [] }
-  }
+  },
+
+  // Opt-in hardening flags (all default false = v1.21.1 behavior)
+  scopeHeaders: false,
+  strictRedaction: false,
+  strictDirectives: false,
+  strictDevtools: false,
+  strictJsonld: false,
+  strictBindings: false
+  // plus templates.pageRelative, i18n.escapeParams, i18n.strictLocale
 });
 ```
 
-For the full options table with types, defaults, and detailed descriptions, see the [Configuration Reference](config.md).
+For the full options table with types, defaults, and detailed descriptions, see the [Configuration Reference](config.md). The hardening flags are described in [Opt-in Hardening Flags](config.md#opt-in-hardening-flags).
 
 ---
 
@@ -83,19 +92,22 @@ await NoJS.init();
 // Initialize on a specific container
 await NoJS.init(document.getElementById('app'));
 
-// Re-initialize (after adding new HTML dynamically)
-await NoJS.init();
+// Calling it again returns the same Promise (no second walk).
+// For HTML added later, use NoJS.processTree(el).
 ```
 
 **Initialization sequence**:
-1. Mark as initialized (prevents duplicate init)
-2. Load and process remote template includes (Phase 1 and Phase 2)
-3. Process all directive attributes on the DOM tree
-4. Create and start the router (if `config.router` is set)
-5. Fire `ready` event on the event bus
-6. Initialize devtools (if enabled)
+1. Lock the sanitization config keys and mark as initialized (a second call returns the same Promise)
+2. Load i18n locale files (when `i18n.loadPath` is set)
+3. Inline template includes, then load Phase 1 remote templates (blocking)
+4. Create the router if a `[route-view]` element exists
+5. Process all directive attributes on the DOM tree (first paint)
+6. Start the router, start Phase 2 template preloading (non-blocking), initialize devtools (if enabled)
+7. Run each plugin's `init()` hook, then emit `plugins:ready` on the event bus
 
 Returns a `Promise` that resolves when initialization is complete.
+
+**Directive errors are isolated.** A directive whose `init` throws no longer stops the rest of the page from rendering: the error is warned on its element (`[No.JS] directive "<name>" init error on <tag>:`) and the walk continues. `NoJS.init()` still starts the router, runs plugin `init()` hooks and emits `plugins:ready`, then rejects with the first such error. Inside a reactive batch update the error is only warned. A disposer that throws is warned and does not stop the remaining disposers.
 
 ---
 
@@ -112,52 +124,44 @@ Register a custom directive for use in HTML attributes.
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `init(el, value, ctx)` | function | Yes | Called when the element is first processed |
-| `update(el, value, ctx)` | function | No | Called when the expression value changes |
-| `destroy(el, ctx)` | function | No | Called when the element is disposed |
-| `priority` | number | No | Processing order (lower = earlier, default: 500) |
+| `init(el, name, value)` | function | Yes | Called once when the element is processed. `name` is the attribute name, `value` the raw attribute string. Evaluate it yourself with `NoJS.evaluate(value, NoJS.findContext(el))` and watch the context if it must react to changes |
+| `priority` | number | No | Processing order (lower = earlier, default: `50`, after all built-in directives) |
+
+There are no `update` or `destroy` hooks. Register cleanup for listeners, observers and timers on the element (see Custom directive utilities below).
 
 ```javascript
-// Object form
 NoJS.directive('tooltip', {
-  init(el, value, ctx) {
-    el._tooltip = document.createElement('div');
-    el._tooltip.className = 'tooltip';
-    el._tooltip.textContent = value;
-    el.appendChild(el._tooltip);
-  },
-  update(el, value) {
-    el._tooltip.textContent = value;
-  },
-  destroy(el) {
-    el._tooltip?.remove();
+  priority: 25,
+  init(el, name, value) {
+    const ctx = NoJS.findContext(el);
+    const tip = document.createElement('div');
+    tip.className = 'tooltip';
+    tip.textContent = NoJS.evaluate(value, ctx);
+    const show = () => document.body.appendChild(tip);
+    const hide = () => tip.remove();
+    el.addEventListener('mouseenter', show);
+    el.addEventListener('mouseleave', hide);
+    el.__disposers = el.__disposers || [];
+    el.__disposers.push(() => {
+      el.removeEventListener('mouseenter', show);
+      el.removeEventListener('mouseleave', hide);
+      tip.remove();
+    });
   }
 });
-
-// Function shorthand (init only)
-NoJS.directive('focus', (el) => el.focus());
 ```
 
 ```html
-<div tooltip="message">Hover me</div>
+<div tooltip="'Saved!'">Hover me</div>
 ```
 
-### Default priority
+A directive whose `init` throws is isolated: the error is warned on its element and the rest of the page keeps rendering.
 
-Custom directives default to priority `500`. Core directives use lower priorities to ensure they process first.
+### Registry freezing and wildcard names
 
-### Wildcard patterns
+Core directive names are frozen as soon as No.JS loads, before `NoJS.init()` runs: registering one logs `Cannot override core directive "<name>".` and is ignored. A name is also locked once it has been registered, so a later registration cannot replace it.
 
-Directive names can include a wildcard suffix (`*`) to match multiple attribute patterns:
-
-```javascript
-NoJS.directive('data-*', {
-  init(el, value, ctx) {
-    const key = el.getAttribute('data-key');
-    // handle data-anything attributes
-  }
-});
-```
+Custom directives cannot declare their own wildcard patterns; only the core wildcards `on:*`, `bind-*`, `class-*` and `style-*` exist. A custom name that one of them would otherwise handle, such as `on:clickoutside`, `class-x` or `bind-chart`, is accepted and wins for that exact attribute only (debug mode logs `Directive "bind-chart" shadows core "bind-*" for that attribute.`). Set `NoJS.config({ strictDirectives: true })` before any `NoJS.directive()` or `NoJS.use()` call to reject such names too.
 
 ### Custom directive utilities
 
@@ -196,7 +200,7 @@ NoJS.filter('pad', (value, length, char) => {
 
 ```html
 <span bind="fullName | initials"></span>       <!-- "John Doe" -> "JD" -->
-<span bind="id | pad:6:'0'"></span>            <!-- 42 -> "000042" -->
+<span bind="id | pad:6,'0'"></span>            <!-- 42 -> "000042" (args are comma-separated) -->
 ```
 
 ---
@@ -210,7 +214,9 @@ Register a custom form validator.
 | `name` | string | Validator name used in `validate="name"` |
 | `fn` | function | Validation function. Receives the input value, returns `true` (valid) or a string (error message) |
 
-Built-in validator names are protected: `required`, `email`, `url`, `min`, `max`, `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha`, `alphanumeric`.
+Only the names of the built-in rules of the NoJS Elements `validate` directive are reserved: `required`, `email`, `url`, `min` and `max`. Registering one of them logs `"<name>" is a built-in validator and cannot be overridden` and does nothing. Every other name can be registered, including `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric` -- the `validate` directive has no rule with those names, so register your own if you want to use them.
+
+Validators are run by NoJS Elements, which reads the registry when it installs: register them before the Elements script loads.
 
 ```javascript
 NoJS.validator('username', (value) => {
@@ -249,6 +255,8 @@ Configure internationalization settings. Can be called before or after `init()`.
 | `fallbackLocale` | string | Fallback locale when a key is missing |
 | `detectBrowser` | boolean | Auto-detect locale from `navigator.language` |
 | `supportedLocales` | string[] | Locales eligible for browser detection. When set with `loadPath`, `detectBrowser` adopts the browser language (or its prefix, e.g. `pt` from `pt-BR`) only if present in this list |
+| `escapeParams` | boolean | Default `false`: `t-*` params in `t-html` are inserted raw and the result is sanitized. `true`: params are HTML-escaped first. Changing it after `init()` re-renders active translations |
+| `strictLocale` | boolean | Default `false`: a persisted `nojs-locale` is restored even if it is not in `supportedLocales`. `true`: such a value is ignored and removed (only when `supportedLocales` is non-empty). Read by this `NoJS.i18n()` call only |
 
 ```javascript
 NoJS.i18n({
@@ -262,7 +270,7 @@ NoJS.i18n({
 });
 ```
 
-On first visit the active locale is resolved by priority: persisted `nojs-locale` > browser detection (when `detectBrowser` + `supportedLocales` match) > `defaultLocale`.
+On first visit the active locale is resolved by priority: persisted `nojs-locale` > browser detection (when `detectBrowser` + `supportedLocales` match) > `defaultLocale`. The persisted value wins even when it is not in `supportedLocales`, unless `strictLocale: true`.
 
 ### Examples
 
@@ -296,7 +304,7 @@ const unsub = NoJS.on('ready', () => {
 unsub();
 ```
 
-**Known events**: `ready`, `route:change`, `route:before`, `route:after`, `locale:change`, `store:change`, `dispose`.
+**Framework events**: `plugins:ready` (end of `NoJS.init()`), `fetch:success` (`{ url, data }`), `fetch:error` and `error` (`{ url, error }`) from the HTTP verb directives and `call`, and `fetch:end`. The `url` in these payloads is the raw URL by default; with `strictRedaction: true` it is redacted (fragment dropped, sensitive query values `[REDACTED]`). Any other name works as a custom event between `NoJS.on()` and your own code.
 
 A maximum of `config.maxEventListeners` (default: 100) listeners can be registered per event. Exceeding this limit logs a memory leak warning.
 
@@ -465,13 +473,25 @@ Register a request or response interceptor.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
-  const token = NoJS.store.auth?.token;
-  if (token) {
-    opts.headers = opts.headers || {};
-    opts.headers['Authorization'] = `Bearer ${token}`;
-  }
+  opts.headers = opts.headers || {};
+  opts.headers['X-Client-Version'] = '2.4.0';
   return opts;
 });
+```
+
+A request interceptor returns the (modified) options. Sensitive headers (`Authorization`, `Cookie`, `X-API-Key`, `X-CSRF-Token`, `x-auth-*`, `x-api-*`, ...) are stripped from the options an untrusted interceptor receives and re-applied after the chain, and values it sets for them are dropped. To stamp an `Authorization` header, register the interceptor from a plugin installed with `{ trusted: true }`:
+
+```javascript
+NoJS.use({
+  name: 'auth-token',
+  install(app) {
+    app.interceptor('request', (url, opts) => {
+      const token = NoJS.store.auth?.token;
+      if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+      return opts;
+    });
+  }
+}, { trusted: true });
 ```
 
 ### Response interceptor
@@ -487,7 +507,7 @@ NoJS.interceptor('response', (response) => {
 
 ### Plugin tracking and header redaction
 
-When registered during `NoJS.use()`, the interceptor is tracked with the plugin name. Untrusted interceptors (those not registered via a trusted plugin) receive redacted request and response headers.
+When registered during `NoJS.use()`, the interceptor is tracked with the plugin name. Untrusted interceptors (those not registered by a plugin installed with `NoJS.use(plugin, { trusted: true })`) receive redacted request and response headers.
 
 ### Sensitive header redaction
 
@@ -495,7 +515,9 @@ When registered during `NoJS.use()`, the interceptor is tracked with the plugin 
 
 **Redacted response headers**: `set-cookie`, `x-csrf-token`, `x-auth-token`, `www-authenticate`, `proxy-authenticate`.
 
-**URL query param redaction**: Parameters matching `token|key|secret|auth|password|credential` (case-insensitive) are replaced with `[REDACTED]`.
+**URL query param redaction (default, v1.21.1 behavior)**: only the URL handed to untrusted **response** interceptors (and the response proxy's `url`) is redacted. Values of parameters whose name contains `token`, `key`, `secret`, `auth`, `password` or `credential` (case-insensitive substring) are replaced, and the URL is re-serialized by the `URL` API, so they read `%5BREDACTED%5D`. Untrusted **request** interceptors, the `fetch:success` / `fetch:error` / `error` payloads and the request failure warnings get the raw URL.
+
+**`strictRedaction: true`**: request and response interceptors, the event payloads and the failure warnings all get a string-level redacted URL: the `#fragment` is dropped and the values of sensitive parameters become a literal `[REDACTED]`, with names matched by word (`author`, `keyword` and `sort_key` stay intact). The `csrf.header` name is withheld from untrusted interceptors and cannot be overridden by them, and response headers that are sensitive as request headers (`authorization`, `cookie`, `x-auth-*`, `x-api-*`, ...) are also stripped from the response proxy.
 
 ### Interceptor timeout
 

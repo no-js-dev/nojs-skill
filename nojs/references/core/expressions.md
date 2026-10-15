@@ -295,19 +295,19 @@ Array destructuring in `for`/`each` loops:
 
 ## Filter Pipe Syntax
 
-Filters transform expression values using the pipe (`|`) operator. Arguments are passed with `:` separators.
+Filters transform expression values using the pipe (`|`) operator. The first argument follows `:`; further arguments are separated by `,`. Arguments are quoted string or number literals; whitespace inside quotes is kept (`join:', '`).
 
 ```
 value | filterName
 value | filterName:arg1
-value | filterName:arg1:arg2
+value | filterName:arg1,arg2
 ```
 
 Filters can be chained:
 
 ```html
 <span bind="name | trim | uppercase"></span>
-<span bind="items | where:'active':true | count"></span>
+<span bind="items | where:'status','active' | count"></span>
 <span bind="price | currency:'EUR'"></span>
 <span bind="text | truncate:50 | stripHtml"></span>
 ```
@@ -546,6 +546,7 @@ The following keywords are recognized by the expression parser:
 ## Limitations
 
 - **No `if`/`else`/`for`/`while` statements** -- Use ternary operator (`? :`) for conditionals in expressions; use `if`/`else`/`each`/`for` directives for control flow.
+- **`const`/`let` only as handler-local declarations** -- In statement context (`on:*`, `watch`), `const name = value` and `let name = value` declare locals that are never written to state (see [events.md](../directives/events.md#multiple-statements-and-local-variables)). No destructuring, no `var`, and names cannot start with `$`.
 - **No `new` keyword in expression context** -- Constructors like `new Date()` work, but `new` followed by user-defined constructors may not behave as expected in all contexts.
 - **No `try`/`catch`/`throw`** -- Errors in expressions are caught by the framework and logged as warnings.
 - **No regular expression literals** -- Use `new RegExp('pattern')` instead of `/pattern/`.
