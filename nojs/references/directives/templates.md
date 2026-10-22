@@ -284,7 +284,7 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
 | `method` | string | HTTP method. Default: `"get"` |
 | `as` | string | Name for response data in context. Default: `"data"` |
 | `into` | string | Write response to a named global store, under the `as` key: `$store.<into>.<as>` |
-| `body` | string | Request body string; each `{expression}` is replaced with its `encodeURIComponent`-ed value (not a JSON template, see [http.md](http.md#body)) |
+| `body` | string | Request body: a JSON template or object literal is sent as JSON; in other text each `{expression}` is replaced with its `encodeURIComponent`-ed value (see [http.md](http.md#body)) |
 | `loading` | string | Template ID shown during request |
 | `success` | string | Template ID rendered on success |
 | `error` | string | Template ID rendered on error |

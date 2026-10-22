@@ -210,7 +210,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 | `debounce` | `debounce="300"` | Debounce reactive URL refetches (ms) |
 | `skeleton` | `skeleton="skelId"` | Show/hide a placeholder element during loading |
 | `headers`/`params` | `headers='{"Auth":"x"}'` | Per-request headers (JSON) / query parameters |
-| `body` | `body="key={expr}"` | Request body string; `{expr}` values are URL-encoded. Not a JSON template: for JSON, use a `<form>` with `name`d fields |
+| `body` | `body='{"key": "{expr}"}'` | Request body: a JSON template or object literal (`{ id: item.id }`) is sent as JSON; other text has its `{expr}` values URL-encoded. Ignored on a `<form>` (named fields are sent) |
 | `retry`/`retry-delay` | `retry="3"` | Retry attempts and delay between retries (ms) |
 | `confirm` | `confirm="Sure?"` | Browser confirmation before request |
 | `redirect` | `redirect="/home"` | SPA redirect on success |
@@ -500,9 +500,9 @@ Browser globals (`window`, `document`, `location`, `history`, `navigator`) avail
 ### Key limitations
 
 - Filters work only in expression context (`bind`, `class-*`, `style-*`), not in `on:*`/`watch` statement handlers
-- `if`/`for`/`while` blocks and `new` statements unsupported -- put the ternary on the right-hand side (`a = ok ? 1 : a`) or use `;`-separated statements
+- `if`/`for`/`while` blocks, `new`, `await` and the `**` operator unsupported -- put the ternary on the right-hand side (`a = ok ? 1 : a`) or use `;`-separated statements; `Math.pow(a, b)` replaces `**`
 - Assignment inside a ternary branch or `&&`/`||` operand (`ok ? a = 1 : null`, `ok && (a = 1)`) and the comma operator (`a = 1, b = 2`) do not run (a console warning is emitted); only top-level assignments apply
-- Handler-local variables in `on:*`/`watch`: `const m = items.splice(0, 1)[0]; items.push(m)` -- `const`/`let` bindings are never written to state; reassigning a `const` throws and cancels the handler's state writes
+- Handler-local variables in `on:*`/`watch`: `const m = items.splice(0, 1)[0]; items.push(m)` -- `const`/`let` bindings are never written to state; reassigning a `const` throws: the handler stops and its `name = value` writes are not applied (in-place changes and `$store` writes made before the error stay)
 - Statement write-back: in `on:*`/`watch`, mutated variables auto-write-back to the owning context
 - AST caching: LRU-cached (configurable: `exprCacheSize`, default 500)
 
@@ -599,7 +599,7 @@ NoJS.REPLACE                   // Interceptor sentinel: return { [NoJS.REPLACE]:
 
 ```html
 <!-- Requires NoJS Elements plugin. Rules are separated with |; lengths use the native minlength attribute -->
-<!-- The form's named fields are sent as a JSON object (body= is not a JSON template) -->
+<!-- The form's named fields are sent as a JSON object (body= is ignored on a form) -->
 <form validate post="/api/login" into="auth">
   <input name="email" type="email" validate="required|email" validate-on="blur"
          error-required="Email is required" error-email="Enter a valid email">

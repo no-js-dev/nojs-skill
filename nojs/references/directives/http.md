@@ -131,7 +131,7 @@ Fetch data via HTTP GET request.
 
 Submit data via HTTP POST request.
 
-**Syntax:** `<form post="/endpoint">` (named fields) or `<element post="/endpoint" body="key={expression}">`
+**Syntax:** `<form post="/endpoint">` (named fields) or `<element post="/endpoint" body='{"key": "{expression}"}'>`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event. On any other element, attaches a `click` listener. When the host element is a `<form>`, fields are auto-serialized via `FormData` (overrides `body` if both are present).
 
@@ -144,19 +144,25 @@ Submit data via HTTP POST request.
   <button>Login</button>
 </form>
 
-<!-- Non-form: triggers on click; send a URL-encoded body -->
+<!-- Non-form: triggers on click; send a JSON body -->
+<button post="/api/action" body='{"id": {item.id}, "note": "{note}"}'>Do it</button>
+
+<!-- Same request as an object literal -->
+<button post="/api/action" body="{ id: item.id, note: note }">Do it</button>
+
+<!-- URL-encoded body -->
 <button post="/api/action"
         headers='{"Content-Type": "application/x-www-form-urlencoded"}'
         body="id={item.id}">Do it</button>
 ```
 
-> **`body` is not a JSON template.** `{…}` in `body` is a URL placeholder: the value is `encodeURIComponent`-ed, and a JSON object's own `{` is read as a placeholder too. `body='{"email":"{email}"}'`, `body='{"role":"admin"}'` and `body="{ email, password }"` are all sent mangled. Send JSON from a `<form>` with `name`d fields; on other elements use a URL-encoded body as above. See [`body`](#body).
+On a `<form>`, `body` is ignored: the named fields are sent. See [`body`](#body) for the rules.
 
 ### `put`
 
 Update data via HTTP PUT request (full replacement).
 
-**Syntax:** `<form put="/endpoint">` (named fields) or `<element put="/endpoint" body="key={expression}">`
+**Syntax:** `<form put="/endpoint">` (named fields) or `<element put="/endpoint" body='{"key": "{expression}"}'>`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event and auto-serializes fields via `FormData` (same as `post`). On any other element, attaches a `click` listener.
 
@@ -263,7 +269,7 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
 
 | Attribute | Description |
 |-----------|-------------|
-| `body` | Request body string. Each `{expression}` is replaced with its `encodeURIComponent`-ed value (not a JSON template; see [`body`](#body)). For `<form>` elements on **any** method (POST, PUT, PATCH, DELETE), fields are auto-serialized via `FormData` and override `body` |
+| `body` | Request body. A JSON template (`'{"name": "{name}"}'`) or object literal (`{ id: item.id }`) is sent as JSON; in other text each `{expression}` is replaced with its `encodeURIComponent`-ed value (see [`body`](#body)). For `<form>` elements on **any** method (POST, PUT, PATCH, DELETE), fields are auto-serialized via `FormData` and `body` is ignored |
 | `success` | Template ID to render on success. Variable name resolved via [Template var Priority](#template-var-priority) |
 | `error` | Template ID to render on error. Variable name resolved via [Template var Priority](#template-var-priority) |
 | `loading` | Template ID to show during request |
@@ -298,17 +304,20 @@ Default value is `"data"`. The response data becomes available in the context un
 
 Request body for POST/PUT/PATCH/DELETE requests, and for the safe `query` read.
 
-**Syntax:** `<element post="/api" body="key={value}">`
+**Syntax:** `<element post="/api" body='{"key": "{value}"}'>`, `body="{ key: value }"` or `body="key={value}"`
 
-A string in which each `{expression}` is replaced with its value encoded by `encodeURIComponent` (the same encoding as URLs, without the URL dot-segment rule). If the result parses as JSON it is sent with `Content-Type: application/json`; otherwise it is sent as is, so set the content type with `headers`. Because a JSON object's own `{` also starts a placeholder, a JSON object in `body` (static or with placeholders) is **not** sent as JSON.
+How the body is built:
 
-| Goal | Pattern that works |
-|------|--------------------|
-| Dynamic JSON object | `<form post="/api">` with `name`d fields: they are sent as a JSON object (values are strings) |
-| Dynamic body on a non-form element | `headers='{"Content-Type": "application/x-www-form-urlencoded"}' body="email={email}&role={role}"` |
-| Structured value in a URL-encoded field | `body="items={$store.cart.items \| json}"` (the server parses the `items` field as JSON) |
+| Form | Example | Sent |
+|------|---------|------|
+| JSON template | `body='{"name": "{user.name}", "qty": {qty}, "items": {$store.cart.items}}'` | JSON (`Content-Type: application/json`). A placeholder inside a JSON string is inserted escaped (`""` for `null`/`undefined`); a placeholder outside a string is serialized as a JSON value (`null` for `undefined`) |
+| Object literal | `body="{ id: item.id, name: name }"`, `body="{ email, password }"` | The object as JSON |
+| Single placeholder holding an object | `body="{payload}"` | The object as JSON |
+| Any other text | `body="email={email}&role={role}"` | Each `{expression}` is replaced with its value encoded by `encodeURIComponent`. If the result parses as JSON it is sent as JSON; otherwise it is sent as is, so set the content type with `headers` |
 
-Inputs need a `name` attribute to be serialized; `model` alone is not enough. For `<form>` elements on any method, fields are always auto-serialized via `FormData` (overrides `body`). The fields are read before the `loading` template replaces the form's content, so a form with `loading` still sends its values. `query` is the one **read** method that carries a `body` — see [`query`](#query).
+A single-key shorthand `body="{ email }"` cannot be told apart from the placeholder `{email}`: it sends the URL-encoded value as text. Write `{ email: email }` or `'{"email": "{email}"}'`.
+
+Inputs need a `name` attribute to be serialized; `model` alone is not enough. For `<form>` elements on any method, fields are always auto-serialized via `FormData` and `body` is ignored. The fields are read before the `loading` template replaces the form's content, so a form with `loading` still sends its values. `query` is the one **read** method that carries a `body` — see [`query`](#query).
 
 ### `headers`
 

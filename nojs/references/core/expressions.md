@@ -12,7 +12,6 @@ No.JS uses a custom sandboxed recursive-descent parser and tree-walking evaluato
   - [Assignment](#assignment)
   - [Nullish and Optional Chaining](#nullish-and-optional-chaining)
   - [Spread](#spread)
-  - [Exponentiation](#exponentiation)
   - [typeof and instanceof](#typeof-and-instanceof)
   - [in Operator](#in-operator)
   - [Increment and Decrement](#increment-and-decrement)
@@ -77,12 +76,13 @@ Expressions are evaluated in every directive attribute value and in `bind` / `bi
 | `*` | Multiplication | `qty * price` |
 | `/` | Division | `total / count` |
 | `%` | Modulo (remainder) | `index % 2` |
-| `**` | Exponentiation | `base ** exp` |
+
+There is no `**` operator (`2 ** 10` renders `NaN` with a console warning); use `Math.pow(base, exp)`.
 
 ```html
 <span bind="price * qty"></span>
 <span bind="index % 2 === 0 ? 'even' : 'odd'"></span>
-<span bind="2 ** 10"></span>  <!-- 1024 -->
+<span bind="Math.pow(2, 10)"></span>  <!-- 1024 -->
 ```
 
 ### Comparison
@@ -350,6 +350,8 @@ These are available directly in any expression via the `_SAFE_GLOBALS` object:
 | `Symbol` | Constructor | Symbol constructor |
 | `console` | Object | Console logging (`console.log`, `console.warn`, etc.) |
 
+Expressions cannot use `new`, so the constructors in this list are reachable only through calls that work without it (`Date.now()`, `String(x)`, `RegExp('^a').test(s)`, `Array.from(...)`) and their static methods. Build instances (`new Date(...)`, `new Map()`) in JavaScript or in a custom filter.
+
 ```html
 <span bind="Math.floor(price * 100) / 100"></span>
 <span bind="Object.keys(config).length"></span>
@@ -392,11 +394,13 @@ These are available via the `_BROWSER_GLOBALS` allow-list. `window`, `document`,
 | `Blob` | Binary large object constructor |
 | `Promise` | Promise constructor |
 
+The constructors in this table cannot be instantiated in an expression (there is no `new`); their static methods work (`URL.canParse(link)`).
+
 ```html
 <span bind="window.innerWidth"></span>
 <span bind="navigator.language"></span>
 <span bind="screen.width + 'x' + screen.height"></span>
-<span bind="new URL(link).hostname"></span>
+<span bind="location.hostname"></span>
 ```
 
 ### Timer Wrappers
@@ -548,9 +552,10 @@ The following keywords are recognized by the expression parser:
 - **No `if`/`else`/`for`/`while` statements** -- Use a ternary on the right-hand side of an assignment (`a = ok ? 1 : a`) and `if`/`else`/`each`/`for` directives for control flow.
 - **Assignments only at the top level of a statement** -- An assignment inside a ternary branch (`ok ? a = 1 : b = 2`), inside `&&`/`||` (`ok && (a = 1)`), or joined with the comma operator (`a = 1, b = 2`) does not run, and a console warning is emitted. Write `a = ok ? 1 : a` or separate statements with `;`. Function calls inside branches work (`ok ? save() : null`).
 - **`const`/`let` only as handler-local declarations** -- In statement context (`on:*`, `watch`), `const name = value` and `let name = value` declare locals that are never written to state (see [events.md](../directives/events.md#multiple-statements-and-local-variables)). No destructuring, no `var`, and names cannot start with `$`.
-- **No `new` keyword in expression context** -- Constructors like `new Date()` work, but `new` followed by user-defined constructors may not behave as expected in all contexts.
+- **No `new` keyword** -- `new Date()`, `new URL(link)`, `new Map()` evaluate to `undefined` with a console warning. Use calls that work without `new` (`Date.now()`, `RegExp('x')`) or create the object in JavaScript (a custom filter or a function registered with `NoJS.global`).
 - **No `try`/`catch`/`throw`** -- Errors in expressions are caught by the framework and logged as warnings.
-- **No regular expression literals** -- Use `new RegExp('pattern')` instead of `/pattern/`.
+- **No regular expression literals** -- Use `RegExp('pattern')` (without `new`) instead of `/pattern/`.
 - **Filter pipe `|` in nested expressions** -- When using filters inside ternary branches or function arguments, wrap the filtered expression in parentheses: `(value | filter)`.
 - **Single-expression body for arrow functions** -- Arrow functions support only expression bodies, not block bodies with `{ ... }`.
-- **No `async`/`await`** -- Expressions are evaluated synchronously.
+- **No `async`/`await`** -- Expressions are evaluated synchronously. A statement starting with `await` does not run at all (`on:click="await $router.push('/x')"` does not navigate); call the function without `await`.
+- **No `**` operator** -- Use `Math.pow(base, exp)`.

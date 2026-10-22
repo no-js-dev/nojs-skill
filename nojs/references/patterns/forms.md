@@ -257,7 +257,46 @@ Full create/read/update/delete pattern with inline form switching:
 
 ## File Upload with Progress Tracking
 
-For real-time upload progress, use `XMLHttpRequest` with `on:init` to set up the progress listener. The NoJS state system drives the progress bar reactively.
+For real-time upload progress, use `XMLHttpRequest` (`fetch` does not report upload progress). Expressions cannot hold that code (no `if`, `var`, `function`, `new`, and `XMLHttpRequest` is not an expression global), so it lives in a small custom directive that writes `uploading`, `progress`, `uploadResult` and `uploadError` to the nearest state. The NoJS state system drives the progress bar reactively.
+
+```html
+<script>
+  NoJS.directive('upload', {
+    init(el, name, url) {
+      const ctx = NoJS.findContext(el);
+      const onClick = () => {
+        const input = ctx.$refs[el.getAttribute('upload-input')];
+        const file = input && input.files[0];
+        if (!file) return;
+        ctx.uploading = true;
+        ctx.progress = 0;
+        ctx.uploadResult = null;
+        ctx.uploadError = null;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) ctx.progress = (e.loaded / e.total) * 100;
+        };
+        xhr.onload = () => {
+          ctx.uploading = false;
+          if (xhr.status >= 200 && xhr.status < 300) ctx.uploadResult = JSON.parse(xhr.responseText);
+          else ctx.uploadError = 'Upload failed: ' + xhr.statusText;
+        };
+        xhr.onerror = () => { ctx.uploading = false; ctx.uploadError = 'Network error'; };
+        xhr.open('POST', url);
+        xhr.send(formData);
+      };
+      el.addEventListener('click', onClick);
+      NoJS.internals.onDispose(() => el.removeEventListener('click', onClick));
+    }
+  });
+</script>
+```
+
+Register the directive before No.JS initializes (a `<script>` after the CDN tag runs before the automatic init). Then use it on the upload button:
 
 ```html
 <div state="{
@@ -285,36 +324,12 @@ For real-time upload progress, use `XMLHttpRequest` with `on:init` to set up the
   <!-- Progress bar -->
   <div class="progress-bar" show="uploading">
     <div class="progress-fill"
-         bind-style:width="progress + '%'"></div>
+         style-width="progress + '%'"></div>
     <span class="progress-text" bind="Math.round(progress) + '%'"></span>
   </div>
 
-  <button on:click="
-    if (!$refs.fileInput.files[0]) return;
-    uploading = true;
-    progress = 0;
-    uploadResult = null;
-    uploadError = null;
-
-    var formData = new FormData();
-    formData.append('file', $refs.fileInput.files[0]);
-
-    var xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = function(e) {
-      if (e.lengthComputable) { progress = (e.loaded / e.total) * 100; }
-    };
-    xhr.onload = function() {
-      uploading = false;
-      if (xhr.status >= 200 && xhr.status < 300) {
-        uploadResult = JSON.parse(xhr.responseText);
-      } else {
-        uploadError = 'Upload failed: ' + xhr.statusText;
-      }
-    };
-    xhr.onerror = function() { uploading = false; uploadError = 'Network error'; };
-    xhr.open('POST', '/api/upload');
-    xhr.send(formData);
-  " bind-disabled="!fileName || uploading">
+  <button upload="/api/upload" upload-input="fileInput"
+          bind-disabled="!fileName || uploading">
     <span hide="uploading">Upload</span>
     <span show="uploading">Uploading...</span>
   </button>

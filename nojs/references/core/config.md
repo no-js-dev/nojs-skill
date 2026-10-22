@@ -217,7 +217,7 @@ NoJS.config({
 | `router.useHash` | boolean | `false` | Use hash-based routing (`/#/path`) instead of History API |
 | `router.base` | string | `"/"` | URL prefix for all routes (history mode). `$route.path` / `router.current.path` exclude it, and routes and `push()` paths are written without it. `<base href>` is not read |
 | `router.scrollBehavior` | string | `"top"` | Scroll behavior on route change: `"top"`, `"smooth"`, `"none"` |
-| `router.templates` | string | `"pages"` | Directory path for route template files. A relative path resolves against the current URL; in history mode use an absolute path (`'/pages'`) so deep links to nested routes load their templates |
+| `router.templates` | string | `"pages"` | Directory path for route template files. A relative path resolves against the current URL; in history mode use an absolute path (`'/pages'`) so deep links to nested routes load their templates. Applies to every top-level `route-view` without `src`: at startup the router prefetches `<path>.tpl` for `<a route>` links from it, skipping `<template route>` definitions, `:param`/`*` patterns and paths with an explicit route for that outlet. A response that is a full HTML document (an SPA fallback's `index.html`) counts as a missing file |
 | `router.ext` | string | `".tpl"` | File extension for route template files |
 | `router.focusBehavior` | string | `"none"` | Focus management on route change |
 | `router.suppressHashWarning` | boolean | `false` | Suppress the warning about hash fragments conflicting with hash routing |

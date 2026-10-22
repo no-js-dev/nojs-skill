@@ -649,7 +649,7 @@ Getter/setter for the base URL used by fetch directives (`get`, `post`, `put`, `
 NoJS.baseApiUrl = 'https://api.example.com/v2';
 ```
 
-Setting the base URL after initialization triggers re-evaluation of any active fetch directives.
+The value is read when each request is built, so a new base URL applies to requests made after it is set. Fetch directives that already loaded are not re-run: they use the new base the next time they request (a reactive URL change, `refresh` polling, a pagination trigger, or a `post`/`put`/`patch`/`delete` submit).
 
 ---
 

@@ -76,8 +76,7 @@ A global store cart with add/remove and computed total:
   <div class="cart-summary" show="$store.cart.items.length > 0">
     <strong>Total: <span bind="$store.cart.total | currency"></span></strong>
     <button call="/api/checkout" method="post"
-            headers='{"Content-Type": "application/x-www-form-urlencoded"}'
-            body="items={$store.cart.items | json}"
+            body='{"items": {$store.cart.items}}'
             then="$store.cart.items = []; $store.cart.total = 0"
             redirect="/checkout/success">
       Checkout
@@ -158,6 +157,10 @@ An enhanced cart that supports incrementing and decrementing quantities per item
     }
     recalcTotal();
   }
+
+  // Script functions are not visible to expressions: expose them as globals
+  NoJS.global('recalcTotal', recalcTotal);
+  NoJS.global('addToCart', addToCart);
 </script>
 
 <!-- Cart page -->
@@ -177,15 +180,15 @@ An enhanced cart that supports incrementing and decrementing quantities per item
         <td bind="item.name"></td>
         <td bind="item.price | currency"></td>
         <td>
-          <button on:click="item.qty = Math.max(1, item.qty - 1); recalcTotal()">-</button>
+          <button on:click="item.qty = Math.max(1, item.qty - 1); $recalcTotal()">-</button>
           <span bind="item.qty"></span>
-          <button on:click="item.qty++; recalcTotal()">+</button>
+          <button on:click="item.qty++; $recalcTotal()">+</button>
         </td>
         <td bind="(item.price * item.qty) | currency"></td>
         <td>
           <button on:click="
             $store.cart.items.splice($index, 1);
-            recalcTotal()
+            $recalcTotal()
           ">Remove</button>
         </td>
       </tr>
