@@ -209,49 +209,63 @@ Full create/read/update/delete pattern with inline form switching:
 
 ## File Upload Form
 
+A plain `<form post>` does **not** upload files. The `post`/`put`/`patch` directives serialize the form's fields into a JSON object, and an `<input type="file">` value becomes `{}` in that object: the server receives `{"description":"...","file":{}}`, never the file bytes.
+
+To send a file, post the form as `multipart/form-data` from a small custom directive that builds a `FormData` from the form and calls `fetch`. Expressions cannot do this (no `new`, and `fetch` is not an expression global), so the code lives in the directive, which writes `uploading`, `uploadResult` and `uploadError` to the nearest state:
+
 ```html
-<div state="{ uploading: false, preview: null, fileName: '' }">
+<script>
+  NoJS.directive('upload-form', {
+    init(el, name, url) {
+      const ctx = NoJS.findContext(el);
+      const onSubmit = async (e) => {
+        e.preventDefault();
+        ctx.uploading = true;
+        ctx.uploadResult = null;
+        ctx.uploadError = null;
+        try {
+          // No Content-Type header: the browser sets multipart/form-data with the boundary
+          const res = await fetch(url, { method: 'POST', body: new FormData(el) });
+          if (!res.ok) throw new Error('Upload failed: ' + res.status);
+          ctx.uploadResult = await res.json();
+        } catch (err) {
+          ctx.uploadError = err.message;
+        } finally {
+          ctx.uploading = false;
+        }
+      };
+      el.addEventListener('submit', onSubmit);
+      NoJS.internals.onDispose(() => el.removeEventListener('submit', onSubmit));
+    }
+  });
+</script>
+```
+
+Register the directive before No.JS initializes (a `<script>` after the CDN tag runs before the automatic init). Use it on a form **without** `post`, so the two submit handlers don't compete:
+
+```html
+<div state="{ uploading: false, fileName: '', uploadResult: null, uploadError: null }">
   <h2>Upload File</h2>
-  <form post="/api/upload" validate
-        loading="#uploadLoading"
-        success="#uploadSuccess"
-        error="#uploadError"
-        on:submit.prevent="uploading = true">
-
-    <div class="upload-zone"
-         class-dragover="isDragOver"
-         on:dragover.prevent="isDragOver = true"
-         on:dragleave="isDragOver = false"
-         on:drop.prevent="isDragOver = false">
-
-      <input type="file" name="file" ref="fileInput" required
-             on:change="fileName = $event.target.files[0]?.name || ''" />
-
-      <p show="!fileName">Drag a file here or click to browse</p>
-      <p show="fileName" bind="'Selected: ' + fileName"></p>
-    </div>
+  <form upload-form="/api/upload">
+    <input type="file" name="file" required
+           on:change="fileName = $event.target.files[0]?.name || ''; uploadResult = null; uploadError = null" />
+    <p show="fileName" bind="'Selected: ' + fileName"></p>
 
     <input type="text" name="description" placeholder="Description (optional)" />
 
-    <button type="submit" bind-disabled="!$form.valid || uploading">
+    <button type="submit" bind-disabled="uploading">
       <span hide="uploading">Upload</span>
       <span show="uploading">Uploading...</span>
     </button>
   </form>
+
+  <p show="uploadResult" class="success"
+     bind="'File uploaded: ' + (uploadResult?.filename || '')"></p>
+  <p show="uploadError" class="error" bind="uploadError"></p>
 </div>
-
-<template id="uploadLoading">
-  <div class="progress-bar"><div class="progress-fill"></div></div>
-</template>
-
-<template id="uploadSuccess" var="result">
-  <p class="success">File uploaded: <span bind="result.filename"></span></p>
-</template>
-
-<template id="uploadError" var="err">
-  <p class="error" bind="err.message"></p>
-</template>
 ```
+
+Every named field is sent, the file included. `required` is native validation: the browser blocks the submit until a file is chosen. The request goes through the browser's `fetch`, not the No.JS HTTP layer, so `baseApiUrl`, `NoJS.interceptor()` and the CSRF header from `NoJS.config({ csrf })` do not apply: the URL resolves against the page, and any auth or CSRF header goes in the `fetch` options. For upload progress, see the next pattern.
 
 ---
 
