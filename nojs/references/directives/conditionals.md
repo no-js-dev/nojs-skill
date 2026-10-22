@@ -21,7 +21,7 @@ Conditional rendering and visibility control. Structural conditionals (`if`, `el
 
 | Directive | Syntax | Description |
 |-----------|--------|-------------|
-| `if` | `if="condition"` | Conditionally render element (adds/removes from DOM) |
+| `if` | `if="condition"` | Conditionally render the element's content (the element itself stays in the DOM) |
 | `else-if` | `else-if="condition"` | Chained conditional after `if` |
 | `else` | `else` or `else="templateId"` | Fallback block |
 | `then` | `then="templateId"` | Template to render when condition is true |
@@ -35,7 +35,7 @@ Conditional rendering and visibility control. Structural conditionals (`if`, `el
 
 ## `if`
 
-Conditionally render element. Removes from DOM when condition is false; re-creates when true.
+Conditionally render the element's content. When the condition is false, the content is cleared (or the `else` template is rendered); when true, the content is re-created. The element that carries `if` stays in the DOM in both cases.
 
 **Syntax:** `<element if="condition">` or `<element if="condition" then="templateId" else="templateId">`
 
@@ -54,8 +54,9 @@ Conditionally render element. Removes from DOM when condition is false; re-creat
 
 ### Edge Cases
 
-- When `if` is false, the element and all its children are removed from the DOM entirely. Event listeners and component state are lost.
-- When `if` becomes true again, the element is re-created from scratch (directives re-initialize).
+- When `if` is false, the element's children are removed (their event listeners and state are lost), but **the element itself stays in the DOM**. Its own box (padding, border, background, margin) remains visible. To hide the box, use `show`/`hide`, or put `if` on an unstyled wrapper around the styled element.
+- When `if` becomes true again, the children are re-created from scratch (directives re-initialize).
+- `if` on a `<template>` element never renders anything. Put it on a regular element (`<div if="…">`).
 - Expressions that evaluate to `0`, `""`, `null`, `undefined`, or `false` are all falsy.
 - **Incompatible with loops on the same element:** Do not place `if` and a loop (`each`/`foreach`/`for`) on the same element — the condition cannot remove individual items. Use the loop's `filter` attribute for per-item filtering, or wrap the loop in a container element with `if` for conditional rendering of the entire list.
 
@@ -230,7 +231,7 @@ Inverse of `show` -- hides element when condition is true.
 
 | | `if` | `show` |
 |--|------|--------|
-| Mechanism | Adds/removes DOM elements | Toggles CSS `display` |
+| Mechanism | Adds/removes the element's content (the element stays) | Toggles CSS `display` |
 | Best for | Rarely toggled content | Frequently toggled content |
 | Preserves state | No (re-creates) | Yes |
 

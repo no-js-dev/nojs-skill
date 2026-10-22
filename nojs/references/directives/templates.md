@@ -283,7 +283,7 @@ Supports the same attributes as HTTP directives. Rapid clicks automatically abor
 | `call` | string | URL for the request (supports `{variable}` interpolation) |
 | `method` | string | HTTP method. Default: `"get"` |
 | `as` | string | Name for response data in context. Default: `"data"` |
-| `into` | string | Write response to a named global store |
+| `into` | string | Write response to a named global store, under the `as` key: `$store.<into>.<as>` |
 | `body` | string | Request body string; each `{expression}` is replaced with its `encodeURIComponent`-ed value (not a JSON template, see [http.md](http.md#body)) |
 | `loading` | string | Template ID shown during request |
 | `success` | string | Template ID rendered on success |

@@ -131,7 +131,7 @@ CDN auto-initializes on `DOMContentLoaded`.
 
 ### Conditionals
 
-`if="expr"` (DOM add/remove), `else-if="expr"`, `else` or `else="tplId"`, `then="tplId"`. `show="expr"` / `hide="expr"` (CSS toggle, keeps in DOM). `switch="expr"` + `case="'val'"` + `default`.
+`if="expr"` (adds/removes the element's content; the element itself stays, so use `show`/`hide` or an unstyled wrapper to hide a styled box), `else-if="expr"`, `else` or `else="tplId"`, `then="tplId"`. `show="expr"` / `hide="expr"` (CSS toggle, keeps in DOM). `switch="expr"` + `case="'val'"` + `default`.
 
 ```html
 <p if="user.loggedIn">Welcome, <span bind="user.name"></span></p>
@@ -205,7 +205,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 | `as` | `as="varName"` | Name for fetched data in context |
 | `loading`/`error`/`empty`/`success` | `loading="tplId"` | Templates for request lifecycle states |
 | `cached` | `cached` or `cached="local"` | Cache responses (`memory`/`local`/`session`) |
-| `into` | `into="storeName"` | Write response to a global store |
+| `into` | `into="storeName"` | Write response to a global store at `$store.storeName.<as>` (`as` defaults to `data`) |
 | `refresh` | `refresh="5000"` | Auto-refresh interval in ms (polling) |
 | `debounce` | `debounce="300"` | Debounce reactive URL refetches (ms) |
 | `skeleton` | `skeleton="skelId"` | Show/hide a placeholder element during loading |
@@ -500,7 +500,8 @@ Browser globals (`window`, `document`, `location`, `history`, `navigator`) avail
 ### Key limitations
 
 - Filters work only in expression context (`bind`, `class-*`, `style-*`), not in `on:*`/`watch` statement handlers
-- `if`/`new` statements unsupported -- use ternary or multi-statement assignments
+- `if`/`for`/`while` blocks and `new` statements unsupported -- put the ternary on the right-hand side (`a = ok ? 1 : a`) or use `;`-separated statements
+- Assignment inside a ternary branch or `&&`/`||` operand (`ok ? a = 1 : null`, `ok && (a = 1)`) and the comma operator (`a = 1, b = 2`) do not run (a console warning is emitted); only top-level assignments apply
 - Handler-local variables in `on:*`/`watch`: `const m = items.splice(0, 1)[0]; items.push(m)` -- `const`/`let` bindings are never written to state; reassigning a `const` throws and cancels the handler's state writes
 - Statement write-back: in `on:*`/`watch`, mutated variables auto-write-back to the owning context
 - AST caching: LRU-cached (configurable: `exprCacheSize`, default 500)

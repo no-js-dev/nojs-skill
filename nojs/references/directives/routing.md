@@ -142,6 +142,8 @@ pages/
 
 Explicit `<template route="...">` declarations always take priority, so you can mix both approaches.
 
+**History mode and deep links:** a relative folder (the default `"pages"`, or `src="./pages/"`) is resolved against the current URL, so a direct load or refresh of a nested route like `/docs/intro` requests `/docs/pages/docs/intro.tpl` and shows the 404 page. In history mode, use an absolute folder: `NoJS.config({ router: { templates: '/pages' } })` or `src="/pages/"`.
+
 **Hierarchical layout resolution:** For multi-segment paths (e.g. `/settings/profile`), the router probes for a layout template matching the first segment (`settings.tpl`) before falling back to the flat path (`settings/profile.tpl`). If the first-segment layout exists, it is rendered and its remaining segments (`profile`) are resolved into nested `route-view` outlets inside the layout. If the first-segment file does not exist, the router falls back to the flat concatenated path.
 
 ### `route-active` and `route-active-exact`
@@ -222,6 +224,8 @@ The router collects all `[route]` links, determines the most aggressive `lazy` l
 | `$route.hash` | URL hash (e.g. `"#section"`) |
 | `$route.matched` | `true` if an explicit route matched, `false` for wildcard/fallback |
 
+In JavaScript the same object is `NoJS.router.current`; the router has no `path` property of its own. In history mode, `path` is relative to `router.base`: with `base: '/app'`, the URL `/app/users/42` gives `$route.path === "/users/42"`, and routes and `push()` paths are written without the base. The base is read only from `NoJS.config({ router: { base } })`; `<base href>` is ignored.
+
 In history mode (the default), the query string and hash are kept on the first page load and on Back/Forward, so `$route.query` and `$route.hash` are filled in and the URL is not rewritten without them. A query value that contains `?` (e.g. `?next=/a?b=1`) is kept whole.
 
 ### Removing One-Time Tokens from the URL
@@ -245,7 +249,7 @@ Because the query is kept, a callback URL such as `/auth/callback?token=abc123` 
 <button on:click="$router.replace('/new-path')">Replace</button>
 ```
 
-`$router.replace()` replaces the current history entry without setting the navigation direction to `"forward"`. This preserves the current direction state, which affects View Transition direction detection (e.g. guard redirects do not trigger a forward slide).
+`$router.replace()` replaces the current history entry. Like `push()`, it counts as a forward navigation for View Transition direction detection (guard redirects included); only history pops (Back/Forward buttons) are treated as backward.
 
 **`$router.destroy()`** -- Tears down the router by removing all global event listeners (`click`, `popstate`/`hashchange`) and clearing route listeners. Useful for cleanup in tests or when unmounting a No.JS application.
 
