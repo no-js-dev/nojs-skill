@@ -210,7 +210,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 | `debounce` | `debounce="300"` | Debounce reactive URL refetches (ms) |
 | `skeleton` | `skeleton="skelId"` | Show/hide a placeholder element during loading |
 | `headers`/`params` | `headers='{"Auth":"x"}'` | Per-request headers (JSON) / query parameters |
-| `body` | `body="key={expr}"` | Request body string; `{expr}` values are URL-encoded. Not a JSON template: for JSON, use a `<form>` with `name`d fields |
+| `body` | `body='{"key": "{expr}"}'` | Request body: a JSON template or object literal (`{ id: item.id }`) is sent as JSON; other text has its `{expr}` values URL-encoded. Ignored on a `<form>` (named fields are sent) |
 | `retry`/`retry-delay` | `retry="3"` | Retry attempts and delay between retries (ms) |
 | `confirm` | `confirm="Sure?"` | Browser confirmation before request |
 | `redirect` | `redirect="/home"` | SPA redirect on success |
@@ -599,7 +599,7 @@ NoJS.REPLACE                   // Interceptor sentinel: return { [NoJS.REPLACE]:
 
 ```html
 <!-- Requires NoJS Elements plugin. Rules are separated with |; lengths use the native minlength attribute -->
-<!-- The form's named fields are sent as a JSON object (body= is not a JSON template) -->
+<!-- The form's named fields are sent as a JSON object (body= is ignored on a form) -->
 <form validate post="/api/login" into="auth">
   <input name="email" type="email" validate="required|email" validate-on="blur"
          error-required="Email is required" error-email="Enter a valid email">
