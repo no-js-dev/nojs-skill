@@ -20,7 +20,7 @@ Client-side SPA routing with params, guards, nested routes, file-based routing, 
 - [$router.push() and $router.replace() Return Promises](#routerpush-and-routerreplace-return-promises)
 - [Automatic 404 Fallback](#automatic-404-fallback) -- default and custom 404 pages
 - [Remote 404 Templates](#remote-404-templates) -- external 404 template loading
-- [File-Based Routing 404](#file-based-routing-404) -- HTTP 404 fallback chain
+- [File-Based Routing 404](#file-based-routing-404) -- HTTP 404 / SPA fallback chain
 - [Named Outlet Wildcards](#named-outlet-wildcards) -- per-outlet wildcard fallback
 - [$route.matched](#routematched) -- explicit vs wildcard match detection
 - [Route Head Attributes](#route-head-attributes) -- page-title, page-description, page-canonical, page-jsonld on routes
@@ -210,7 +210,7 @@ Control when route templates are fetched.
 <a route="/reports" lazy="ondemand">Reports</a>
 ```
 
-The router collects all `[route]` links, determines the most aggressive `lazy` level per path, and prefetches accordingly. `priority` routes load first; remaining routes load in the background; `ondemand` routes are skipped until navigated.
+The router collects the `<a route>`-style links (not `<template route>` definitions), determines the most aggressive `lazy` level per path, and prefetches accordingly. `priority` routes load first; remaining routes load in the background; `ondemand` routes are skipped until navigated. Paths that file-based routing would not render are never fetched from the folder: patterns (`:param`, `*`) and paths that already have an explicit `<template route>` for that outlet. An app that only uses inline `<template route>` definitions therefore makes no `pages/*.tpl` requests at startup.
 
 **Layout-aware prefetch:** When prefetching multi-segment routes, the router checks if the first-segment layout is already cached. If so, it skips re-fetching the layout and only prefetches the child template.
 
@@ -331,10 +331,16 @@ NoJS.router.register('/path', templateElement, 'outletName');
 
 ### `$router.push()` and `$router.replace()` Return Promises
 
-Programmatic navigation is asynchronous:
+Programmatic navigation is asynchronous. In a handler, call it without `await` (expressions do not support `await`; a statement starting with it does not run):
 
 ```html
-<button on:click="await $router.push('/users/42')">Navigate</button>
+<button on:click="$router.push('/users/42')">Navigate</button>
+```
+
+Await the Promise from JavaScript when the next step must wait for the page to render:
+
+```javascript
+await NoJS.router.push('/users/42');
 ```
 
 If a newer navigation starts before the current one has rendered (for example while a `lazy="ondemand"` or file-based template is still loading), only the newer page renders: the stale render is dropped instead of overwriting the newer page, `<head>` or route listeners. The earlier Promise still resolves, without rendering its page. A navigation blocked by a `guard` (without `redirect`) or a hash-only change does not count as a newer navigation and does not cancel the one in progress.
@@ -360,7 +366,9 @@ Wildcard routes support `src` for remote template loading:
 
 ### File-Based Routing 404
 
-When file-based routing gets an HTTP 404 for a template file, it triggers the wildcard route fallback chain.
+When file-based routing gets an HTTP 404 (or other error) for a template file, it triggers the wildcard route fallback chain. The failed response is not cached.
+
+A server with an SPA fallback (`try_files $uri $uri/ /index.html`, Netlify `_redirects`, Vercel `rewrites`) answers a missing `.tpl` with `200` and the app's `index.html`. When a template that file-based routing resolved from the folder comes back as a full HTML document (starts with `<!DOCTYPE html>` or `<html>`), No.JS treats it as not found and logs a warning, so the wildcard renders instead of the page shell (and the document is never used as a layout). Explicit `<template src>` and `<template route src>` load their response as-is.
 
 ### Named Outlet Wildcards
 
@@ -457,7 +465,7 @@ NoJS.config({ router: { useHash: true, suppressHashWarning: true } });
 
 ### SPA Deployment Fallback
 
-History mode requires the server to return `index.html` for all routes. Common configs:
+History mode requires the server to return `index.html` for all routes. File-based routing detects a missing `.tpl` answered with this fallback (see [File-Based Routing 404](#file-based-routing-404)). Common configs:
 
 ```nginx
 # nginx

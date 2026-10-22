@@ -500,9 +500,9 @@ Browser globals (`window`, `document`, `location`, `history`, `navigator`) avail
 ### Key limitations
 
 - Filters work only in expression context (`bind`, `class-*`, `style-*`), not in `on:*`/`watch` statement handlers
-- `if`/`for`/`while` blocks and `new` statements unsupported -- put the ternary on the right-hand side (`a = ok ? 1 : a`) or use `;`-separated statements
+- `if`/`for`/`while` blocks, `new`, `await` and the `**` operator unsupported -- put the ternary on the right-hand side (`a = ok ? 1 : a`) or use `;`-separated statements; `Math.pow(a, b)` replaces `**`
 - Assignment inside a ternary branch or `&&`/`||` operand (`ok ? a = 1 : null`, `ok && (a = 1)`) and the comma operator (`a = 1, b = 2`) do not run (a console warning is emitted); only top-level assignments apply
-- Handler-local variables in `on:*`/`watch`: `const m = items.splice(0, 1)[0]; items.push(m)` -- `const`/`let` bindings are never written to state; reassigning a `const` throws and cancels the handler's state writes
+- Handler-local variables in `on:*`/`watch`: `const m = items.splice(0, 1)[0]; items.push(m)` -- `const`/`let` bindings are never written to state; reassigning a `const` throws: the handler stops and its `name = value` writes are not applied (in-place changes and `$store` writes made before the error stay)
 - Statement write-back: in `on:*`/`watch`, mutated variables auto-write-back to the owning context
 - AST caching: LRU-cached (configurable: `exprCacheSize`, default 500)
 
