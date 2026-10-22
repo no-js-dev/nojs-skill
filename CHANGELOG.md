@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.21.1...HEAD)
 
+Synced with NoJS Core 1.22. Core's opt-in hardening flags all default to `false`, so v1.21.1 behavior is unchanged without them.
+
+### Added
+
+- Opt-in hardening flags `scopeHeaders`, `strictRedaction`, `strictDirectives`, `strictDevtools`, `strictJsonld`, `strictBindings`, `templates.pageRelative`, `i18n.escapeParams` and `i18n.strictLocale`, with their 1.22 semantics, in `SKILL.md`, a new "Opt-in Hardening Flags" section of `core/config.md` and the related core, directive and troubleshooting references (PR #84)
+- Core 1.22 default fixes: history mode keeps `?query` / `#hash` (with a recipe for removing one-time tokens), `.` / `..` path placeholders are escaped, a failing directive `init` is isolated, superseded navigations are dropped, loops re-render after in-place mutation, quoted filter args keep their whitespace, `const` / `let` handler locals, form fields are read before the `loading` template (PR #84)
+- `body`: JSON templates, object literals and object placeholders are sent as JSON; the `{ email }` shorthand limit; `body` is ignored on a `<form>` (PR #86)
+
+### Fixed
+
+- Default URL redaction (only response interceptors get a redacted URL), registry freeze timing (at load), reserved validator names (`required` / `email` / `url` / `min` / `max`), `NoJS.config()` after `init()`, trust granted only by the `NoJS.use()` option, custom directive handler shape (`init(el, name, value)`, no `update` / `destroy`), comma-separated filter args, same-origin CSRF header, `i18n.detectBrowser` default, interceptor sentinels as object keys (PR #84)
+- Broken examples: mangled `body` JSON templates replaced; the form pattern and `templates/scaffold-form.html` load Elements and use `|` rule separators, `$form.errors` and native `minlength`; the multi-step wizard uses a ternary instead of `if` (PR #84)
+- `if` keeps its host element and the `<template if>` pattern is replaced; assignments only at statement top level; plugin trust and `X-CSRF-Token` protection; `NoJS.global` drops functions inside object values; `into` writes to `$store.<into>.<as>`; store writes from JS need `NoJS.notify()`; custom directive utilities limited to public APIs; `router.current` / `router.on()` and base semantics; nonexistent bus events removed and `error` / `fetch:error` payloads fixed (PR #85)
+- Expression examples no longer use unsupported forms: no `**` (use `Math.pow`), no `new` (static methods and calls without `new` only), no `await` in handlers; the upload-with-progress pattern is a custom directive; realtime and e-commerce patterns expose script functions with `NoJS.global` and call them as `$name()`; `style-width` replaces `bind-style:width` (PR #86)
+- `NoJS.baseApiUrl` applies to later requests; active fetch directives are not re-run (PR #86)
+- Routing: prefetch skips `<template route>`, patterns and explicit routes; an SPA fallback `index.html` counts as a missing file-based template (PR #86)
+- Statement forms table and the partial-write semantics on handler errors match Core (PR #86)
+
+### Chore
+
+- Version sync script (`scripts/version.mjs` sync / check), release hooks and the version check in CI (`14f1b8c`)
+- CI runs on pull requests into release branches (`297c1a4`)
+
 ## [1.21.1](https://github.com/no-js-dev/nojs-skill/compare/v1.21.0...v1.21.1) — 2026-08-14
 
 ### Changed
