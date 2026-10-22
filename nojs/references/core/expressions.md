@@ -29,6 +29,7 @@ No.JS uses a custom sandboxed recursive-descent parser and tree-walking evaluato
   - [Browser Globals](#browser-globals)
   - [Timer Wrappers](#timer-wrappers)
 - [Security Proxies](#security-proxies)
+  - [Readable Members](#readable-members)
   - [Window Proxy](#window-proxy)
   - [Document Proxy](#document-proxy)
   - [Location Proxy](#location-proxy)
@@ -372,7 +373,7 @@ These are available via the `_BROWSER_GLOBALS` allow-list. `window`, `document`,
 | `console` | Console API |
 | `location` | Location object (proxied -- read-only, blocks `assign`/`replace`/`reload`) |
 | `history` | History object (proxied -- blocks `pushState`/`replaceState`/`go`/`back`/`forward`) |
-| `navigator` | Navigator object (proxied -- blocks `sendBeacon`, `credentials`) |
+| `navigator` | Navigator object (proxied -- allow-listed reads only, blocks `sendBeacon`, `credentials`; see [Readable Members](#readable-members)) |
 | `screen` | Screen dimensions |
 | `performance` | Performance timing API |
 | `crypto` | Crypto API |
@@ -415,6 +416,25 @@ The constructors in this table cannot be instantiated in an expression (there is
 ## Security Proxies
 
 Browser globals that provide access to sensitive APIs are wrapped in `Proxy` objects that block dangerous sub-properties while allowing safe DOM and measurement operations.
+
+### Readable Members
+
+Browsers reject host getters and methods called through a proxy, so `window`, `document` and `navigator` expose only an explicit allow-list of read-only members:
+
+| Owner | Readable members |
+|-------|------------------|
+| `navigator` | `language`, `languages`, `onLine`, `userAgent`, `platform`, `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` |
+| `navigator.clipboard` | `writeText(text)` only (`readText`, `read` and `write` are not reachable) |
+| `window` | `innerWidth`, `innerHeight`, `scrollX`, `scrollY`, `pageXOffset`, `pageYOffset`, `devicePixelRatio`, `matchMedia(query)` |
+
+```html
+<span bind="navigator.language"></span>
+<p show="!navigator.onLine">You are offline</p>
+<button on:click="navigator.clipboard.writeText(code)">Copy</button>
+<div class-compact="window.matchMedia('(max-width: 600px)').matches"></div>
+```
+
+Other host getters and methods, such as `document.title`, `document.querySelector()`, `navigator.geolocation` and `window.getComputedStyle()`, are not reachable: the expression evaluates to `undefined` and logs a warning. Plain JavaScript values on `window` (`window.Date.now()`, `window.JSON`) still work. For DOM access use `$el` / `$refs`; for anything else, register a helper with `NoJS.global()`.
 
 ### Window Proxy
 

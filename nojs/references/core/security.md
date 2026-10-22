@@ -389,7 +389,8 @@ Key behaviors:
 - **Document proxy**: `cookie`, `domain`, `write`, `writeln`, `execCommand` are blocked. `defaultView` returns the safe window proxy.
 - **Location proxy**: All writes are blocked. Properties like `href`, `pathname`, `search` are readable.
 - **History proxy**: Navigation methods are blocked. `length` and `state` are readable.
-- **Navigator proxy**: `sendBeacon` and `credentials` are blocked. Properties like `language`, `userAgent`, `onLine` are readable.
+- **Navigator proxy**: `sendBeacon` and `credentials` are blocked. Only `language`, `languages`, `onLine`, `userAgent`, `platform`, `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` and `clipboard.writeText()` are readable.
+- **Host members**: on `window`, `document` and `navigator`, only an allow-list of read-only members works (see [Readable Members](expressions.md#readable-members)); other browser getters and methods evaluate to `undefined`.
 
 ---
 
