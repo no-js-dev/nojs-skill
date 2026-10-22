@@ -85,7 +85,7 @@ NoJS.config({
 | Property | Type | Description |
 |----------|------|-------------|
 | `token` | string | The CSRF token value |
-| `header` | string | The HTTP header name to send the token in (default `X-CSRF-Token`). Untrusted request interceptors can read and override it unless `strictRedaction: true` |
+| `header` | string | The HTTP header name to send the token in (default `X-CSRF-Token`). `X-CSRF-Token` is always a sensitive header: untrusted request interceptors cannot read or override it. A custom header name is protected the same way only with `strictRedaction: true` |
 
 ---
 
@@ -215,9 +215,9 @@ NoJS.config({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `router.useHash` | boolean | `false` | Use hash-based routing (`/#/path`) instead of History API |
-| `router.base` | string | `"/"` | Base path prefix for all routes |
+| `router.base` | string | `"/"` | URL prefix for all routes (history mode). `$route.path` / `router.current.path` exclude it, and routes and `push()` paths are written without it. `<base href>` is not read |
 | `router.scrollBehavior` | string | `"top"` | Scroll behavior on route change: `"top"`, `"smooth"`, `"none"` |
-| `router.templates` | string | `"pages"` | Directory path for route template files |
+| `router.templates` | string | `"pages"` | Directory path for route template files. A relative path resolves against the current URL; in history mode use an absolute path (`'/pages'`) so deep links to nested routes load their templates |
 | `router.ext` | string | `".tpl"` | File extension for route template files |
 | `router.focusBehavior` | string | `"none"` | Focus management on route change |
 | `router.suppressHashWarning` | boolean | `false` | Suppress the warning about hash fragments conflicting with hash routing |

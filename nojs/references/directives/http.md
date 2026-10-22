@@ -89,7 +89,7 @@ Fetch data via HTTP GET request.
 | `empty` | string | Template ID shown when response is empty array/null |
 | `refresh` | number | Auto-refresh interval in ms (polling) |
 | `cached` | boolean or string | Cache responses. `cached` = memory, `cached="local"` = localStorage, `cached="session"` = sessionStorage |
-| `into` | string | Write response to a named global store |
+| `into` | string | Write response to a named global store, under the `as` key: `$store.<into>.<as>` |
 | `debounce` | number | Debounce reactive URL refetches in ms |
 | `headers` | string | JSON string of additional headers |
 | `params` | string | Expression that resolves to query params object |
@@ -270,7 +270,7 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
 | `confirm` | Show browser `confirm()` dialog before sending |
 | `redirect` | URL to navigate to on success (SPA route) |
 | `then` | Expression to execute on success (e.g. `"users.push(result)"`) |
-| `into` | Write response to a named global store |
+| `into` | Write response to a named global store, under the `as` key: `$store.<into>.<as>` |
 | `cached` | Cache responses (memory/local/session) |
 | `retry` | Number of retry attempts on failure. Default: value from `NoJS.config({ retries })` |
 | `retry-delay` | Delay in ms between retries. Default: `1000` |
@@ -349,15 +349,22 @@ Write response to a named global store.
 
 **Syntax:** `<element get="/user" into="currentUser">`
 
-The store does not need to be pre-defined -- `into` creates it automatically if it doesn't exist. The data is accessible via `$store.storeName` from anywhere.
+The store does not need to be pre-defined -- `into` creates it automatically if it doesn't exist. The response is stored under the `as` key (`data` when `as` is omitted), so it is accessible via `$store.<into>.<as>` from anywhere. The response fields are not merged into the store itself.
 
 ```html
 <div get="/me" as="user" into="currentUser">
   <p bind="user.name"></p>
 </div>
-<!-- Accessible from anywhere -->
-<span bind="$store.currentUser.name"></span>
+<!-- Accessible from anywhere: $store.<into>.<as> -->
+<span bind="$store.currentUser.user.name"></span>
+
+<!-- Without `as`, the key is `data` -->
+<div get="/settings" into="prefs"></div>
+<span bind="$store.prefs.data.theme"></span>
 ```
+
+- `into` takes a plain store name. `into="user.profile"` creates a store literally named `user.profile`; it does not write to `$store.user.profile`.
+- `call` and `sse` follow the same rule.
 
 ### `debounce`
 

@@ -545,7 +545,8 @@ The following keywords are recognized by the expression parser:
 
 ## Limitations
 
-- **No `if`/`else`/`for`/`while` statements** -- Use ternary operator (`? :`) for conditionals in expressions; use `if`/`else`/`each`/`for` directives for control flow.
+- **No `if`/`else`/`for`/`while` statements** -- Use a ternary on the right-hand side of an assignment (`a = ok ? 1 : a`) and `if`/`else`/`each`/`for` directives for control flow.
+- **Assignments only at the top level of a statement** -- An assignment inside a ternary branch (`ok ? a = 1 : b = 2`), inside `&&`/`||` (`ok && (a = 1)`), or joined with the comma operator (`a = 1, b = 2`) does not run, and a console warning is emitted. Write `a = ok ? 1 : a` or separate statements with `;`. Function calls inside branches work (`ok ? save() : null`).
 - **`const`/`let` only as handler-local declarations** -- In statement context (`on:*`, `watch`), `const name = value` and `let name = value` declare locals that are never written to state (see [events.md](../directives/events.md#multiple-statements-and-local-variables)). No destructuring, no `var`, and names cannot start with `$`.
 - **No `new` keyword in expression context** -- Constructors like `new Date()` work, but `new` followed by user-defined constructors may not behave as expected in all contexts.
 - **No `try`/`catch`/`throw`** -- Errors in expressions are caught by the framework and logged as warnings.

@@ -73,7 +73,7 @@ const MyPlugin = {
   install(app, options) {
     app.directive('tooltip', { /* ... */ });
     app.filter('initials', (v) => /* ... */);
-    app.global('$myVar', 42);
+    app.global('myVar', 42); // $myVar in expressions
   },
   init(app) {
     // called after NoJS.init() completes
@@ -169,7 +169,7 @@ install(app, options) {
   app.directive('my-dir', { init(el, name, value) { /* ... */ } });
   app.filter('my-filter', (v) => v.toUpperCase());
   app.validator('my-rule', (v) => v.length >= 3 || 'Too short');
-  app.global('$myGlobal', { count: 0 });
+  app.global('myGlobal', { count: 0 }); // $myGlobal in expressions
   app.interceptor('request', (url, opts) => opts);
 }
 ```
@@ -181,7 +181,7 @@ Called after `NoJS.init()` completes (DOM is processed, router is running). Use 
 ```javascript
 init(app) {
   // DOM is ready, router is active
-  console.log('Current route:', app.router.path);
+  console.log('Current route:', app.router.current.path);
 }
 ```
 
@@ -208,18 +208,22 @@ Set a global reactive variable accessible in all expressions as `$name`.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | string | Variable name (without `$` prefix) |
-| `value` | any | The value (primitives and objects both work) |
+| `value` | any | The value. Primitives, plain data objects and functions work. Objects are copied through JSON, so functions inside them (object methods, class instance methods) are dropped and a console warning is emitted |
 
 ```javascript
 NoJS.global('theme', 'dark');
 NoJS.global('user', { name: 'Erick', role: 'admin' });
+NoJS.global('formatPrice', (n) => '$' + n.toFixed(2)); // top-level function: kept
 ```
 
 ```html
 <div class-dark="$theme === 'dark'">
   Welcome, <span bind="$user.name"></span>
+  <span bind="$formatPrice(product.price)"></span>
 </div>
 ```
+
+To expose callable helpers, register each function as its own global (`$formatPrice(...)`). An object of actions (`NoJS.global('actions', { save() {} })`) or a class instance loses its methods: `$actions.save()` returns `undefined`.
 
 ### Naming Conventions
 
@@ -329,7 +333,7 @@ Devtools `fetch:success` / `fetch:error` events are not affected by `strictRedac
 
 ### Granting Trusted Access
 
-Pass `{ trusted: true }` as the `NoJS.use()` options. Trust is read from the options given to `NoJS.use()`; a `trusted` property on the plugin object itself is ignored. NoJS logs a warning naming the plugin when trust is granted:
+Pass `{ trusted: true }` as the `NoJS.use()` options. Trust is read from the options given to `NoJS.use()`; a `trusted` property on the plugin object itself is ignored. Trust covers only the interceptors that `install` registers synchronously with `app.interceptor()`: interceptors registered later (in `init`, after an `await`, from a timer) and app-level `NoJS.interceptor()` calls are untrusted, and the sensitive headers they set are dropped. For static or login-time values, `NoJS.config({ headers })` and `NoJS.config({ csrf })` need no plugin. NoJS logs a warning naming the plugin when trust is granted:
 
 ```javascript
 const AuthPlugin = {
@@ -486,16 +490,22 @@ See the [Security Reference](security.md) for complete details.
 
 ## Events
 
-Plugins can subscribe to framework events via `NoJS.on()`:
+Plugins can subscribe to the framework events on the bus via `app.on()`: `plugins:ready`, `fetch:success` (`{ url, data }`), `fetch:error` and `error` (`{ url, error }`), and `fetch:end` (`{ url }`, a paginated `get` reached the end of its data). There are no route, store, locale or dispose events; use the router, `$watch` and the plugin hooks instead:
 
 ```javascript
-install(app) {
-  app.on('ready', () => { /* framework initialized */ });
-  app.on('route:change', (route) => { /* navigation occurred */ });
-  app.on('store:change', (data) => { /* store updated */ });
-  app.on('locale:change', (locale) => { /* locale switched */ });
-  app.on('dispose', () => { /* framework tearing down */ });
-}
+const MyPlugin = {
+  name: 'my-plugin',
+  install(app) {
+    app.on('plugins:ready', () => { /* every plugin's init() has run */ });
+    app.on('fetch:error', ({ url, error }) => { /* request failed */ });
+  },
+  init(app) {
+    // The router and stores exist once init() runs
+    app.router?.on((route) => { /* navigation occurred */ });
+    app.store.cart?.$watch(() => { /* cart store changed */ });
+  },
+  dispose(app) { /* framework tearing down */ }
+};
 ```
 
 ---
@@ -510,13 +520,15 @@ const AnalyticsPlugin = {
   install(app, options) {
     const { trackingId, sampleRate = 1.0 } = options;
 
-    // Track page views on route changes
-    app.on('route:change', (route) => {
-      if (Math.random() > sampleRate) return;
-      sendAnalytics('pageview', {
-        trackingId,
-        path: route.path,
-        params: route.params
+    // Track page views on route changes (the router exists once init has run)
+    app.on('plugins:ready', () => {
+      app.router?.on((route) => {
+        if (Math.random() > sampleRate) return;
+        sendAnalytics('pageview', {
+          trackingId,
+          path: route.path,
+          params: route.params
+        });
       });
     });
 

@@ -66,6 +66,17 @@ Separate statements with `;`. Use `const` or `let` for values that only the hand
 
 Errors in a handler are logged as `[No.JS] Expression error: <statement>` and dispatch a `nojs:error` event on the element, so `error-boundary` can catch them.
 
+**Unsupported statement forms.** Handlers run expressions and assignments separated by `;`, not full JavaScript statements. An assignment only takes effect at the top level of a statement:
+
+| Not supported | Write instead |
+|---------------|---------------|
+| `if (ok) { a = 1 }`, `for (…) { … }`, `while (…) { … }` | `a = ok ? 1 : a` |
+| `ok ? a = 1 : b = 2` (assignment inside a ternary branch) | `a = ok ? 1 : a; b = ok ? b : 2` |
+| `ok && (a = 1)`, `ok \|\| (a = 1)` (assignment inside a logical operand) | `a = ok ? 1 : a` |
+| `a = 1, b = 2` (comma operator) | `a = 1; b = 2` |
+
+A function call inside a branch works (`ok ? save() : null`). In the unsupported forms the assignment does not run, and a console warning is emitted.
+
 ### Complete Example
 
 ```html
