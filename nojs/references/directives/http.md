@@ -317,7 +317,7 @@ How the body is built:
 
 A single-key shorthand `body="{ email }"` cannot be told apart from the placeholder `{email}`: it sends the URL-encoded value as text. Write `{ email: email }` or `'{"email": "{email}"}'`.
 
-Inputs need a `name` attribute to be serialized; `model` alone is not enough. For `<form>` elements on any method, fields are always auto-serialized via `FormData` and `body` is ignored. The fields are read before the `loading` template replaces the form's content, so a form with `loading` still sends its values. `query` is the one **read** method that carries a `body` — see [`query`](#query).
+Inputs need a `name` attribute to be serialized; `model` alone is not enough. For `<form>` elements on any method, fields are always auto-serialized via `FormData` and `body` is ignored. The fields are sent as a JSON object, so `<input type="file">` values are not uploaded (a file is sent as `{}`); see [File Upload Form](../patterns/forms.md#file-upload-form). The fields are read before the `loading` template replaces the form's content, so a form with `loading` still sends its values. `query` is the one **read** method that carries a `body` — see [`query`](#query).
 
 ### `headers`
 
