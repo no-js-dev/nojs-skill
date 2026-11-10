@@ -382,15 +382,15 @@ All HTTP operations must go through NoJS fetch directives (`get`, `post`, `put`,
 
 ## Browser Global Proxies
 
-`window`, `document`, `location`, `history`, and `navigator` are wrapped in `Proxy` objects that enforce read-only access and block sensitive sub-properties. See the [Expressions Reference](expressions.md#security-proxies) for the complete blocked property lists per proxy.
+`window`, `document` and `navigator` are wrapped in `Proxy` objects that expose only an allow-list of read-only host members and also block a fixed set of sensitive properties outright. `location` and `history` are replaced by frozen read-only wrappers. See the [Expressions Reference](expressions.md#security-proxies) for the allow-list and the blocked property lists per proxy.
 
 Key behaviors:
-- **Window proxy**: All property writes are silently swallowed (no-op). Sensitive sub-properties return `undefined`.
-- **Document proxy**: `cookie`, `domain`, `write`, `writeln`, `execCommand` are blocked. `defaultView` returns the safe window proxy.
+- **Window proxy**: All property writes are silently swallowed (no-op). Only `innerWidth`, `innerHeight`, `scrollX`, `scrollY`, `pageXOffset`, `pageYOffset`, `devicePixelRatio` and `matchMedia()` are readable host members; plain JavaScript values (`window.Date`, `window.JSON`) still work. `fetch`, `localStorage`, `eval`, `open`, `postMessage` and the other blocked properties return `undefined`.
+- **Document proxy**: Only `defaultView` (the safe window proxy) and `location` (the safe location wrapper) are readable. `cookie`, `domain`, `write`, `writeln`, `execCommand` are blocked outright. Use `$el` / `$refs` for DOM access.
 - **Location proxy**: All writes are blocked. Properties like `href`, `pathname`, `search` are readable.
 - **History proxy**: Navigation methods are blocked. `length` and `state` are readable.
-- **Navigator proxy**: `sendBeacon` and `credentials` are blocked. Only `language`, `languages`, `onLine`, `userAgent`, `platform`, `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` and `clipboard.writeText()` are readable.
-- **Host members**: on `window`, `document` and `navigator`, only an allow-list of read-only members works (see [Readable Members](expressions.md#readable-members)); other browser getters and methods evaluate to `undefined`.
+- **Navigator proxy**: `sendBeacon` and `credentials` are blocked. Only `language`, `languages`, `onLine`, `userAgent`, `platform`, `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` and `clipboard.writeText()` are readable (`clipboard` only in secure contexts).
+- **Host members**: on `window`, `document` and `navigator`, only an allow-list of read-only members works (see [Readable Members](expressions.md#readable-members)); other browser getters and methods evaluate to `undefined`. Allow-listed values are read when the binding evaluates and are not reactive.
 
 ---
 
