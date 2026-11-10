@@ -5,7 +5,9 @@ All notable changes to the **NoJS Skill** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.21.1...HEAD)
+## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.22.0...HEAD)
+
+## [1.22.0](https://github.com/no-js-dev/nojs-skill/compare/v1.21.1...v1.22.0) — 2026-11-10
 
 Synced with NoJS Core 1.22. Core's opt-in hardening flags all default to `false`, so v1.21.1 behavior is unchanged without them.
 
