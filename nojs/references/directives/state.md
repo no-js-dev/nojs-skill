@@ -121,8 +121,8 @@ Stores can also be pre-initialized via `NoJS.config()`. **Important:** stores cr
 
 <!-- Login form writes to store -->
 <form post="/api/login" then="$store.auth.user = result.user; $store.auth.token = result.token">
-  <input model="email" type="email" placeholder="Email" />
-  <input model="password" type="password" placeholder="Password" />
+  <input name="email" type="email" placeholder="Email" />
+  <input name="password" type="password" placeholder="Password" />
   <button>Login</button>
 </form>
 

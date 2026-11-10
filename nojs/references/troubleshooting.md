@@ -22,6 +22,10 @@ Common issues, their causes, and fixes when developing with the No.JS framework.
   - [Orphan else Element](#orphan-else-element)
   - [Security Warning for bind-html](#security-warning-for-bind-html)
   - [Cannot Override Core Directive](#cannot-override-core-directive)
+  - [Directive Init Error](#directive-init-error)
+  - [bind-on* Rejected (strictBindings)](#bind-on-rejected-strictbindings)
+  - [Dot-Segment Value Escaped](#dot-segment-value-escaped)
+  - [Config Key Locked After init()](#config-key-locked-after-init)
   - [MaxListenersExceeded](#maxlistenersexceeded)
   - [Plugin Warnings](#plugin-warnings)
   - [drag-multiple Without drag-group](#drag-multiple-without-drag-group)
@@ -121,11 +125,11 @@ All No.JS warnings are prefixed with `[No.JS]` in the browser console. These are
 
 ```html
 <script>
-  NoJS.filter('uppercase', value => String(value).toUpperCase());
+  NoJS.filter('shout', value => String(value).toUpperCase() + '!');
 </script>
 
-<!-- Now works -->
-<span bind="name | uppercase"></span>
+<!-- Now works (built-in names such as uppercase cannot be re-registered) -->
+<span bind="name | shout"></span>
 ```
 
 ### Failed to Load Template
@@ -145,6 +149,8 @@ or
 **Cause:** A `<template src="...">` could not be fetched. The server returned an error status code or the network request failed entirely.
 
 **Fix:** Verify the template file exists at the specified path. Check the network tab in DevTools for 404 errors. Ensure the server serves `.tpl` files with a proper MIME type.
+
+If the warning ends with `(resolved to "<url>" via base= / baseApiUrl; set NoJS.config({ templates: { pageRelative: true } }) to resolve template src against the page)`, the template `src` was prefixed with the nearest `base` attribute or `baseApiUrl`, like an HTTP directive URL. Serve the template from that location, or set `templates: { pageRelative: true }` to load templates from the page origin. See [templates.md](directives/templates.md#how-src-is-resolved).
 
 ### Insecure Template URL
 
@@ -379,7 +385,7 @@ For conditionals, ensure the `else` element directly follows its `if`/`else-if` 
 [No.JS] Cannot override core directive "<name>".
 ```
 
-**Cause:** Attempted to register a custom directive using a name reserved by the framework (e.g., `state`, `bind`, `if`). Core directives are frozen after framework initialization.
+**Cause:** Attempted to register a custom directive using a name reserved by the framework (e.g., `state`, `bind`, `if`), or a name that was already registered. Core directives are frozen as soon as the framework loads, before `NoJS.init()`. With `strictDirectives: true`, names covered by a core wildcard (`on:*`, `bind-*`, `class-*`, `style-*`) are rejected with the same message.
 
 **Fix:** Choose a different name for your custom directive:
 
@@ -390,6 +396,54 @@ NoJS.directive('bind', { ... });
 // Works — custom name
 NoJS.directive('my-bind', { ... });
 ```
+
+### Directive Init Error
+
+**Console message:**
+
+```text
+[No.JS] directive "<name>" init error on <tag>: <error>
+```
+
+**Cause:** A directive's `init` threw while the DOM was being processed (often a custom directive or plugin). The error is isolated: the rest of the page keeps rendering. During `NoJS.init()`, the router, plugin `init()` hooks and `plugins:ready` still run, then the `init()` Promise rejects with the first such error. Inside a reactive batch update the error is only warned.
+
+**Fix:** Fix the directive named in the message. A disposer that throws is reported as `disposer error:` and does not stop the remaining disposers.
+
+### bind-on* Rejected (strictBindings)
+
+**Console message:**
+
+```text
+[No.JS] [Security] bind-onclick rejected: event-handler attributes are not bindable — use on:click instead.
+```
+
+**Cause:** `strictBindings: true` is set and an element uses a `bind-on*` attribute without a hyphen. With the flag, inline handler attributes are never set, because a value from state would run as code.
+
+**Fix:** Use an `on:` directive (`on:click="save()"`). Names with a hyphen (`bind-onboarding-step`) are not handlers and still bind. Setting `strictBindings` back to `false` after `init()` logs `config.strictBindings cannot be turned off after init()` and is ignored.
+
+### Dot-Segment Value Escaped
+
+**Console message:**
+
+```text
+[No.JS] Dot-segment value escaped in {<expr>}
+```
+
+**Cause:** A placeholder in the path part of an HTTP, `call` or `sse` URL evaluated to exactly `.` or `..`. The value is escaped to `%252E` / `%252E%252E` so the URL cannot be collapsed to a parent path (`/api/users/{id}` with `id = '..'` would otherwise request `/api/`). Always on, no opt-out.
+
+**Fix:** Validate the value before it reaches the URL. Query-string and fragment placeholders are not affected.
+
+### Config Key Locked After init()
+
+**Console message:**
+
+```text
+[No.JS] config.<key> cannot be changed after init()
+```
+
+**Cause:** `NoJS.config()` was called after `NoJS.init()` with `sanitize`, `dangerouslyDisableSanitize` or `sanitizeHtml`. These keys are locked once `init()` starts; the rest of the call is applied. `NoJS.config()` itself never throws after init.
+
+**Fix:** Set sanitization options before `NoJS.init()` (or before the CDN build auto-initializes on `DOMContentLoaded`).
 
 ### MaxListenersExceeded
 
@@ -1134,7 +1188,7 @@ NoJS.i18n({
 
 **Problem:** A template using `src="./child.tpl"` fails to load with a 404.
 
-**Cause:** Relative `./` paths are resolved against the nearest ancestor's `__srcBase` property, which is set to the folder of the parent template's resolved URL. If no ancestor has `__srcBase` (e.g., the template is at the document root), the `./` is simply stripped.
+**Cause:** Relative `./` paths are resolved against the nearest ancestor's `__srcBase` property, which is set to the folder of the parent template's resolved URL. If no ancestor has `__srcBase` (e.g., the template is at the document root), the `./` is stripped and the path is resolved like any other `src`: prefixed with the nearest `base` attribute or `baseApiUrl`, unless `templates: { pageRelative: true }`.
 
 **Fix:** Ensure parent templates are loaded first (they set `__srcBase` on their content), or use absolute paths:
 

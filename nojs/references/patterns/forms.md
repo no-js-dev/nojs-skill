@@ -148,7 +148,8 @@ Full create/read/update/delete pattern with inline form switching:
       <!-- Create -->
       <button if="!editing"
               call="/api/users" method="post"
-              body='{"name": "{name}", "email": "{email}"}'
+              headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+              body="name={name}&email={email}"
               then="showForm = false"
               bind-disabled="!$form.valid">
         Create
@@ -157,7 +158,8 @@ Full create/read/update/delete pattern with inline form switching:
       <!-- Update -->
       <button if="editing"
               call="/api/users/{editing.id}" method="put"
-              body='{"name": "{name}", "email": "{email}"}'
+              headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+              body="name={name}&email={email}"
               then="showForm = false"
               bind-disabled="!$form.valid">
         Save
@@ -207,55 +209,108 @@ Full create/read/update/delete pattern with inline form switching:
 
 ## File Upload Form
 
+A plain `<form post>` does **not** upload files. The `post`/`put`/`patch` directives serialize the form's fields into a JSON object, and an `<input type="file">` value becomes `{}` in that object: the server receives `{"description":"...","file":{}}`, never the file bytes.
+
+To send a file, post the form as `multipart/form-data` from a small custom directive that builds a `FormData` from the form and calls `fetch`. Expressions cannot do this (no `new`, and `fetch` is not an expression global), so the code lives in the directive, which writes `uploading`, `uploadResult` and `uploadError` to the nearest state:
+
 ```html
-<div state="{ uploading: false, preview: null, fileName: '' }">
+<script>
+  NoJS.directive('upload-form', {
+    init(el, name, url) {
+      const ctx = NoJS.findContext(el);
+      const onSubmit = async (e) => {
+        e.preventDefault();
+        ctx.uploading = true;
+        ctx.uploadResult = null;
+        ctx.uploadError = null;
+        try {
+          // No Content-Type header: the browser sets multipart/form-data with the boundary
+          const res = await fetch(url, { method: 'POST', body: new FormData(el) });
+          if (!res.ok) throw new Error('Upload failed: ' + res.status);
+          ctx.uploadResult = await res.json();
+        } catch (err) {
+          ctx.uploadError = err.message;
+        } finally {
+          ctx.uploading = false;
+        }
+      };
+      el.addEventListener('submit', onSubmit);
+      NoJS.internals.onDispose(() => el.removeEventListener('submit', onSubmit));
+    }
+  });
+</script>
+```
+
+Register the directive before No.JS initializes (a `<script>` after the CDN tag runs before the automatic init). Use it on a form **without** `post`, so the two submit handlers don't compete:
+
+```html
+<div state="{ uploading: false, fileName: '', uploadResult: null, uploadError: null }">
   <h2>Upload File</h2>
-  <form post="/api/upload" validate
-        loading="#uploadLoading"
-        success="#uploadSuccess"
-        error="#uploadError"
-        on:submit.prevent="uploading = true">
-
-    <div class="upload-zone"
-         class-dragover="isDragOver"
-         on:dragover.prevent="isDragOver = true"
-         on:dragleave="isDragOver = false"
-         on:drop.prevent="isDragOver = false">
-
-      <input type="file" name="file" ref="fileInput" required
-             on:change="fileName = $event.target.files[0]?.name || ''" />
-
-      <p show="!fileName">Drag a file here or click to browse</p>
-      <p show="fileName" bind="'Selected: ' + fileName"></p>
-    </div>
+  <form upload-form="/api/upload">
+    <input type="file" name="file" required
+           on:change="fileName = $event.target.files[0]?.name || ''; uploadResult = null; uploadError = null" />
+    <p show="fileName" bind="'Selected: ' + fileName"></p>
 
     <input type="text" name="description" placeholder="Description (optional)" />
 
-    <button type="submit" bind-disabled="!$form.valid || uploading">
+    <button type="submit" bind-disabled="uploading">
       <span hide="uploading">Upload</span>
       <span show="uploading">Uploading...</span>
     </button>
   </form>
+
+  <p show="uploadResult" class="success"
+     bind="'File uploaded: ' + (uploadResult?.filename || '')"></p>
+  <p show="uploadError" class="error" bind="uploadError"></p>
 </div>
-
-<template id="uploadLoading">
-  <div class="progress-bar"><div class="progress-fill"></div></div>
-</template>
-
-<template id="uploadSuccess" var="result">
-  <p class="success">File uploaded: <span bind="result.filename"></span></p>
-</template>
-
-<template id="uploadError" var="err">
-  <p class="error" bind="err.message"></p>
-</template>
 ```
+
+Every named field is sent, the file included. `required` is native validation: the browser blocks the submit until a file is chosen. The request goes through the browser's `fetch`, not the No.JS HTTP layer, so `baseApiUrl`, `NoJS.interceptor()` and the CSRF header from `NoJS.config({ csrf })` do not apply: the URL resolves against the page, and any auth or CSRF header goes in the `fetch` options. For upload progress, see the next pattern.
 
 ---
 
 ## File Upload with Progress Tracking
 
-For real-time upload progress, use `XMLHttpRequest` with `on:init` to set up the progress listener. The NoJS state system drives the progress bar reactively.
+For real-time upload progress, use `XMLHttpRequest` (`fetch` does not report upload progress). Expressions cannot hold that code (no `if`, `var`, `function`, `new`, and `XMLHttpRequest` is not an expression global), so it lives in a small custom directive that writes `uploading`, `progress`, `uploadResult` and `uploadError` to the nearest state. The NoJS state system drives the progress bar reactively.
+
+```html
+<script>
+  NoJS.directive('upload', {
+    init(el, name, url) {
+      const ctx = NoJS.findContext(el);
+      const onClick = () => {
+        const input = ctx.$refs[el.getAttribute('upload-input')];
+        const file = input && input.files[0];
+        if (!file) return;
+        ctx.uploading = true;
+        ctx.progress = 0;
+        ctx.uploadResult = null;
+        ctx.uploadError = null;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) ctx.progress = (e.loaded / e.total) * 100;
+        };
+        xhr.onload = () => {
+          ctx.uploading = false;
+          if (xhr.status >= 200 && xhr.status < 300) ctx.uploadResult = JSON.parse(xhr.responseText);
+          else ctx.uploadError = 'Upload failed: ' + xhr.statusText;
+        };
+        xhr.onerror = () => { ctx.uploading = false; ctx.uploadError = 'Network error'; };
+        xhr.open('POST', url);
+        xhr.send(formData);
+      };
+      el.addEventListener('click', onClick);
+      NoJS.internals.onDispose(() => el.removeEventListener('click', onClick));
+    }
+  });
+</script>
+```
+
+Register the directive before No.JS initializes (a `<script>` after the CDN tag runs before the automatic init). Then use it on the upload button:
 
 ```html
 <div state="{
@@ -283,36 +338,12 @@ For real-time upload progress, use `XMLHttpRequest` with `on:init` to set up the
   <!-- Progress bar -->
   <div class="progress-bar" show="uploading">
     <div class="progress-fill"
-         bind-style:width="progress + '%'"></div>
+         style-width="progress + '%'"></div>
     <span class="progress-text" bind="Math.round(progress) + '%'"></span>
   </div>
 
-  <button on:click="
-    if (!$refs.fileInput.files[0]) return;
-    uploading = true;
-    progress = 0;
-    uploadResult = null;
-    uploadError = null;
-
-    var formData = new FormData();
-    formData.append('file', $refs.fileInput.files[0]);
-
-    var xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = function(e) {
-      if (e.lengthComputable) { progress = (e.loaded / e.total) * 100; }
-    };
-    xhr.onload = function() {
-      uploading = false;
-      if (xhr.status >= 200 && xhr.status < 300) {
-        uploadResult = JSON.parse(xhr.responseText);
-      } else {
-        uploadError = 'Upload failed: ' + xhr.statusText;
-      }
-    };
-    xhr.onerror = function() { uploading = false; uploadError = 'Network error'; };
-    xhr.open('POST', '/api/upload');
-    xhr.send(formData);
-  " bind-disabled="!fileName || uploading">
+  <button upload="/api/upload" upload-input="fileInput"
+          bind-disabled="!fileName || uploading">
     <span hide="uploading">Upload</span>
     <span show="uploading">Uploading...</span>
   </button>
@@ -359,7 +390,7 @@ A wizard-style form where each step validates independently before proceeding. U
            error-required="Email is required"
            error-email="Enter a valid email" />
     <button type="button"
-            on:click="if ($form.valid) step = 2"
+            on:click="step = $form.valid ? 2 : step"
             bind-disabled="!$form.valid">
       Next
     </button>
@@ -376,7 +407,7 @@ A wizard-style form where each step validates independently before proceeding. U
     <div class="form-actions">
       <button type="button" on:click="step = 1">Back</button>
       <button type="button"
-              on:click="if ($form.valid) step = 3"
+              on:click="step = $form.valid ? 3 : step"
               bind-disabled="!$form.valid">
         Next
       </button>

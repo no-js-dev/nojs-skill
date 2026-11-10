@@ -25,16 +25,18 @@ No.JS ships with **32 built-in filters** organized into five categories. Filters
 ```
 value | filterName
 value | filterName:arg1
-value | filterName:arg1:arg2
+value | filterName:arg1,arg2
 value | filter1 | filter2 | filter3
 ```
 
-The pipe operator has the lowest precedence -- everything to its left is evaluated first, then the result is passed as the first argument to the filter function. Additional arguments are separated by `:`.
+The pipe operator has the lowest precedence -- everything to its left is evaluated first, then the result is passed as the first argument to the filter function. The first argument follows `:`; further arguments are separated by `,`.
+
+Arguments are literals, not expressions: quoted strings (`'EUR'`, `', '`) and numbers (`50`). An unquoted value that is not a number (`true`, `item.id`) is passed as a string. Whitespace inside quotes is kept (`join:', '` joins with comma + space); unquoted arguments are trimmed.
 
 ```html
 <span bind="name | uppercase"></span>
 <span bind="price | currency:'EUR'"></span>
-<span bind="items | where:'active':true | count"></span>
+<span bind="items | where:'status','active' | count"></span>
 ```
 
 ---
@@ -311,7 +313,7 @@ Join array elements into a string with a separator.
 
 ```html
 <span bind="tags | join:', '"></span>
-<!-- ["js", "html", "css"] -> "js, html, css" -->
+<!-- ["js", "html", "css"] -> "js, html, css" (the space inside the quotes is kept) -->
 
 <span bind="parts | join:'-'"></span>
 <!-- ["2026", "06", "15"] -> "2026-06-15" -->
@@ -389,17 +391,17 @@ Filter an array to objects matching a property condition.
 
 | | |
 |---|---|
-| **Syntax** | `value \| where:property:value` |
-| **Arguments** | `property` (string) -- property name to test; `value` (any) -- expected value |
+| **Syntax** | `value \| where:property,value` |
+| **Arguments** | `property` (string) -- property name to test; `value` (string or number literal) -- expected value, compared with `===` |
 
 ```html
-<!-- Filter active users -->
-<div each="user in users | where:'active':true">
+<!-- Filter by status -->
+<div each="user in users | where:'status','active'">
   <span bind="user.name"></span>
 </div>
 
 <!-- Filter by role -->
-<div each="admin in users | where:'role':'admin'">
+<div each="admin in users | where:'role','admin'">
   <span bind="admin.name"></span>
 </div>
 ```
@@ -529,7 +531,7 @@ Log the value to the console and return it unchanged. Useful for inspecting inte
 | **Arguments** | None |
 
 ```html
-<span bind="items | debug | where:'active':true | debug | count"></span>
+<span bind="items | debug | where:'status','active' | debug | count"></span>
 <!-- Logs the array before and after filtering -->
 ```
 
@@ -588,7 +590,7 @@ NoJS.filter('markdown', (text) => {
 
 ```html
 <span bind="fullName | initials"></span>         <!-- "John Doe" -> "JD" -->
-<span bind="id | pad:6:'0'"></span>              <!-- 42 -> "000042" -->
+<span bind="id | pad:6,'0'"></span>              <!-- 42 -> "000042" -->
 <div bind-html="content | markdown"></div>
 ```
 
@@ -603,11 +605,11 @@ Filters can be chained to build complex transformations:
 <span bind="content | stripHtml | trim | truncate:100"></span>
 
 <!-- Array processing pipeline -->
-<span bind="users | where:'active':true | sortBy:'name' | pluck:'name' | join:', '"></span>
+<span bind="users | where:'status','active' | sortBy:'name' | pluck:'name' | join:', '"></span>
 
 <!-- Conditional display with default -->
 <span bind="user.bio | stripHtml | truncate:200 | default:'No bio provided'"></span>
 
 <!-- Debug intermediate values -->
-<span bind="items | debug | where:'price':0 | debug | count"></span>
+<span bind="items | debug | where:'price',0 | debug | count"></span>
 ```

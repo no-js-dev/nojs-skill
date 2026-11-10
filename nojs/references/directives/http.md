@@ -89,7 +89,7 @@ Fetch data via HTTP GET request.
 | `empty` | string | Template ID shown when response is empty array/null |
 | `refresh` | number | Auto-refresh interval in ms (polling) |
 | `cached` | boolean or string | Cache responses. `cached` = memory, `cached="local"` = localStorage, `cached="session"` = sessionStorage |
-| `into` | string | Write response to a named global store |
+| `into` | string | Write response to a named global store, under the `as` key: `$store.<into>.<as>` |
 | `debounce` | number | Debounce reactive URL refetches in ms |
 | `headers` | string | JSON string of additional headers |
 | `params` | string | Expression that resolves to query params object |
@@ -125,48 +125,65 @@ Fetch data via HTTP GET request.
 </div>
 ```
 
+**URL placeholders** -- each `{expression}` value is encoded with `encodeURIComponent`, so `/` becomes `%2F`. URL attributes are never evaluated as expressions, so build multi-segment paths with one placeholder per segment: `get="/files/{dir}/{name}"`. In the path part of the URL, a value that is exactly `.` or `..` is escaped as `%252E` / `%252E%252E` (with a console warning) so URL parsers cannot collapse it as a dot-segment and send the request elsewhere: `get="/users/{id}/avatar"` with `id = '..'` requests `/users/%252E%252E/avatar` (the server decodes the segment to the text `%2E%2E`). The warning is logged once per request. This is on by default with no opt-out, and applies to every HTTP verb, `call` and `sse`. Query-string and fragment values, and request bodies, are not affected.
+
 ### `post`
 
 Submit data via HTTP POST request.
 
-**Syntax:** `<element post="/endpoint" body="{expression}">`
+**Syntax:** `<form post="/endpoint">` (named fields) or `<element post="/endpoint" body='{"key": "{expression}"}'>`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event. On any other element, attaches a `click` listener. When the host element is a `<form>`, fields are auto-serialized via `FormData` (overrides `body` if both are present).
 
 ```html
-<form post="/login" body="{ email, password }" as="result"
+<!-- Form: every field with a name is sent as a JSON object -->
+<form post="/login" as="result"
       success="#loginSuccess" error="#loginError" loading="#loginLoading">
-  <input model="email">
-  <input model="password" type="password">
+  <input name="email" model="email">
+  <input name="password" model="password" type="password">
   <button>Login</button>
 </form>
 
-<!-- Non-form: triggers on click -->
-<button post="/api/action" body="{ id: item.id }">Do it</button>
+<!-- Non-form: triggers on click; send a JSON body -->
+<button post="/api/action" body='{"id": {item.id}, "note": "{note}"}'>Do it</button>
+
+<!-- Same request as an object literal -->
+<button post="/api/action" body="{ id: item.id, note: note }">Do it</button>
+
+<!-- URL-encoded body -->
+<button post="/api/action"
+        headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+        body="id={item.id}">Do it</button>
 ```
+
+On a `<form>`, `body` is ignored: the named fields are sent. See [`body`](#body) for the rules.
 
 ### `put`
 
 Update data via HTTP PUT request (full replacement).
 
-**Syntax:** `<element put="/endpoint" body="{expression}">`
+**Syntax:** `<form put="/endpoint">` (named fields) or `<element put="/endpoint" body='{"key": "{expression}"}'>`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event and auto-serializes fields via `FormData` (same as `post`). On any other element, attaches a `click` listener.
 
 ```html
-<form put="/users/{user.id}" body='{"name": "{user.name}", "role": "{selectedRole}"}'>
-  ...
+<form put="/users/{user.id}">
+  <input name="name" model="user.name">
+  <select name="role" model="selectedRole">...</select>
+  <button>Save</button>
 </form>
 
 <!-- Non-form: triggers on click -->
-<button put="/users/{user.id}" body="{ role: 'admin' }">Promote</button>
+<button put="/users/{user.id}"
+        headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+        body="role=admin">Promote</button>
 ```
 
 ### `patch`
 
 Partial update via HTTP PATCH request.
 
-**Syntax:** `<element patch="/endpoint" body="{expression}">`
+**Syntax:** `<form patch="/endpoint">` (named fields) or `<element patch="/endpoint" body="key={expression}">`
 
 **Trigger:** On a `<form>`, intercepts the `submit` event and auto-serializes fields via `FormData` (same as `post`). On any other element, attaches a `click` listener.
 
@@ -190,22 +207,21 @@ Delete data via HTTP DELETE request.
 
 Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/rfc10008.html)).
 
-**Syntax:** `<element query="/endpoint" body="{expression}" as="dataVar">`
+**Syntax:** `<form query="/endpoint" as="dataVar">` (named fields) or `<element query="/endpoint" body="key={expression}" as="dataVar">`
 
 `QUERY` is a **safe, idempotent, cacheable** method that — unlike `get` — **carries a request body**. Use it for complex read operations whose criteria don't fit cleanly in a URL query string: rich search, faceted filtering, or long structured filter payloads. Semantically it is a **read**, not a mutation: it never changes server state, so it is safe to retry, cache, and re-fire reactively.
 
 **Trigger:**
 
 - On a `<form>`, intercepts the `submit` event and serializes fields via `FormData` (same as `post`).
-- On any other element, **auto-fires on mount** and **re-fires reactively** when reactive variables in its URL or `body` change (same on-mount/reactive behavior as `get`).
+- On any other element, **auto-fires on mount** and **re-fires reactively** when a placeholder in its URL changes (same as `get`). A change to state used only in `body` does not re-fire; call `el.refresh()` (for example `$refs.x.refresh()` from a later event) or put the value in the URL.
 
 **Trigger modes (non-form elements):** control *when* the request fires with `query-trigger` — the QUERY-side counterparts of `get-trigger`:
 
 | Attribute | Description |
 |-----------|-------------|
-| `query-trigger` | When the request fires: `visible` (on IntersectionObserver entry), `scroll`, `hover` (first `mouseenter`), `button` (renders a trigger button), or `none` (suppress auto-fire; use `.refresh()`). Absent = fires on mount |
-| `query-trigger-label` | Custom label for the auto-generated button when `query-trigger="button"`. Default: `"Load More"` |
-| `query-threshold` | IntersectionObserver `rootMargin` for `visible`/`scroll` triggers (e.g. `"200px"`) |
+| `query-trigger` | When the request fires: `visible` (on IntersectionObserver entry), `hover` (first `mouseenter`), or `none` (suppress auto-fire; use `.refresh()`). Absent = fires on mount. `scroll` and `button` need `get-insert`, which is GET-only, so on `query` they warn and fall back (`scroll` to `visible`, `button` to firing on mount); `query-trigger-label` has no effect |
+| `query-threshold` | IntersectionObserver `rootMargin` for the `visible` trigger (e.g. `"200px"`) |
 
 **Body-aware caching:** when `cached` is set, the cache key incorporates the serialized request body (not just the URL), so two QUERY requests to the same endpoint with different filter bodies cache independently.
 
@@ -215,13 +231,13 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
 
 ```html
 <!-- Complex search/filter as a safe, body-carrying read -->
-<form query="/orders" body="{ status, minTotal, sort }" as="result">
-  <select model="status">
+<form query="/orders" as="result">
+  <select name="status">
     <option value="open">Open</option>
     <option value="closed">Closed</option>
   </select>
-  <input model="minTotal" type="number">
-  <select model="sort">
+  <input name="minTotal" type="number">
+  <select name="sort">
     <option value="date">Newest</option>
     <option value="total">Total</option>
   </select>
@@ -232,10 +248,12 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
   </div>
 </form>
 
-<!-- Non-form: auto-fires on mount, re-fires when filter state changes -->
-<div state="{ region: 'us', tags: [] }">
-  <div query="/products/search"
-       body="{ region, tags }"
+<!-- Non-form: fires when visible; re-fires when region (a URL placeholder) changes.
+     tag is body-only: changing it alone does not re-fire (use $refs.x.refresh()). -->
+<div state="{ region: 'us', tag: 'new' }">
+  <div query="/products/search?region={region}"
+       headers='{"Content-Type": "application/x-www-form-urlencoded"}'
+       body="tag={tag}"
        query-trigger="visible"
        query-threshold="200px"
        as="products"
@@ -251,14 +269,14 @@ Read data via HTTP `QUERY` request ([RFC 10008](https://www.rfc-editor.org/rfc/r
 
 | Attribute | Description |
 |-----------|-------------|
-| `body` | Request body (JSON string with `{variable}` interpolation). For `<form>` elements on **any** method (POST, PUT, PATCH, DELETE), fields are auto-serialized via `FormData` and override `body` |
+| `body` | Request body. A JSON template (`'{"name": "{name}"}'`) or object literal (`{ id: item.id }`) is sent as JSON; in other text each `{expression}` is replaced with its `encodeURIComponent`-ed value (see [`body`](#body)). For `<form>` elements on **any** method (POST, PUT, PATCH, DELETE), fields are auto-serialized via `FormData` and `body` is ignored |
 | `success` | Template ID to render on success. Variable name resolved via [Template var Priority](#template-var-priority) |
 | `error` | Template ID to render on error. Variable name resolved via [Template var Priority](#template-var-priority) |
 | `loading` | Template ID to show during request |
 | `confirm` | Show browser `confirm()` dialog before sending |
 | `redirect` | URL to navigate to on success (SPA route) |
 | `then` | Expression to execute on success (e.g. `"users.push(result)"`) |
-| `into` | Write response to a named global store |
+| `into` | Write response to a named global store, under the `as` key: `$store.<into>.<as>` |
 | `cached` | Cache responses (memory/local/session) |
 | `retry` | Number of retry attempts on failure. Default: value from `NoJS.config({ retries })` |
 | `retry-delay` | Delay in ms between retries. Default: `1000` |
@@ -286,9 +304,20 @@ Default value is `"data"`. The response data becomes available in the context un
 
 Request body for POST/PUT/PATCH/DELETE requests, and for the safe `query` read.
 
-**Syntax:** `<element post="/api" body="{ key: value }">`
+**Syntax:** `<element post="/api" body='{"key": "{value}"}'>`, `body="{ key: value }"` or `body="key={value}"`
 
-Accepts a JSON string with `{variable}` interpolation. For `<form>` elements on any method, fields are always auto-serialized via `FormData` (overrides `body`). `query` is the one **read** method that carries a `body` — see [`query`](#query).
+How the body is built:
+
+| Form | Example | Sent |
+|------|---------|------|
+| JSON template | `body='{"name": "{user.name}", "qty": {qty}, "items": {$store.cart.items}}'` | JSON (`Content-Type: application/json`). A placeholder inside a JSON string is inserted escaped (`""` for `null`/`undefined`); a placeholder outside a string is serialized as a JSON value (`null` for `undefined`) |
+| Object literal | `body="{ id: item.id, name: name }"`, `body="{ email, password }"` | The object as JSON |
+| Single placeholder holding an object | `body="{payload}"` | The object as JSON |
+| Any other text | `body="email={email}&role={role}"` | Each `{expression}` is replaced with its value encoded by `encodeURIComponent`. If the result parses as JSON it is sent as JSON; otherwise it is sent as is, so set the content type with `headers` |
+
+A single-key shorthand `body="{ email }"` cannot be told apart from the placeholder `{email}`: it sends the URL-encoded value as text. Write `{ email: email }` or `'{"email": "{email}"}'`.
+
+Inputs need a `name` attribute to be serialized; `model` alone is not enough. For `<form>` elements on any method, fields are always auto-serialized via `FormData` and `body` is ignored. The fields are sent as a JSON object, so `<input type="file">` values are not uploaded (a file is sent as `{}`); see [File Upload Form](../patterns/forms.md#file-upload-form). The fields are read before the `loading` template replaces the form's content, so a form with `loading` still sends its values. `query` is the one **read** method that carries a `body` — see [`query`](#query).
 
 ### `headers`
 
@@ -297,6 +326,8 @@ Custom request headers.
 **Syntax:** `<element get="/api" headers='{"Authorization": "Bearer token"}'>`
 
 Provided as a JSON string. Merged with global headers from `NoJS.config()`.
+
+> **Note:** Global `NoJS.config({ headers })` are sent with every request, including requests to other origins (v1.21.1 behavior). Set `scopeHeaders: true` to send them only to trusted origins: the page, the `baseApiUrl` origin and the origin of the nearest `base` attribute. Per-request `headers` attributes still apply to any origin.
 
 > **Note:** Inline sensitive headers (`Authorization`, `Cookie`, `X-CSRF-Token`, `X-API-Key`) trigger an unconditional console warning. Prefer `NoJS.config({ headers })` or interceptors for sensitive headers.
 
@@ -327,15 +358,22 @@ Write response to a named global store.
 
 **Syntax:** `<element get="/user" into="currentUser">`
 
-The store does not need to be pre-defined -- `into` creates it automatically if it doesn't exist. The data is accessible via `$store.storeName` from anywhere.
+The store does not need to be pre-defined -- `into` creates it automatically if it doesn't exist. The response is stored under the `as` key (`data` when `as` is omitted), so it is accessible via `$store.<into>.<as>` from anywhere. The response fields are not merged into the store itself.
 
 ```html
 <div get="/me" as="user" into="currentUser">
   <p bind="user.name"></p>
 </div>
-<!-- Accessible from anywhere -->
-<span bind="$store.currentUser.name"></span>
+<!-- Accessible from anywhere: $store.<into>.<as> -->
+<span bind="$store.currentUser.user.name"></span>
+
+<!-- Without `as`, the key is `data` -->
+<div get="/settings" into="prefs"></div>
+<span bind="$store.prefs.data.theme"></span>
 ```
+
+- `into` takes a plain store name. `into="user.profile"` creates a store literally named `user.profile`; it does not write to `$store.user.profile`.
+- `call` and `sse` follow the same rule.
 
 ### `debounce`
 
@@ -415,7 +453,7 @@ The variable name exposed inside `success` and `error` templates follows a prior
   <p bind="user.name"></p>
 </template>
 
-<div post="/login" body="{ email }" success="#ok">...</div>
+<form post="/login" success="#ok"><input name="email"><button>Go</button></form>
 ```
 
 ### Trigger Behavior
@@ -620,7 +658,7 @@ When an error is caught, the boundary replaces its children with the fallback te
 
 ### Global Error Handler
 
-Use `NoJS.on()` to listen for errors globally -- useful for logging, analytics, or session management:
+Use `NoJS.on()` to listen for errors globally -- useful for logging, analytics, or session management. The `url` in `fetch:success`, `fetch:error` and `error` payloads, and in the `GET <url> failed:` console warning, is the raw request URL by default (query and fragment included). With `NoJS.config({ strictRedaction: true })` it is redacted: the `#fragment` is dropped and the values of sensitive query parameters (`token`, `api_key`, `password`, ...) become `[REDACTED]`.
 
 ```html
 <script>

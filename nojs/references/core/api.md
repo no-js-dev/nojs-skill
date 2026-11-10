@@ -35,7 +35,7 @@ Complete reference for the NoJS JavaScript API surface. All methods, getters, se
 
 ## NoJS.config(options)
 
-Configure global framework settings. Call before `NoJS.init()` or the DOM ready event. Config is locked after initialization -- calling `NoJS.config()` after `NoJS.init()` throws.
+Configure global framework settings. Can be called before or after `NoJS.init()` and never throws. After `init()` starts, only `sanitize`, `dangerouslyDisableSanitize` and `sanitizeHtml` are locked (changing them logs a warning and is ignored), and `strictBindings` cannot be turned off once it is `true`. Both locks reset on `NoJS.dispose()`.
 
 ```javascript
 NoJS.config({
@@ -60,11 +60,20 @@ NoJS.config({
   stores: {
     auth: { user: null, token: null },
     cart: { items: [] }
-  }
+  },
+
+  // Opt-in hardening flags (all default false = v1.21.1 behavior)
+  scopeHeaders: false,
+  strictRedaction: false,
+  strictDirectives: false,
+  strictDevtools: false,
+  strictJsonld: false,
+  strictBindings: false
+  // plus templates.pageRelative, i18n.escapeParams, i18n.strictLocale
 });
 ```
 
-For the full options table with types, defaults, and detailed descriptions, see the [Configuration Reference](config.md).
+For the full options table with types, defaults, and detailed descriptions, see the [Configuration Reference](config.md). The hardening flags are described in [Opt-in Hardening Flags](config.md#opt-in-hardening-flags).
 
 ---
 
@@ -83,19 +92,22 @@ await NoJS.init();
 // Initialize on a specific container
 await NoJS.init(document.getElementById('app'));
 
-// Re-initialize (after adding new HTML dynamically)
-await NoJS.init();
+// Calling it again returns the same Promise (no second walk).
+// For HTML added later, use NoJS.processTree(el).
 ```
 
 **Initialization sequence**:
-1. Mark as initialized (prevents duplicate init)
-2. Load and process remote template includes (Phase 1 and Phase 2)
-3. Process all directive attributes on the DOM tree
-4. Create and start the router (if `config.router` is set)
-5. Fire `ready` event on the event bus
-6. Initialize devtools (if enabled)
+1. Lock the sanitization config keys and mark as initialized (a second call returns the same Promise)
+2. Load i18n locale files (when `i18n.loadPath` is set)
+3. Inline template includes, then load Phase 1 remote templates (blocking)
+4. Create the router if a `[route-view]` element exists
+5. Process all directive attributes on the DOM tree (first paint)
+6. Start the router, start Phase 2 template preloading (non-blocking), initialize devtools (if enabled)
+7. Run each plugin's `init()` hook, then emit `plugins:ready` on the event bus
 
 Returns a `Promise` that resolves when initialization is complete.
+
+**Directive errors are isolated.** A directive whose `init` throws no longer stops the rest of the page from rendering: the error is warned on its element (`[No.JS] directive "<name>" init error on <tag>:`) and the walk continues. `NoJS.init()` still starts the router, runs plugin `init()` hooks and emits `plugins:ready`, then rejects with the first such error. Inside a reactive batch update the error is only warned. A disposer that throws is warned and does not stop the remaining disposers.
 
 ---
 
@@ -106,68 +118,64 @@ Register a custom directive for use in HTML attributes.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | string | Directive name (used as `name="..."` in HTML) |
-| `handler` | object\|function | Directive handler |
+| `handler` | object | Directive handler: `{ priority?, init }`. A plain function is not accepted (its `init` is missing, so the directive fails on every element) |
 
 ### Handler shape
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `init(el, value, ctx)` | function | Yes | Called when the element is first processed |
-| `update(el, value, ctx)` | function | No | Called when the expression value changes |
-| `destroy(el, ctx)` | function | No | Called when the element is disposed |
-| `priority` | number | No | Processing order (lower = earlier, default: 500) |
+| `init(el, name, value)` | function | Yes | Called once when the element is processed. `name` is the attribute name, `value` the raw attribute string. Evaluate it yourself with `NoJS.evaluate(value, NoJS.findContext(el))` and watch the context if it must react to changes |
+| `priority` | number | No | Processing order (lower = earlier, default: `50`, after all built-in directives) |
+
+There are no `update` or `destroy` hooks, no context is passed in, and the value returned by `init` is ignored. Register cleanup for listeners, observers and timers on the element (see Custom directive utilities below).
 
 ```javascript
-// Object form
 NoJS.directive('tooltip', {
-  init(el, value, ctx) {
-    el._tooltip = document.createElement('div');
-    el._tooltip.className = 'tooltip';
-    el._tooltip.textContent = value;
-    el.appendChild(el._tooltip);
-  },
-  update(el, value) {
-    el._tooltip.textContent = value;
-  },
-  destroy(el) {
-    el._tooltip?.remove();
+  priority: 25,
+  init(el, name, value) {
+    const ctx = NoJS.findContext(el);
+    const tip = document.createElement('div');
+    tip.className = 'tooltip';
+    tip.textContent = NoJS.evaluate(value, ctx);
+    const show = () => document.body.appendChild(tip);
+    const hide = () => tip.remove();
+    el.addEventListener('mouseenter', show);
+    el.addEventListener('mouseleave', hide);
+    el.__disposers = el.__disposers || [];
+    el.__disposers.push(() => {
+      el.removeEventListener('mouseenter', show);
+      el.removeEventListener('mouseleave', hide);
+      tip.remove();
+    });
   }
 });
-
-// Function shorthand (init only)
-NoJS.directive('focus', (el) => el.focus());
 ```
 
 ```html
-<div tooltip="message">Hover me</div>
+<div tooltip="'Saved!'">Hover me</div>
 ```
 
-### Default priority
+A directive whose `init` throws is isolated: the error is warned on its element and the rest of the page keeps rendering.
 
-Custom directives default to priority `500`. Core directives use lower priorities to ensure they process first.
+### Registry freezing and wildcard names
 
-### Wildcard patterns
+Core directive names are frozen as soon as No.JS loads, before `NoJS.init()` runs: registering one logs `Cannot override core directive "<name>".` and is ignored. A name is also locked once it has been registered, so a later registration cannot replace it.
 
-Directive names can include a wildcard suffix (`*`) to match multiple attribute patterns:
-
-```javascript
-NoJS.directive('data-*', {
-  init(el, value, ctx) {
-    const key = el.getAttribute('data-key');
-    // handle data-anything attributes
-  }
-});
-```
+Custom directives cannot declare their own wildcard patterns; only the core wildcards `on:*`, `bind-*`, `class-*` and `style-*` exist. A custom name that one of them would otherwise handle, such as `on:clickoutside`, `class-x` or `bind-chart`, is accepted and wins for that exact attribute only (debug mode logs `Directive "bind-chart" shadows core "bind-*" for that attribute.`). Set `NoJS.config({ strictDirectives: true })` before any `NoJS.directive()` or `NoJS.use()` call to reject such names too.
 
 ### Custom directive utilities
 
 | Utility | Description |
 |---------|-------------|
-| `_onDispose(fn)` | Register a cleanup callback on the element currently being processed |
-| `_watchExpr(expr, ctx, fn)` | Watch an expression for changes with automatic store subscription |
-| `_disposeTree(root)` | Dispose all directives on a DOM subtree |
-| `_disposeChildren(parent)` | Dispose descendants only (not the parent) |
+| `el.__disposers.push(fn)` | Cleanup callback run when No.JS disposes the element (create the array first: `el.__disposers = el.__disposers \|\| []`) |
+| `NoJS.internals.onDispose(fn)` | Same, for the element whose `init` is running. Call it synchronously inside `init`, not from a callback |
+| `ctx.$watch(fn)` | Call `fn` when a key on that context changes; returns an unsubscribe function. A key owned by an ancestor context (e.g. a `state` key read inside a loop item) needs a watch on that context (`ctx.$parent`) |
+| `NoJS.evaluate(expr, ctx)` / `NoJS.findContext(el)` | Evaluate an expression / find the nearest context |
+| `NoJS.internals.disposeTree(root)` | Dispose all directives on a DOM subtree |
+| `NoJS.internals.disposeChildren(parent)` | Dispose descendants only (not the parent) |
 | `el.__declared = false` | Force re-processing by `processTree()` on next pass |
+
+`_onDispose`, `_watchExpr`, `_disposeTree` and `_disposeChildren` are internal names: they are not globals and are not exposed on `NoJS`, so user code cannot call them (a bare `_onDispose(...)` call throws a `ReferenceError`).
 
 ---
 
@@ -196,7 +204,7 @@ NoJS.filter('pad', (value, length, char) => {
 
 ```html
 <span bind="fullName | initials"></span>       <!-- "John Doe" -> "JD" -->
-<span bind="id | pad:6:'0'"></span>            <!-- 42 -> "000042" -->
+<span bind="id | pad:6,'0'"></span>            <!-- 42 -> "000042" (args are comma-separated) -->
 ```
 
 ---
@@ -210,7 +218,9 @@ Register a custom form validator.
 | `name` | string | Validator name used in `validate="name"` |
 | `fn` | function | Validation function. Receives the input value, returns `true` (valid) or a string (error message) |
 
-Built-in validator names are protected: `required`, `email`, `url`, `min`, `max`, `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha`, `alphanumeric`.
+Only the names of the built-in rules of the NoJS Elements `validate` directive are reserved: `required`, `email`, `url`, `min` and `max`. Registering one of them logs `"<name>" is a built-in validator and cannot be overridden` and does nothing. Every other name can be registered, including `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric` -- the `validate` directive has no rule with those names, so register your own if you want to use them.
+
+Validators are run by NoJS Elements, which reads the registry when it installs: register them before the Elements script loads.
 
 ```javascript
 NoJS.validator('username', (value) => {
@@ -249,6 +259,8 @@ Configure internationalization settings. Can be called before or after `init()`.
 | `fallbackLocale` | string | Fallback locale when a key is missing |
 | `detectBrowser` | boolean | Auto-detect locale from `navigator.language` |
 | `supportedLocales` | string[] | Locales eligible for browser detection. When set with `loadPath`, `detectBrowser` adopts the browser language (or its prefix, e.g. `pt` from `pt-BR`) only if present in this list |
+| `escapeParams` | boolean | Default `false`: `t-*` params in `t-html` are inserted raw and the result is sanitized. `true`: params are HTML-escaped first. Changing it after `init()` re-renders active translations |
+| `strictLocale` | boolean | Default `false`: a persisted `nojs-locale` is restored even if it is not in `supportedLocales`. `true`: such a value is ignored and removed (only when `supportedLocales` is non-empty). Read by this `NoJS.i18n()` call only |
 
 ```javascript
 NoJS.i18n({
@@ -262,7 +274,7 @@ NoJS.i18n({
 });
 ```
 
-On first visit the active locale is resolved by priority: persisted `nojs-locale` > browser detection (when `detectBrowser` + `supportedLocales` match) > `defaultLocale`.
+On first visit the active locale is resolved by priority: persisted `nojs-locale` > browser detection (when `detectBrowser` + `supportedLocales` match) > `defaultLocale`. The persisted value wins even when it is not in `supportedLocales`, unless `strictLocale: true`.
 
 ### Examples
 
@@ -288,7 +300,7 @@ Subscribe to lifecycle events on the internal event bus.
 Returns an unsubscribe function.
 
 ```javascript
-const unsub = NoJS.on('ready', () => {
+const unsub = NoJS.on('plugins:ready', () => {
   console.log('NoJS initialized');
 });
 
@@ -296,7 +308,9 @@ const unsub = NoJS.on('ready', () => {
 unsub();
 ```
 
-**Known events**: `ready`, `route:change`, `route:before`, `route:after`, `locale:change`, `store:change`, `dispose`.
+**Framework events**: `plugins:ready` (end of `NoJS.init()`), `fetch:success` (`{ url, data }`), `fetch:error` and `error` (`{ url, error }`) from the HTTP verb directives and `call`, and `fetch:end` (`{ url }`, emitted only when a paginated `get` reaches the end of its data). The `url` in these payloads is the raw URL by default; with `strictRedaction: true` it is redacted (fragment dropped, sensitive query values `[REDACTED]`). Any other name works as a custom event between `NoJS.on()` and your own code.
+
+There are no `ready`, `route:change`, `route:before`, `route:after`, `store:change`, `locale:change` or `dispose` events; listening for them never fires. Use `plugins:ready` for the end of init, `NoJS.router.on(fn)` for navigation (returns an unsubscribe function; block navigation with a route `guard`), `NoJS.store.<name>.$watch(fn)` or the `watch` directive for store changes, and a plugin's `dispose` hook for teardown.
 
 A maximum of `config.maxEventListeners` (default: 100) listeners can be registered per event. Exceeding this limit logs a memory leak warning.
 
@@ -318,9 +332,9 @@ const MyPlugin = {
   name: 'my-plugin',
   install(app, options) {
     // Register directives, filters, globals, interceptors
-    app.directive('my-dir', { init(el, val, ctx) { /* ... */ } });
+    app.directive('my-dir', { init(el, name, value) { /* ... */ } });
     app.filter('my-filter', (v) => v);
-    app.global('$myGlobal', { value: 42 });
+    app.global('myGlobal', { value: 42 }); // $myGlobal in expressions
   },
   init(app) {
     // Called after NoJS.init() completes
@@ -367,18 +381,22 @@ Set a global reactive variable accessible in all expressions as `$name`.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | string | Variable name (without `$` prefix) |
-| `value` | any | The value (primitives and objects both work) |
+| `value` | any | The value. Primitives, plain data objects and functions work. Objects are copied through JSON, so functions inside them (object methods, class instance methods) are dropped and a console warning is emitted |
 
 ```javascript
 NoJS.global('theme', 'dark');
 NoJS.global('user', { name: 'Erick', role: 'admin' });
+NoJS.global('formatPrice', (n) => '$' + n.toFixed(2)); // top-level function: kept
 ```
 
 ```html
 <div class-dark="$theme === 'dark'">
   Welcome, <span bind="$user.name"></span>
+  <span bind="$formatPrice(product.price)"></span>
 </div>
 ```
+
+To expose callable helpers, register each function as its own global (`$formatPrice(...)`). An object of actions (`NoJS.global('actions', { save() {} })`) or a class instance loses its methods: `$actions.save()` returns `undefined`.
 
 **Reserved names** (cannot be used): `store`, `route`, `router`, `i18n`, `refs`, `form`, `parent`, `watch`, `set`, `notify`, `raw`, `isProxy`, `listeners`, `app`, `config`, `env`, `debug`, `version`, `plugins`, `globals`, `el`, `event`, `self`, `this`, `super`, `window`, `document`, `toString`, `valueOf`, `hasOwnProperty`.
 
@@ -409,11 +427,11 @@ await NoJS.dispose();
 
 ## NoJS.CANCEL
 
-Sentinel symbol. Return from a request interceptor to abort the request entirely.
+Sentinel symbol. Return an object keyed by it, `{ [NoJS.CANCEL]: true }`, from a request interceptor to abort the request entirely (the fetch fails with an `AbortError`). Returning the bare symbol does not cancel.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
-  if (isOffline()) return NoJS.CANCEL;
+  if (isOffline()) return { [NoJS.CANCEL]: true };
   return opts;
 });
 ```
@@ -424,12 +442,12 @@ Read-only, non-configurable property.
 
 ## NoJS.RESPOND
 
-Sentinel symbol. Return `{ __nojs__: NoJS.RESPOND, body: data }` from a request interceptor to short-circuit with mock data (no network request is made).
+Sentinel symbol. Return `{ [NoJS.RESPOND]: data }` from a request interceptor to short-circuit: `data` is used as the response and no network request is made.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
   if (url.includes('/cached')) {
-    return { __nojs__: NoJS.RESPOND, body: getCachedData(url) };
+    return { [NoJS.RESPOND]: getCachedData(url) };
   }
   return opts;
 });
@@ -439,12 +457,12 @@ NoJS.interceptor('request', (url, opts) => {
 
 ## NoJS.REPLACE
 
-Sentinel symbol. Return `{ __nojs__: NoJS.REPLACE, body: data }` from a response interceptor to replace the response body.
+Sentinel symbol. Return `{ [NoJS.REPLACE]: data }` from a response interceptor to replace the parsed response body with `data`.
 
 ```javascript
 NoJS.interceptor('response', (response) => {
   if (response.url.includes('/transform')) {
-    return { __nojs__: NoJS.REPLACE, body: transformData(response) };
+    return { [NoJS.REPLACE]: transformData(response) };
   }
   return response;
 });
@@ -465,13 +483,25 @@ Register a request or response interceptor.
 
 ```javascript
 NoJS.interceptor('request', (url, opts) => {
-  const token = NoJS.store.auth?.token;
-  if (token) {
-    opts.headers = opts.headers || {};
-    opts.headers['Authorization'] = `Bearer ${token}`;
-  }
+  opts.headers = opts.headers || {};
+  opts.headers['X-Client-Version'] = '2.4.0';
   return opts;
 });
+```
+
+A request interceptor returns the (modified) options. Sensitive headers (`Authorization`, `Cookie`, `X-API-Key`, `X-CSRF-Token`, `x-auth-*`, `x-api-*`, ...) are stripped from the options an untrusted interceptor receives and re-applied after the chain, and values it sets for them are dropped. To stamp an `Authorization` header, register the interceptor from a plugin installed with `{ trusted: true }`:
+
+```javascript
+NoJS.use({
+  name: 'auth-token',
+  install(app) {
+    app.interceptor('request', (url, opts) => {
+      const token = NoJS.store.auth?.token;
+      if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+      return opts;
+    });
+  }
+}, { trusted: true });
 ```
 
 ### Response interceptor
@@ -487,7 +517,7 @@ NoJS.interceptor('response', (response) => {
 
 ### Plugin tracking and header redaction
 
-When registered during `NoJS.use()`, the interceptor is tracked with the plugin name. Untrusted interceptors (those not registered via a trusted plugin) receive redacted request and response headers.
+When registered during `NoJS.use()`, the interceptor is tracked with the plugin name. Untrusted interceptors (those not registered by a plugin installed with `NoJS.use(plugin, { trusted: true })`) receive redacted request and response headers.
 
 ### Sensitive header redaction
 
@@ -495,7 +525,9 @@ When registered during `NoJS.use()`, the interceptor is tracked with the plugin 
 
 **Redacted response headers**: `set-cookie`, `x-csrf-token`, `x-auth-token`, `www-authenticate`, `proxy-authenticate`.
 
-**URL query param redaction**: Parameters matching `token|key|secret|auth|password|credential` (case-insensitive) are replaced with `[REDACTED]`.
+**URL query param redaction (default, v1.21.1 behavior)**: only the URL handed to untrusted **response** interceptors (and the response proxy's `url`) is redacted. Values of parameters whose name contains `token`, `key`, `secret`, `auth`, `password` or `credential` (case-insensitive substring) are replaced, and the URL is re-serialized by the `URL` API, so they read `%5BREDACTED%5D`. Untrusted **request** interceptors, the `fetch:success` / `fetch:error` / `error` payloads and the request failure warnings get the raw URL.
+
+**`strictRedaction: true`**: request and response interceptors, the event payloads and the failure warnings all get a string-level redacted URL: the `#fragment` is dropped and the values of sensitive parameters become a literal `[REDACTED]`, with names matched by word (`author`, `keyword` and `sort_key` stay intact). The `csrf.header` name is withheld from untrusted interceptors and cannot be overridden by them, and response headers that are sensitive as request headers (`authorization`, `cookie`, `x-auth-*`, `x-api-*`, ...) are also stripped from the response proxy.
 
 ### Interceptor timeout
 
@@ -517,7 +549,7 @@ Multiple interceptors of the same type run in registration order. Requests that 
 
 ## NoJS.store
 
-Getter that returns the global reactive stores object. Stores are defined via `NoJS.config({ stores: { ... } })`.
+Getter that returns the global stores object. Stores are defined via `NoJS.config({ stores: { ... } })` or the `store` attribute. Assigning a new key on it (`NoJS.store.prefs = {}`) adds a plain object, not a reactive store: it has no `$watch` or `$set`, and bindings that read it change only when `NoJS.notify()` runs.
 
 ```javascript
 // Define stores at config time
@@ -528,9 +560,10 @@ NoJS.config({
   }
 });
 
-// Read/write from JavaScript
+// Read/write from JavaScript, then flush the DOM
 NoJS.store.auth.user = { name: 'Erick' };
 NoJS.store.cart.items.push({ id: 1, name: 'Widget' });
+NoJS.notify();
 ```
 
 ```html
@@ -539,24 +572,26 @@ NoJS.store.cart.items.push({ id: 1, name: 'Widget' });
 <span bind="$store.cart.items | count"></span>
 ```
 
-Stores are deeply reactive -- property assignments automatically trigger re-evaluation of bound expressions.
+Writes made in HTML expressions (`on:click="$store.cart.count++"`) re-render `$store.*` bindings automatically. Writes made from JavaScript through `NoJS.store` do not: call `NoJS.notify()` afterwards. A store's `$watch(fn)` listeners do run on JavaScript writes.
 
 ---
 
 ## NoJS.notify()
 
-Force a reactive re-evaluation cycle on all bound expressions. Useful after mutations that bypass the reactive proxy (e.g., direct array index assignment).
+Re-evaluate every binding that reads `$store`. Call it after any store mutation made from JavaScript (interceptors, `<script>` blocks, timers); those writes do not re-render `$store.*` bindings on their own.
 
 ```javascript
 NoJS.store.cart.items[0].qty = 5;
 NoJS.notify(); // trigger UI update
 ```
 
+The store's own `$set()` and `$notify()` are not a substitute: `NoJS.store.cart.$set('total', 0)` and `NoJS.store.cart.$notify()` update the store and run its `$watch` listeners, but `$store.*` bindings re-render only after `NoJS.notify()`.
+
 ---
 
 ## NoJS.router
 
-Getter that returns the client-side router instance (created during `NoJS.init()` if router config is present).
+Getter that returns the client-side router instance (created during `NoJS.init()` when the page has a `[route-view]` outlet; `null` otherwise).
 
 ### Properties and methods
 
@@ -566,10 +601,11 @@ Getter that returns the client-side router instance (created during `NoJS.init()
 | `replace(path)` | method | Navigate without adding history entry |
 | `back()` | method | Go back in history |
 | `forward()` | method | Go forward in history |
-| `path` | string | Current route path |
-| `params` | object | Current route parameters |
-| `query` | object | Current query string parameters |
-| `hash` | string | Current hash fragment |
+| `on(fn)` | method | Call `fn(current)` after each navigation. Returns an unsubscribe function |
+| `register(path, templateEl, outlet?)` | method | Register a route template programmatically |
+| `current` | getter | Current route: `{ path, params, query, hash, matched }` (the same object as `$route`) |
+
+The router has no `path`, `params`, `query` or `hash` property of its own: read them from `NoJS.router.current`. `current.path` is relative to `router.base` (with `base: '/app'`, the URL `/app/dashboard` gives `"/dashboard"`), and `push()`/`replace()` take paths relative to the base. The base comes only from `NoJS.config({ router: { base } })`; `<base href>` is ignored.
 
 ### Examples
 
@@ -578,9 +614,11 @@ NoJS.router.push('/dashboard');
 NoJS.router.replace('/login');
 NoJS.router.back();
 
-console.log(NoJS.router.path);   // "/dashboard"
-console.log(NoJS.router.params); // { id: "42" }
-console.log(NoJS.router.query);  // { tab: "settings" }
+console.log(NoJS.router.current.path);   // "/dashboard"
+console.log(NoJS.router.current.params); // { id: "42" }
+console.log(NoJS.router.current.query);  // { tab: "settings" }
+
+const off = NoJS.router.on((route) => console.log('navigated to', route.path));
 ```
 
 ```html
@@ -611,7 +649,7 @@ Getter/setter for the base URL used by fetch directives (`get`, `post`, `put`, `
 NoJS.baseApiUrl = 'https://api.example.com/v2';
 ```
 
-Setting the base URL after initialization triggers re-evaluation of any active fetch directives.
+The value is read when each request is built, so a new base URL applies to requests made after it is set. Fetch directives that already loaded are not re-run: they use the new base the next time they request (a reactive URL change, `refresh` polling, a pagination trigger, or a `post`/`put`/`patch`/`delete` submit).
 
 ---
 
@@ -848,14 +886,20 @@ NoJS can process directives inside Shadow DOM when `processTree()` is called on 
     return /^[a-zA-Z0-9_]{3,20}$/.test(value);
   });
 
-  NoJS.interceptor('request', (url, opts) => {
-    const token = NoJS.store.auth?.token;
-    if (token) {
-      opts.headers = opts.headers || {};
-      opts.headers['Authorization'] = 'Bearer ' + token;
+  // Authorization is a sensitive header: only a trusted plugin's interceptor may set it
+  NoJS.use({
+    name: 'auth-token',
+    install(app) {
+      app.interceptor('request', (url, opts) => {
+        const token = NoJS.store.auth?.token;
+        if (token) {
+          opts.headers = opts.headers || {};
+          opts.headers['Authorization'] = 'Bearer ' + token;
+        }
+        return opts;
+      });
     }
-    return opts;
-  });
+  }, { trusted: true });
 
   NoJS.interceptor('response', (response) => {
     if (response.status === 401) {
@@ -867,8 +911,9 @@ NoJS can process directives inside Shadow DOM when `processTree()` is called on 
     return response;
   });
 
-  NoJS.on('route:change', (route) => {
-    analytics.pageView(route.path);
+  // The router exists once init has run
+  NoJS.on('plugins:ready', () => {
+    NoJS.router?.on((route) => analytics.pageView(route.path));
   });
 </script>
 ```

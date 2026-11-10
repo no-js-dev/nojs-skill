@@ -9,6 +9,7 @@ List rendering with iteration, filtering, sorting, and pagination. Priority 10.
 - [for](#for) -- alias for foreach
 - [Loop Attributes](#loop-attributes) -- template, index, key, filter, sort, limit, offset
 - [Loop Context Variables](#loop-context-variables) -- $index, $count, $first, $last, $even, $odd
+- [Reactivity](#reactivity) -- re-render on reassignment and in-place mutation
 - [Animation Attributes](#animation-attributes) -- animate-enter, animate-leave, animate-stagger, animate-duration
 - [Empty-List Fallback (else)](#empty-list-fallback-else) -- companion attribute pattern
 - [Nested Loops](#nested-loops) -- parent scope access
@@ -229,6 +230,27 @@ Inside any loop (`foreach`, `each`, or `for`), these variables are automatically
   <span bind="item.name"></span>
 </div>
 ```
+
+---
+
+## Reactivity
+
+Loops re-render automatically when the source array changes -- both on full reassignment (`items = [...]`) and on in-place mutation: `push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse` and index assignment (`items[0] = 'X'`). No `$notify()` call is needed when the mutation happens inside an HTML expression:
+
+```html
+<div state="{ items: ['A', 'B', 'C'] }">
+  <ul>
+    <li foreach="item in items" bind="item"></li>
+  </ul>
+  <button on:click="items.push('New')">Add</button>
+  <button on:click="items.reverse()">Reverse</button>
+  <button on:click="items[0] = 'X'">Replace first</button>
+</div>
+```
+
+Keyed loops (`key="item.id"`) move their existing rows on an in-place reorder instead of recreating them. When the array and every element are unchanged, the loop only refreshes the bindings of the existing rows (for example after a nested field such as `item.done` changes). Loops with `filter` or `sort` always re-run their pipeline, so changing a field used by `sort` reorders the list.
+
+After mutating a store array from plain JavaScript (a `<script>`, interceptor or third-party callback), call `NoJS.notify()` to flush the change (see [state.md](state.md#mutating-stores-from-javascript)).
 
 ---
 

@@ -125,7 +125,10 @@ The `data-nojs` marker on the generated `<script>` tag distinguishes it from han
 ### Edge Cases
 
 - Placeholders use `{expression}` syntax (single curly braces), not template literals.
-- The JSON must be valid after interpolation. Ensure string values are properly quoted.
+- **Default output (v1.21.1, byte-for-byte):** each placeholder is replaced with its value as text (`null`, `undefined` and expression errors become an empty string), with no escaping. Raw placeholders (`"offers":{offersJson}`, `"author":{JSON.stringify(author)}`) and pre-escaped values keep working. A value with `"`, `\` or a line break inside a quoted placeholder (e.g. a product named `27" Monitor`) makes the output invalid JSON, and search engines ignore the block. `</` is always written as `<\/`, so a value can never close the `<script>` element.
+- **Untrusted data:** by default a value in a quoted placeholder can end the JSON string and add or override keys. With `q = 'x","@type":"Organization'`, `{"@type":"SearchResultsPage","name":"{q}"}` produces an extra `"@type":"Organization"`. If any placeholder carries data you do not control (route params, `$route.query`, user input, third-party API content), set `NoJS.config({ strictJsonld: true })`.
+- **`strictJsonld: true`:** every placeholder inside a JSON string is escaped as JSON string content, so it cannot end the string or add keys, and `"`, `\` or line breaks no longer make the output invalid. `<` in every value becomes `\u003c`. Takes effect on the next render. Two v1.21.1 patterns change meaning in this mode: values pre-escaped for JSON are escaped again, and `"sameAs":["{list.join('","')}"]` yields one string -- use `"sameAs":{JSON.stringify(list)}` instead.
+- Placeholders **outside** a string (`"price":{product.price}`) are inserted as-is in both modes. Never put untrusted data in them unserialized; `{JSON.stringify(value)}` in a raw position always produces a single JSON value.
 - Multiple `page-jsonld` directives can coexist; each manages its own `<script>` tag.
 
 ### Complete Example

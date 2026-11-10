@@ -12,7 +12,6 @@ No.JS uses a custom sandboxed recursive-descent parser and tree-walking evaluato
   - [Assignment](#assignment)
   - [Nullish and Optional Chaining](#nullish-and-optional-chaining)
   - [Spread](#spread)
-  - [Exponentiation](#exponentiation)
   - [typeof and instanceof](#typeof-and-instanceof)
   - [in Operator](#in-operator)
   - [Increment and Decrement](#increment-and-decrement)
@@ -30,6 +29,7 @@ No.JS uses a custom sandboxed recursive-descent parser and tree-walking evaluato
   - [Browser Globals](#browser-globals)
   - [Timer Wrappers](#timer-wrappers)
 - [Security Proxies](#security-proxies)
+  - [Readable Members](#readable-members)
   - [Window Proxy](#window-proxy)
   - [Document Proxy](#document-proxy)
   - [Location Proxy](#location-proxy)
@@ -77,12 +77,13 @@ Expressions are evaluated in every directive attribute value and in `bind` / `bi
 | `*` | Multiplication | `qty * price` |
 | `/` | Division | `total / count` |
 | `%` | Modulo (remainder) | `index % 2` |
-| `**` | Exponentiation | `base ** exp` |
+
+There is no `**` operator (`2 ** 10` renders `NaN` with a console warning); use `Math.pow(base, exp)`.
 
 ```html
 <span bind="price * qty"></span>
 <span bind="index % 2 === 0 ? 'even' : 'odd'"></span>
-<span bind="2 ** 10"></span>  <!-- 1024 -->
+<span bind="Math.pow(2, 10)"></span>  <!-- 1024 -->
 ```
 
 ### Comparison
@@ -295,19 +296,19 @@ Array destructuring in `for`/`each` loops:
 
 ## Filter Pipe Syntax
 
-Filters transform expression values using the pipe (`|`) operator. Arguments are passed with `:` separators.
+Filters transform expression values using the pipe (`|`) operator. The first argument follows `:`; further arguments are separated by `,`. Arguments are quoted string or number literals; whitespace inside quotes is kept (`join:', '`).
 
 ```
 value | filterName
 value | filterName:arg1
-value | filterName:arg1:arg2
+value | filterName:arg1,arg2
 ```
 
 Filters can be chained:
 
 ```html
 <span bind="name | trim | uppercase"></span>
-<span bind="items | where:'active':true | count"></span>
+<span bind="items | where:'status','active' | count"></span>
 <span bind="price | currency:'EUR'"></span>
 <span bind="text | truncate:50 | stripHtml"></span>
 ```
@@ -350,6 +351,8 @@ These are available directly in any expression via the `_SAFE_GLOBALS` object:
 | `Symbol` | Constructor | Symbol constructor |
 | `console` | Object | Console logging (`console.log`, `console.warn`, etc.) |
 
+Expressions cannot use `new`, so the constructors in this list are reachable only through calls that work without it (`Date.now()`, `String(x)`, `RegExp('^a').test(s)`, `Array.from(...)`) and their static methods. Build instances (`new Date(...)`, `new Map()`) in JavaScript or in a custom filter.
+
 ```html
 <span bind="Math.floor(price * 100) / 100"></span>
 <span bind="Object.keys(config).length"></span>
@@ -365,12 +368,12 @@ These are available via the `_BROWSER_GLOBALS` allow-list. `window`, `document`,
 
 | Global | Description |
 |--------|-------------|
-| `window` | Window object (proxied -- blocks sensitive sub-properties) |
-| `document` | Document object (proxied -- blocks `cookie`, `write`, etc.) |
+| `window` | Window object (proxied -- allow-listed host reads only, plain JavaScript values still work; see [Readable Members](#readable-members)) |
+| `document` | Document object (proxied -- only `defaultView` and `location` are readable; see [Readable Members](#readable-members)) |
 | `console` | Console API |
 | `location` | Location object (proxied -- read-only, blocks `assign`/`replace`/`reload`) |
 | `history` | History object (proxied -- blocks `pushState`/`replaceState`/`go`/`back`/`forward`) |
-| `navigator` | Navigator object (proxied -- blocks `sendBeacon`, `credentials`) |
+| `navigator` | Navigator object (proxied -- allow-listed reads only, blocks `sendBeacon`, `credentials`; see [Readable Members](#readable-members)) |
 | `screen` | Screen dimensions |
 | `performance` | Performance timing API |
 | `crypto` | Crypto API |
@@ -392,11 +395,13 @@ These are available via the `_BROWSER_GLOBALS` allow-list. `window`, `document`,
 | `Blob` | Binary large object constructor |
 | `Promise` | Promise constructor |
 
+The constructors in this table cannot be instantiated in an expression (there is no `new`); their static methods work (`URL.canParse(link)`).
+
 ```html
 <span bind="window.innerWidth"></span>
 <span bind="navigator.language"></span>
 <span bind="screen.width + 'x' + screen.height"></span>
-<span bind="new URL(link).hostname"></span>
+<span bind="location.hostname"></span>
 ```
 
 ### Timer Wrappers
@@ -410,11 +415,46 @@ These are available via the `_BROWSER_GLOBALS` allow-list. `window`, `document`,
 
 ## Security Proxies
 
-Browser globals that provide access to sensitive APIs are wrapped in `Proxy` objects that block dangerous sub-properties while allowing safe DOM and measurement operations.
+`window`, `document` and `navigator` are wrapped in `Proxy` objects that expose only an allow-list of read-only host members (see [Readable Members](#readable-members)); on top of that, each proxy blocks a fixed set of sensitive properties outright and swallows writes. `location` and `history` are replaced by frozen read-only wrappers. DOM access goes through `$el` / `$refs`, not `document`.
+
+### Readable Members
+
+Browsers reject host getters and methods called through a proxy, so `window`, `document` and `navigator` expose only an explicit allow-list of read-only members:
+
+| Owner | Readable members |
+|-------|------------------|
+| `navigator` | `language`, `languages`, `onLine`, `userAgent`, `platform`, `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` |
+| `navigator.clipboard` | A frozen `{ writeText(text) }` object (`readText`, `read` and `write` are not reachable). Secure contexts only (HTTPS or `localhost`); elsewhere `navigator.clipboard` evaluates to `undefined` |
+| `window` | `innerWidth`, `innerHeight`, `scrollX`, `scrollY`, `pageXOffset`, `pageYOffset`, `devicePixelRatio`, `matchMedia(query)` |
+| `document` | `defaultView` (the safe `window` proxy) and `location` (the safe `location` wrapper) |
+
+These values are **not reactive**. They are read when the binding evaluates, and nothing re-evaluates the binding when the browser value changes: `show="!navigator.onLine"` does not update when the network drops, and `class-compact="window.matchMedia(...).matches"` does not update on resize. Read them once (on init) or at the moment an event handler runs:
+
+```html
+<span bind="navigator.language"></span>
+
+<!-- read once, when the state initializes -->
+<div state="{ compact: window.matchMedia('(max-width: 600px)').matches }" class-compact="compact">...</div>
+
+<!-- read when the user clicks -->
+<div state="{ status: '' }">
+  <button on:click="status = navigator.onLine ? 'Online' : 'Offline'">Check connection</button>
+  <span bind="status"></span>
+</div>
+
+<div state="{ code: 'npm i @erickxavier/no-js', copied: false }">
+  <button on:click="navigator.clipboard.writeText(code); copied = true">Copy</button>
+  <span show="copied">Copied</span>
+</div>
+```
+
+For layout that follows the viewport, use CSS media or container queries.
+
+Other host getters and methods, such as `document.title`, `document.body`, `document.querySelector()`, `navigator.geolocation` and `window.getComputedStyle()`, do not work: reading the getter or calling the method evaluates to `undefined` and logs a warning. Plain JavaScript values on `window` (`window.Date.now()`, `window.JSON`) still work. For DOM access use `$el` / `$refs`; for anything else, register a helper with `NoJS.global()`.
 
 ### Window Proxy
 
-The `window` object blocks writes (all property assignments are silently swallowed) and blocks access to:
+Besides the [Readable Members](#readable-members) allow-list, the `window` object blocks writes (all property assignments are silently swallowed) and always returns `undefined` for:
 
 | Blocked Property | Reason |
 |------------------|--------|
@@ -434,7 +474,7 @@ Accessing `window.location`, `window.document`, `window.history`, and `window.na
 
 ### Document Proxy
 
-The `document` object blocks access to:
+Only `document.defaultView` and `document.location` are readable (see [Readable Members](#readable-members)). These properties are also blocked outright, and writes to them are swallowed:
 
 | Blocked Property | Reason |
 |------------------|--------|
@@ -545,10 +585,13 @@ The following keywords are recognized by the expression parser:
 
 ## Limitations
 
-- **No `if`/`else`/`for`/`while` statements** -- Use ternary operator (`? :`) for conditionals in expressions; use `if`/`else`/`each`/`for` directives for control flow.
-- **No `new` keyword in expression context** -- Constructors like `new Date()` work, but `new` followed by user-defined constructors may not behave as expected in all contexts.
+- **No `if`/`else`/`for`/`while` statements** -- Use a ternary on the right-hand side of an assignment (`a = ok ? 1 : a`) and `if`/`else`/`each`/`for` directives for control flow.
+- **Assignments only at the top level of a statement** -- An assignment inside a ternary branch (`ok ? a = 1 : b = 2`), inside `&&`/`||` (`ok && (a = 1)`), or joined with the comma operator (`a = 1, b = 2`) does not run, and a console warning is emitted. Write `a = ok ? 1 : a` or separate statements with `;`. Function calls inside branches work (`ok ? save() : null`).
+- **`const`/`let` only as handler-local declarations** -- In statement context (`on:*`, `watch`), `const name = value` and `let name = value` declare locals that are never written to state (see [events.md](../directives/events.md#multiple-statements-and-local-variables)). No destructuring, no `var`, and names cannot start with `$`.
+- **No `new` keyword** -- `new Date()`, `new URL(link)`, `new Map()` evaluate to `undefined` with a console warning. Use calls that work without `new` (`Date.now()`, `RegExp('x')`) or create the object in JavaScript (a custom filter or a function registered with `NoJS.global`).
 - **No `try`/`catch`/`throw`** -- Errors in expressions are caught by the framework and logged as warnings.
-- **No regular expression literals** -- Use `new RegExp('pattern')` instead of `/pattern/`.
+- **No regular expression literals** -- Use `RegExp('pattern')` (without `new`) instead of `/pattern/`.
 - **Filter pipe `|` in nested expressions** -- When using filters inside ternary branches or function arguments, wrap the filtered expression in parentheses: `(value | filter)`.
 - **Single-expression body for arrow functions** -- Arrow functions support only expression bodies, not block bodies with `{ ... }`.
-- **No `async`/`await`** -- Expressions are evaluated synchronously.
+- **No `async`/`await`** -- Expressions are evaluated synchronously. A statement starting with `await` does not run at all (`on:click="await $router.push('/x')"` does not navigate); call the function without `await`.
+- **No `**` operator** -- Use `Math.pow(base, exp)`.

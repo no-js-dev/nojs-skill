@@ -1,6 +1,6 @@
 # No.JS DevTools Reference
 
-Runtime inspection, mutation, and monitoring API for No.JS applications. DevTools provides zero-overhead tooling that is only active when explicitly enabled and running on a local hostname.
+Runtime inspection, mutation, and monitoring API for No.JS applications. DevTools is only active when explicitly enabled. The `window.__NOJS_DEVTOOLS__` API is installed only on a local hostname; see [Local-Hostname Restriction](#local-hostname-restriction) for what still runs elsewhere and how `strictDevtools` changes it.
 
 ## Contents
 
@@ -39,10 +39,10 @@ NoJS.init();
 When enabled, the framework:
 
 1. Assigns a unique `__devtoolsId` to every reactive context created by `createContext()`
-2. Registers each context in an internal `_ctxRegistry` Map for inspection
+2. Registers each context in an internal `_ctxRegistry` Map for inspection (local hosts only)
 3. Emits `CustomEvent` lifecycle events on the `window` object
-4. Exposes the `window.__NOJS_DEVTOOLS__` API object
-5. Listens for `nojs:devtools:cmd` CustomEvents for external tool integration
+4. Exposes the `window.__NOJS_DEVTOOLS__` API object (local hosts only)
+5. Listens for `nojs:devtools:cmd` CustomEvents for external tool integration (local hosts only)
 
 A confirmation message appears in the console when DevTools is successfully initialized:
 
@@ -54,7 +54,7 @@ A confirmation message appears in the console when DevTools is successfully init
 
 ## Local-Hostname Restriction
 
-DevTools is silently disabled on non-local hostnames to prevent accidental exposure in production. The following hostnames are considered local:
+The `window.__NOJS_DEVTOOLS__` API, its `nojs:devtools:cmd` command listener and the context registry are installed only on local hostnames. The following hostnames are considered local:
 
 | Hostname | Description |
 |----------|-------------|
@@ -65,13 +65,27 @@ DevTools is silently disabled on non-local hostnames to prevent accidental expos
 | `*.localhost` | Subdomain localhost (e.g., `app.localhost`) |
 | `""` (empty string) | File protocol / no hostname |
 
-If `devtools: true` is set but the hostname is not local, the following warning is emitted and DevTools does not initialize:
+If `devtools: true` is set but the hostname is not local, the following warning is emitted and the API is not exposed:
 
 ```text
 [No.JS] devtools: true is ignored outside local environments. Remove devtools: true before deploying to production.
 ```
 
-**Important:** Always remove `devtools: true` from production builds. Even though the hostname guard prevents activation, the config flag itself signals intent and should not ship to production.
+**By default (v1.21.1 behavior), the restriction covers the API, the command listener and the context registry only.** On any hostname, `devtools: true` still assigns `__devtoolsId`s and dispatches `nojs:devtools` events (context creation and updates, store creation, fetch URLs, route navigation) on `window`, where any script on the page can read them. `ctx:updated` events show the values of keys containing `token`, `password`, `secret`, `key`, `auth`, `credential` or `session` (substring match) as `[REDACTED]`; every other value, store snapshots and the `config` getter are shown as is.
+
+Set `strictDevtools: true` to harden devtools:
+
+- `nojs:devtools` events and context ids are also limited to local hosts, so `devtools: true` on a production hostname emits nothing.
+- Sensitive names are matched by word rather than by substring: `token`, `accessToken`, `api_key`, `apiKey`, `password`, `secret`, `session`, `sessionId`, `auth`, `authorization`, `credentials`, `cookie` and similar names are redacted, while `author`, `keyboard`, `keywords`, `sort_key` and `tokenCount` are not.
+- Store and element snapshots (`stores`, `inspect`/`inspect:element`, `inspectStore`/`inspect:store`), `globals`, the `options` of `plugins` and the values in `ctx:updated` events are redacted at every depth (nested objects and arrays included). Circular references appear as `[Circular]`.
+- The `config` getter returns `headers` with sensitive headers (including the configured `csrf.header`) redacted per key, and `csrf.token` as `[REDACTED]` when a token is set. `get:config` keeps returning `headers` as the string `'[REDACTED]'`.
+- `fetch:success` and `fetch:error` devtools events carry the URL without its `#fragment` and with the values of sensitive query parameters replaced by `[REDACTED]`.
+
+```js
+NoJS.config({ devtools: true, strictDevtools: true });
+```
+
+**Important:** Always remove `devtools: true` from production builds, or at least set `strictDevtools: true`.
 
 ---
 
@@ -95,7 +109,7 @@ dt.plugins  // Map — copy of installed plugins (name -> { plugin, options })
 dt.globals  // Object — copy of plugin globals
 ```
 
-Store snapshots are serialized safely: functions are excluded, circular references are stringified, and proxy references are recursively unwrapped. Sensitive config values (`headers`, `csrf.token`) are redacted in the `get:config` command response but visible in the `config` getter.
+Store snapshots are serialized safely: functions are excluded, circular references are stringified, and proxy references are recursively unwrapped. By default, snapshots show every key, the `config` getter returns `headers` and `csrf` as configured, and the `get:config` command returns `headers` as the string `'[REDACTED]'` with `csrf.token` redacted. With `strictDevtools: true`, snapshots, `globals` and plugin `options` redact sensitive names at every depth, and the `config` getter redacts headers per key.
 
 ### inspect(selector)
 
@@ -301,7 +315,7 @@ Response shape: `{ command, result, timestamp }`.
 | `inspect:tree` | `{ selector }` | Walk directive tree from root (default: `document.body`) |
 | `mutate:context` | `{ id, key, value }` | Set a value on a context by devtools ID |
 | `mutate:store` | `{ name, key, value }` | Set a value on a named store |
-| `get:config` | (none) | Return framework config (headers/CSRF token redacted) |
+| `get:config` | (none) | Return framework config (`headers` as the string `'[REDACTED]'`, `csrf.token` redacted) |
 | `get:routes` | (none) | Return registered route definitions |
 | `get:stats` | (none) | Return framework statistics |
 | `highlight:element` | `{ selector }` | Show visual overlay on element |
@@ -333,16 +347,18 @@ window.addEventListener('nojs:devtools', (e) => {
 | `ctx:disposed` | `{ id }` | A context is disposed (element removed) |
 | `directive:init` | `{ name, element }` | A directive initializes on an element |
 | `route:navigate` | `{ path, params }` | The router navigates to a new route |
+| `fetch:success` | `{ method, url }` | An HTTP directive or `call` request succeeds (`url` redacted only with `strictDevtools`) |
+| `fetch:error` | `{ method, url, error }` | An HTTP directive or `call` request fails (`url` redacted only with `strictDevtools`) |
 | `batch:start` | `{ depth }` | `_startBatch()` increments batch depth |
 | `batch:end` | `{ depth, queueSize }` | `_endBatch()` flushes queued callbacks |
 
-The `_devtoolsEmit()` function is a no-op when `_config.devtools` is `false`, so there is zero performance overhead when DevTools is disabled.
+The `_devtoolsEmit()` function is a no-op when `_config.devtools` is `false` (and, with `strictDevtools: true`, on non-local hosts), so there is zero performance overhead when DevTools is disabled.
 
 ---
 
 ## Context Registry
 
-When DevTools is enabled, every reactive context created by `createContext()` is assigned a monotonically increasing `__devtoolsId` and registered in an internal `Map` (`_ctxRegistry`). This registry maps `id -> Proxy` and is used by the `inspect` and `mutate` commands.
+When DevTools is enabled, every reactive context created by `createContext()` is assigned a monotonically increasing `__devtoolsId` and, on local hosts, registered in an internal `Map` (`_ctxRegistry`). On other hosts contexts are not kept in the registry, so they are not retained in memory. This registry maps `id -> Proxy` and is used by the `inspect` and `mutate` commands.
 
 The registry enables:
 

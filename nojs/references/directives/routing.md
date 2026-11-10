@@ -20,7 +20,7 @@ Client-side SPA routing with params, guards, nested routes, file-based routing, 
 - [$router.push() and $router.replace() Return Promises](#routerpush-and-routerreplace-return-promises)
 - [Automatic 404 Fallback](#automatic-404-fallback) -- default and custom 404 pages
 - [Remote 404 Templates](#remote-404-templates) -- external 404 template loading
-- [File-Based Routing 404](#file-based-routing-404) -- HTTP 404 fallback chain
+- [File-Based Routing 404](#file-based-routing-404) -- HTTP 404 / SPA fallback chain
 - [Named Outlet Wildcards](#named-outlet-wildcards) -- per-outlet wildcard fallback
 - [$route.matched](#routematched) -- explicit vs wildcard match detection
 - [Route Head Attributes](#route-head-attributes) -- page-title, page-description, page-canonical, page-jsonld on routes
@@ -142,6 +142,8 @@ pages/
 
 Explicit `<template route="...">` declarations always take priority, so you can mix both approaches.
 
+**History mode and deep links:** a relative folder (the default `"pages"`, or `src="./pages/"`) is resolved against the current URL, so a direct load or refresh of a nested route like `/docs/intro` requests `/docs/pages/docs/intro.tpl` and shows the 404 page. In history mode, use an absolute folder: `NoJS.config({ router: { templates: '/pages' } })` or `src="/pages/"`.
+
 **Hierarchical layout resolution:** For multi-segment paths (e.g. `/settings/profile`), the router probes for a layout template matching the first segment (`settings.tpl`) before falling back to the flat path (`settings/profile.tpl`). If the first-segment layout exists, it is rendered and its remaining segments (`profile`) are resolved into nested `route-view` outlets inside the layout. If the first-segment file does not exist, the router falls back to the flat concatenated path.
 
 ### `route-active` and `route-active-exact`
@@ -208,7 +210,7 @@ Control when route templates are fetched.
 <a route="/reports" lazy="ondemand">Reports</a>
 ```
 
-The router collects all `[route]` links, determines the most aggressive `lazy` level per path, and prefetches accordingly. `priority` routes load first; remaining routes load in the background; `ondemand` routes are skipped until navigated.
+The router collects the `<a route>`-style links (not `<template route>` definitions), determines the most aggressive `lazy` level per path, and prefetches accordingly. `priority` routes load first; remaining routes load in the background; `ondemand` routes are skipped until navigated. Paths that file-based routing would not render are never fetched from the folder: patterns (`:param`, `*`) and paths that already have an explicit `<template route>` for that outlet. An app that only uses inline `<template route>` definitions therefore makes no `pages/*.tpl` requests at startup.
 
 **Layout-aware prefetch:** When prefetching multi-segment routes, the router checks if the first-segment layout is already cached. If so, it skips re-fetching the layout and only prefetches the child template.
 
@@ -222,6 +224,23 @@ The router collects all `[route]` links, determines the most aggressive `lazy` l
 | `$route.hash` | URL hash (e.g. `"#section"`) |
 | `$route.matched` | `true` if an explicit route matched, `false` for wildcard/fallback |
 
+In JavaScript the same object is `NoJS.router.current`; the router has no `path` property of its own. In history mode, `path` is relative to `router.base`: with `base: '/app'`, the URL `/app/users/42` gives `$route.path === "/users/42"`, and routes and `push()` paths are written without the base. The base is read only from `NoJS.config({ router: { base } })`; `<base href>` is ignored.
+
+In history mode (the default), the query string and hash are kept on the first page load and on Back/Forward, so `$route.query` and `$route.hash` are filled in and the URL is not rewritten without them. A query value that contains `?` (e.g. `?next=/a?b=1`) is kept whole.
+
+### Removing One-Time Tokens from the URL
+
+Because the query is kept, a callback URL such as `/auth/callback?token=abc123` (magic link, OAuth `?code=`) stays in the address bar and in the browser history until you replace it. Read the value, then replace the history entry with a **different** path:
+
+```html
+<!-- /auth/callback?token=abc123 (assumes an "auth" store) -->
+<template route="/auth/callback">
+  <div on:init="$store.auth.token = $route.query.token; $router.replace('/dashboard')"></div>
+</template>
+```
+
+`$router.replace()` swaps the current history entry, so Back does not return to the URL that carried the token. Replacing with the same path without the query renders the route again, and `$route.query.token` is then empty.
+
 ### Programmatic Navigation
 
 ```html
@@ -230,7 +249,7 @@ The router collects all `[route]` links, determines the most aggressive `lazy` l
 <button on:click="$router.replace('/new-path')">Replace</button>
 ```
 
-`$router.replace()` replaces the current history entry without setting the navigation direction to `"forward"`. This preserves the current direction state, which affects View Transition direction detection (e.g. guard redirects do not trigger a forward slide).
+`$router.replace()` replaces the current history entry. Like `push()`, it counts as a forward navigation for View Transition direction detection (guard redirects included); only history pops (Back/Forward buttons) are treated as backward.
 
 **`$router.destroy()`** -- Tears down the router by removing all global event listeners (`click`, `popstate`/`hashchange`) and clearing route listeners. Useful for cleanup in tests or when unmounting a No.JS application.
 
@@ -312,11 +331,19 @@ NoJS.router.register('/path', templateElement, 'outletName');
 
 ### `$router.push()` and `$router.replace()` Return Promises
 
-Programmatic navigation is asynchronous:
+Programmatic navigation is asynchronous. In a handler, call it without `await` (expressions do not support `await`; a statement starting with it does not run):
 
 ```html
-<button on:click="await $router.push('/users/42')">Navigate</button>
+<button on:click="$router.push('/users/42')">Navigate</button>
 ```
+
+Await the Promise from JavaScript when the next step must wait for the page to render:
+
+```javascript
+await NoJS.router.push('/users/42');
+```
+
+If a newer navigation starts before the current one has rendered (for example while a `lazy="ondemand"` or file-based template is still loading), only the newer page renders: the stale render is dropped instead of overwriting the newer page, `<head>` or route listeners. The earlier Promise still resolves, without rendering its page. A navigation blocked by a `guard` (without `redirect`) or a hash-only change does not count as a newer navigation and does not cancel the one in progress.
 
 ### Automatic 404 Fallback
 
@@ -339,7 +366,9 @@ Wildcard routes support `src` for remote template loading:
 
 ### File-Based Routing 404
 
-When file-based routing gets an HTTP 404 for a template file, it triggers the wildcard route fallback chain.
+When file-based routing gets an HTTP 404 (or other error) for a template file, it triggers the wildcard route fallback chain. The failed response is not cached.
+
+A server with an SPA fallback (`try_files $uri $uri/ /index.html`, Netlify `_redirects`, Vercel `rewrites`) answers a missing `.tpl` with `200` and the app's `index.html`. When a template that file-based routing resolved from the folder comes back as a full HTML document (starts with `<!DOCTYPE html>` or `<html>`), No.JS treats it as not found and logs a warning, so the wildcard renders instead of the page shell (and the document is never used as a layout). Explicit `<template src>` and `<template route src>` load their response as-is.
 
 ### Named Outlet Wildcards
 
@@ -372,7 +401,9 @@ Set `<head>` metadata declaratively on each `<template route>`. Updated on every
 | `page-title` | Sets `document.title`. Value is a No.JS expression (single-quoted strings: `'About \| Site'`) |
 | `page-description` | Creates/updates `<meta name="description">` |
 | `page-canonical` | Creates/updates `<link rel="canonical">` |
-| `page-jsonld` | Creates/updates `<script type="application/ld+json" data-nojs>`. Value is a JSON string with `{placeholder}` interpolation |
+| `page-jsonld` | Creates/updates `<script type="application/ld+json" data-nojs>`. Value is a JSON string with `{placeholder}` interpolation (same escaping rules as the [`page-jsonld` directive](head-seo.md#page-jsonld)) |
+
+> **Untrusted data in `page-jsonld`:** route params and `$route.query` come from the URL, so anyone can craft them. By default a value in a quoted placeholder can end the JSON string and add or override keys, exactly as in v1.21.1 (`?q=x","@type":"Organization` turns `"name":"{$route.query.q}"` into an extra `"@type"` key), and a value with `"`, `\` or a line break makes the output invalid JSON. Set `NoJS.config({ strictJsonld: true })` to always escape quoted values as data. Placeholders outside a string (`"position":{$route.params.n}`) are inserted as-is in both modes, so never put URL data in them unserialized.
 
 ```html
 <!-- Static title -->
@@ -434,7 +465,7 @@ NoJS.config({ router: { useHash: true, suppressHashWarning: true } });
 
 ### SPA Deployment Fallback
 
-History mode requires the server to return `index.html` for all routes. Common configs:
+History mode requires the server to return `index.html` for all routes. File-based routing detects a missing `.tpl` answered with this fallback (see [File-Based Routing 404](#file-based-routing-404)). Common configs:
 
 ```nginx
 # nginx

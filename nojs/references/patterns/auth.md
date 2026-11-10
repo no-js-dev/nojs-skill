@@ -41,7 +41,7 @@ A login form with built-in validation, loading states, and success/error templat
     <div class="field">
       <label>Email</label>
       <input model="email" type="email" name="email"
-             validate="required,email"
+             validate="required|email"
              error-required="Email is required"
              error-email="Invalid email address">
     </div>
@@ -142,14 +142,21 @@ Full authentication flow: login, store token, attach to requests, handle 401, an
     }
   });
 
-  // Attach token to every request
-  NoJS.interceptor('request', (url, options) => {
-    const token = NoJS.store.auth.token;
-    if (token) {
-      options.headers['Authorization'] = 'Bearer ' + token;
+  // Attach token to every request.
+  // Only a plugin installed with { trusted: true } can set Authorization:
+  // sensitive headers set by untrusted interceptors are dropped.
+  NoJS.use({
+    name: 'auth-token',
+    install(app) {
+      app.interceptor('request', (url, options) => {
+        const token = NoJS.store.auth.token;
+        if (token) {
+          options.headers['Authorization'] = 'Bearer ' + token;
+        }
+        return options;
+      });
     }
-    return options;
-  });
+  }, { trusted: true });
 
   // Handle 401 globally
   NoJS.interceptor('response', (response) => {
@@ -201,15 +208,22 @@ Pair a request interceptor (stamps tokens) with a response interceptor (revokes 
 
 ```html
 <script>
-  // Stamp JWT on every outgoing request
-  NoJS.interceptor('request', (url, opts) => {
-    const token = NoJS.store.auth?.token;
-    if (token) {
-      opts.headers = opts.headers || {};
-      opts.headers['Authorization'] = 'Bearer ' + token;
+  // Stamp JWT on every outgoing request.
+  // Only a plugin installed with { trusted: true } can set Authorization:
+  // sensitive headers set by untrusted interceptors are dropped.
+  NoJS.use({
+    name: 'jwt',
+    install(app) {
+      app.interceptor('request', (url, opts) => {
+        const token = NoJS.store.auth?.token;
+        if (token) {
+          opts.headers = opts.headers || {};
+          opts.headers['Authorization'] = 'Bearer ' + token;
+        }
+        return opts;
+      });
     }
-    return opts;
-  });
+  }, { trusted: true });
 
   // Revoke session on 401/403
   NoJS.interceptor('response', (response) => {
@@ -381,15 +395,22 @@ Use an async request interceptor to refresh expired tokens before sending reques
     return refreshPromise;
   }
 
-  // Async interceptor — refreshes token before each request if needed
-  NoJS.interceptor('request', async (url, options) => {
-    const token = await refreshTokenIfExpired();
-    if (token) {
-      options.headers = options.headers || {};
-      options.headers['Authorization'] = 'Bearer ' + token;
+  // Async interceptor — refreshes token before each request if needed.
+  // Only a plugin installed with { trusted: true } can set Authorization:
+  // sensitive headers set by untrusted interceptors are dropped.
+  NoJS.use({
+    name: 'token-refresh',
+    install(app) {
+      app.interceptor('request', async (url, options) => {
+        const token = await refreshTokenIfExpired();
+        if (token) {
+          options.headers = options.headers || {};
+          options.headers['Authorization'] = 'Bearer ' + token;
+        }
+        return options;
+      });
     }
-    return options;
-  });
+  }, { trusted: true });
 </script>
 ```
 

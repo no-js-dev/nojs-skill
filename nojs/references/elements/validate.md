@@ -59,7 +59,7 @@ Add `validate` to a `<form>` element. Add `validate` with pipe-separated rules o
          placeholder="Email address" />
 
   <input name="password" model="password" type="password"
-         validate="required|min:8"
+         minlength="8" validate="required"
          placeholder="Password" />
 
   <button type="submit">Sign Up</button>
@@ -85,27 +85,42 @@ Add validation rules to individual fields using pipe-separated syntax:
 
 ```html
 <input validate="required|email" />
-<input validate="required|min:3|max:50" />
-<input validate="required|pattern:^[A-Z]" />
+<input type="number" validate="required|min:3|max:50" />
+<input validate="required" minlength="3" pattern="[A-Z].*" />
 ```
 
 ### Built-in Validators
 
+The `validate` attribute has five built-in rules. Their names are reserved: `NoJS.validator()` refuses to override them.
+
 | Validator | Description |
 |-----------|-------------|
-| `required` | Field must not be empty |
+| `required` | Field must not be empty (whitespace-only counts as empty) |
 | `email` | Must be a valid email address |
 | `url` | Must be a valid URL |
-| `min:n` | Minimum length (string) or minimum value (number) |
-| `max:n` | Maximum length (string) or maximum value (number) |
-| `minlength:n` | Minimum character length |
-| `maxlength:n` | Maximum character length |
-| `pattern:regex` | Must match the regular expression |
-| `match:fieldName` | Must match another field's value (password confirmation) |
-| `number` | Must be a valid number |
-| `integer` | Must be an integer |
-| `alpha` | Letters only |
-| `alphanumeric` | Letters and numbers only |
+| `min:n` | Numeric value must be at least `n` (not a length check) |
+| `max:n` | Numeric value must be at most `n` (not a length check) |
+| `custom:name` | Runs the registered validator `name` |
+
+Lengths, patterns and types come from native HTML attributes, which are also validated and reported under these rule names (usable in `error-{rule}`): `required`, `minlength`, `maxlength`, `pattern`, `min`, `max`, `step`, and the input `type` (`email`, `url`, `number`, `date`, ...).
+
+There is no built-in `minlength:n`, `maxlength:n`, `pattern:regex`, `match`, `number`, `integer`, `alpha` or `alphanumeric` rule. These names are free: register your own with `NoJS.validator()` (Core 1.22 no longer reserves them) in a script that runs before NoJS Elements loads, because Elements reads the validator registry when it installs:
+
+```html
+<script src="https://cdn.no-js.dev/"></script>
+<script>
+  NoJS.validator('match', (value, other, values) =>
+    value === (values || {})[other] || 'Values do not match');
+  NoJS.validator('alphanumeric', (value) =>
+    /^[a-z0-9]*$/i.test(value) || 'Letters and numbers only');
+</script>
+<script src="https://cdn-elements.no-js.dev/"></script>
+
+<input name="password" type="password" minlength="8" validate="required" />
+<input name="confirm" type="password" validate="required|match:password" />
+```
+
+A validator receives `(value, ...ruleArgs, formValues)` and returns an error string to fail; `true` or any falsy value passes.
 
 ### Field Attributes
 
@@ -169,7 +184,7 @@ Skip validation when a field is irrelevant using `validate-if`:
          placeholder="Email" />
 
   <input name="phone" model="phone"
-         validate="required|pattern:^\\+?[0-9]{10,}"
+         validate="required" pattern="\+?[0-9]{10,}"
          validate-if="contactMethod === 'phone'"
          placeholder="Phone number" />
 </form>
@@ -251,7 +266,7 @@ Override default messages with `error-{rule}` attributes:
 Use a `<template>` for rich error display:
 
 ```html
-<input name="username" validate="required|min:3"
+<input name="username" validate="required" minlength="3"
        error-template="username-errors" />
 
 <template id="username-errors">
@@ -281,7 +296,7 @@ The class is added when the field is invalid AND the error is visible (respects 
 Use the `as` attribute to expose a field's validation state as a named variable in the parent scope:
 
 ```html
-<input name="password" validate="required|min:8" as="pw" />
+<input name="password" validate="required" minlength="8" as="pw" />
 <div if="pw.touched && pw.invalid" class="hint">
   Password must be at least 8 characters
 </div>
@@ -349,7 +364,7 @@ To opt out, bind the `disabled` attribute explicitly:
 Use `validate` on a single field outside a `<form>` for isolated validation:
 
 ```html
-<input name="search" validate="required|min:3"
+<input name="search" validate="required" minlength="3"
        error-template="search-error" />
 
 <template id="search-error">
@@ -405,17 +420,22 @@ The validation module does not inject global CSS classes. Styling is controlled 
 
 ### Registration Form
 
-Complete registration form with multiple validation rules, custom messages, and submit handling.
+Complete registration form with multiple validation rules, custom messages, and submit handling. `alphanumeric` and `match` are not built-in rules: register them before NoJS Elements loads (see [Built-in Validators](#built-in-validators)).
 
 ```html
+<script>
+  NoJS.validator('alphanumeric', (value) => /^[a-z0-9]*$/i.test(value) || 'Letters and numbers only');
+  NoJS.validator('match', (value, other, values) => value === (values || {})[other] || 'Values do not match');
+</script>
+
 <div state="{ username: '', email: '', password: '', confirmPassword: '' }">
   <form validate on:submit.prevent="register()">
     <div>
       <label>Username</label>
       <input name="username" model="username"
-             validate="required|min:3|max:20|alphanumeric"
+             validate="required|alphanumeric" minlength="3" maxlength="20"
              error-required="Username is required"
-             error-min="At least 3 characters"
+             error-minlength="At least 3 characters"
              error-class="input-error"
              placeholder="Choose a username" />
       <span if="$form.fields.username?.touched && $form.fields.username?.error"
@@ -435,7 +455,7 @@ Complete registration form with multiple validation rules, custom messages, and 
     <div>
       <label>Password</label>
       <input name="password" model="password" type="password"
-             validate="required|min:8"
+             validate="required" minlength="8"
              error-class="input-error"
              placeholder="At least 8 characters" />
     </div>
@@ -505,12 +525,12 @@ Show and validate fields based on user selection.
 
     <div show="accountType === 'business'">
       <input name="companyName" model="companyName"
-             validate="required|min:2"
+             validate="required" minlength="2"
              validate-if="accountType === 'business'"
              placeholder="Company name" />
 
       <input name="taxId" model="taxId"
-             validate="required|pattern:^[0-9]{2}\\.[0-9]{3}\\.[0-9]{3}\\/[0-9]{4}\\-[0-9]{2}$"
+             validate="required" pattern="[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2}"
              validate-if="accountType === 'business'"
              error-pattern="Enter a valid CNPJ"
              placeholder="Tax ID (CNPJ)" />

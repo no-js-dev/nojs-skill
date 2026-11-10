@@ -298,12 +298,14 @@ Use `into` to write API responses directly into a named global store, making the
 ```html
 <div store="user" value="{ profile: null }"></div>
 
-<!-- Fetch and write into the store -->
-<div get="/api/me" into="user.profile"></div>
+<!-- Fetch and write into the store: the response is stored at $store.user.profile -->
+<div get="/api/me" as="profile" into="user"></div>
 
 <!-- Access from anywhere -->
 <span bind="$store.user.profile.name"></span>
 ```
+
+The response is stored under the `as` key (`data` when `as` is omitted): `$store.<into>.<as>`. Its fields are not merged into the store. `into` takes a plain store name; `into="user.profile"` would create a store literally named `user.profile`, unreachable as `$store.user.profile`.
 
 ---
 
@@ -313,7 +315,7 @@ Use `into` to write API responses directly into a named global store, making the
 <div get="/api/items/{$route.params.id}" as="item"
      loading="#detailSkeleton"
      error="#detailError">
-  <template if="item">
+  <div if="item">
     <h1 bind="item.title"></h1>
     <p bind="item.description"></p>
     <span bind="item.createdAt | relative"></span>
@@ -328,7 +330,7 @@ Use `into` to write API responses directly into a named global store, making the
         Delete
       </button>
     </div>
-  </template>
+  </div>
 </div>
 
 <template id="detailSkeleton">
@@ -432,12 +434,13 @@ Isolate failures so they do not propagate to the entire page:
 
 ```html
 <script>
-  NoJS.on('error', (error, context) => {
-    console.error('[NoJS]', error);
+  // Bus listeners receive one payload object: { url, error }
+  NoJS.on('error', ({ url, error }) => {
+    console.error('[NoJS]', url, error);
     // Send to error tracking (Sentry, etc.)
   });
 
-  NoJS.on('fetch:error', (url, error) => {
+  NoJS.on('fetch:error', ({ url, error }) => {
     if (error.status === 401) {
       NoJS.store.auth.user = null;
       NoJS.notify();
@@ -459,7 +462,7 @@ Isolate failures so they do not propagate to the entire page:
     baseApiUrl: 'https://api.myapp.com/v1',
     stores: {
       auth:  { user: null, token: localStorage.getItem('token') },
-      stats: { revenue: 0, users: 0, orders: 0 },
+      stats: { data: { revenue: 0, users: 0, orders: 0 } },
       ui:    { sidebarOpen: true, theme: 'light' }
     }
   });
@@ -486,20 +489,20 @@ Isolate failures so they do not propagate to the entire page:
       <span bind="$store.auth.user.name"></span>
     </header>
 
-    <!-- Stats cards fetched into store -->
+    <!-- Stats cards fetched into store: the response is stored at $store.stats.data -->
     <div get="/api/stats" as="data" into="stats" refresh="60000">
       <div class="stat-grid">
         <div class="stat-card">
           <h3>Revenue</h3>
-          <span bind="$store.stats.revenue | currency"></span>
+          <span bind="$store.stats.data.revenue | currency"></span>
         </div>
         <div class="stat-card">
           <h3>Users</h3>
-          <span bind="$store.stats.users | number"></span>
+          <span bind="$store.stats.data.users | number"></span>
         </div>
         <div class="stat-card">
           <h3>Orders</h3>
-          <span bind="$store.stats.orders | number"></span>
+          <span bind="$store.stats.data.orders | number"></span>
         </div>
       </div>
     </div>

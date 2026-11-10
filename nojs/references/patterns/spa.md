@@ -57,14 +57,20 @@ Login + JWT interceptors + dashboard + validation -- all integrated.
       router: { useHash: false }
     });
 
-    NoJS.interceptor('request', (url, opts) => {
-      const token = NoJS.store.auth.token;
-      if (token) {
-        opts.headers = opts.headers || {};
-        opts.headers['Authorization'] = 'Bearer ' + token;
+    // Only a plugin installed with { trusted: true } can set Authorization
+    NoJS.use({
+      name: 'auth-token',
+      install(app) {
+        app.interceptor('request', (url, opts) => {
+          const token = NoJS.store.auth.token;
+          if (token) {
+            opts.headers = opts.headers || {};
+            opts.headers['Authorization'] = 'Bearer ' + token;
+          }
+          return opts;
+        });
       }
-      return opts;
-    });
+    }, { trusted: true });
 
     NoJS.interceptor('response', (response) => {
       if (response.status === 401 || response.status === 403) {

@@ -62,7 +62,7 @@ Stop polling when a condition is met:
        bind-refresh="pollingActive ? 2000 : 0">
     <p bind="'Status: ' + job.status"></p>
     <div class="progress-bar">
-      <div class="progress-fill" bind-style:width="job.progress + '%'"></div>
+      <div class="progress-fill" style-width="job.progress + '%'"></div>
     </div>
     <p show="job.status === 'complete'"
        on:init="pollingActive = false">
@@ -175,10 +175,23 @@ Connect a WebSocket on element mount, push messages into a store, and clean up o
       socket.send(JSON.stringify({ text, timestamp: Date.now() }));
     }
   }
+
+  function disconnectWebSocket() {
+    if (socket) {
+      socket.onclose = null; // no auto-reconnect after an intentional close
+      socket.close();
+      socket = null;
+    }
+  }
+
+  // Script functions and variables are not visible to expressions: expose the functions as globals
+  NoJS.global('connectWebSocket', connectWebSocket);
+  NoJS.global('disconnectWebSocket', disconnectWebSocket);
+  NoJS.global('sendMessage', sendMessage);
 </script>
 
 <!-- Connect on page load -->
-<div on:init="connectWebSocket()" on:unmounted="socket && socket.close()">
+<div on:init="$connectWebSocket()" on:unmounted="$disconnectWebSocket()">
 
   <!-- Connection indicator -->
   <span class-online="$store.ws.connected"
@@ -308,9 +321,12 @@ Server-Sent Events provide a simple one-way channel from server to client. Use `
       NoJS.notify();
     }
   }
+
+  NoJS.global('connectSSE', connectSSE);
+  NoJS.global('disconnectSSE', disconnectSSE);
 </script>
 
-<div on:init="connectSSE()" on:unmounted="disconnectSSE()">
+<div on:init="$connectSSE()" on:unmounted="$disconnectSSE()">
 
   <!-- Connection status -->
   <div class="status-badge"
@@ -412,12 +428,25 @@ A complete chat interface with WebSocket, message history, and typing indicators
       chatSocket.send(JSON.stringify({ type: 'typing' }));
     }
   }
+
+  function disconnectChat() {
+    if (chatSocket) {
+      chatSocket.onclose = null;
+      chatSocket.close();
+      chatSocket = null;
+    }
+  }
+
+  NoJS.global('connectChat', connectChat);
+  NoJS.global('disconnectChat', disconnectChat);
+  NoJS.global('sendChatMessage', sendChatMessage);
+  NoJS.global('sendTypingIndicator', sendTypingIndicator);
 </script>
 
 <template route="/chat/:roomId">
   <div class="chat-container"
-       on:init="connectChat($route.params.roomId)"
-       on:unmounted="chatSocket && chatSocket.close()">
+       on:init="$connectChat($route.params.roomId)"
+       on:unmounted="$disconnectChat()">
 
     <!-- Header -->
     <div class="chat-header">
@@ -448,9 +477,9 @@ A complete chat interface with WebSocket, message history, and typing indicators
     <!-- Message input -->
     <div state="{ message: '' }" class="chat-input">
       <input model="message" placeholder="Type a message..."
-             on:keyup.enter="sendChatMessage(message); message = ''"
-             on:input="sendTypingIndicator()" />
-      <button on:click="sendChatMessage(message); message = ''"
+             on:keyup.enter="$sendChatMessage(message); message = ''"
+             on:input="$sendTypingIndicator()" />
+      <button on:click="$sendChatMessage(message); message = ''"
               bind-disabled="!message.trim() || !$store.chat.connected">
         Send
       </button>
@@ -515,11 +544,15 @@ A real-time activity feed that shows new events as they arrive from the server, 
     NoJS.store.activity.unreadCount = 0;
     NoJS.notify();
   }
+
+  NoJS.global('startActivityFeed', startActivityFeed);
+  NoJS.global('stopActivityFeed', stopActivityFeed);
+  NoJS.global('markAllRead', markAllRead);
 </script>
 
 <!-- Notification bell -->
-<div class="notification-bell" on:init="startActivityFeed()">
-  <button on:click="markAllRead()">
+<div class="notification-bell" on:init="$startActivityFeed()" on:unmounted="$stopActivityFeed()">
+  <button on:click="$markAllRead()">
     Notifications
     <span show="$store.activity.unreadCount > 0"
           class="badge"

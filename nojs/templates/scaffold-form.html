@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NoJS Form</title>
     <script src="https://cdn.no-js.dev/"></script>
+    <script src="https://cdn-elements.no-js.dev/"></script>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 500px; margin: 2rem auto; padding: 0 1rem; }
         .field { margin-bottom: 1rem; }
@@ -20,53 +21,58 @@
 
     <h1>Contact Form</h1>
 
-    <form state="{ name: '', email: '', subject: '', message: '', submitted: false }"
-          validate
-          on:submit.prevent="submitted = true">
+    <div state="{ sent: null }">
+    <form validate on:submit.prevent="sent = $form.values; $form.endSubmit()">
 
         <div class="field">
             <label for="name">Name</label>
-            <input id="name" type="text" model="name"
-                   validate="required|minLength:2"
+            <input id="name" name="name" type="text"
+                   required minlength="2"
+                   error-required="Name is required"
+                   error-minlength="At least 2 characters"
                    placeholder="Your name">
-            <div class="error" bind="$errors.name"></div>
+            <div class="error" bind="$form.errors.name"></div>
         </div>
 
         <div class="field">
             <label for="email">Email</label>
-            <input id="email" type="email" model="email"
+            <input id="email" name="email" type="email"
                    validate="required|email"
                    placeholder="you@example.com">
-            <div class="error" bind="$errors.email"></div>
+            <div class="error" bind="$form.errors.email"></div>
         </div>
 
         <div class="field">
             <label for="subject">Subject</label>
-            <select id="subject" model="subject" validate="required">
+            <select id="subject" name="subject" required
+                    error-required="Choose a subject">
                 <option value="">Select a subject...</option>
                 <option value="general">General Inquiry</option>
                 <option value="support">Support</option>
                 <option value="feedback">Feedback</option>
             </select>
-            <div class="error" bind="$errors.subject"></div>
+            <div class="error" bind="$form.errors.subject"></div>
         </div>
 
         <div class="field">
             <label for="message">Message</label>
-            <textarea id="message" model="message" rows="5"
-                      validate="required|minLength:10|maxLength:500"
+            <textarea id="message" name="message" rows="5"
+                      required minlength="10" maxlength="500"
+                      error-minlength="At least 10 characters"
                       placeholder="Your message..."></textarea>
-            <div class="error" bind="$errors.message"></div>
-            <small><span bind="message.length"></span>/500</small>
+            <div class="error" bind="$form.errors.message"></div>
+            <small><span bind="($form.values.message || '').length"></span>/500</small>
         </div>
 
-        <button type="submit" bind-disabled="!$valid">Send Message</button>
-
-        <div show="submitted" style="margin-top: 1rem; padding: 1rem; background: #d4edda; border-radius: 4px;">
-            Thank you, <strong bind="name"></strong>! Your message has been sent.
-        </div>
+        <!-- Disabled automatically while the form is invalid -->
+        <button type="submit">Send Message</button>
 
     </form>
+
+    <div show="sent" style="margin-top: 1rem; padding: 1rem; background: #d4edda; border-radius: 4px;">
+        Thank you, <strong bind="sent.name"></strong>! Your message has been sent.
+    </div>
+    </div>
 
 </body>
 </html>
