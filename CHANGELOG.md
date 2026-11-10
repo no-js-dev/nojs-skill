@@ -14,6 +14,7 @@ Synced with NoJS Core 1.22. Core's opt-in hardening flags all default to `false`
 - Opt-in hardening flags `scopeHeaders`, `strictRedaction`, `strictDirectives`, `strictDevtools`, `strictJsonld`, `strictBindings`, `templates.pageRelative`, `i18n.escapeParams` and `i18n.strictLocale`, with their 1.22 semantics, in `SKILL.md`, a new "Opt-in Hardening Flags" section of `core/config.md` and the related core, directive and troubleshooting references (PR #84)
 - Core 1.22 default fixes: history mode keeps `?query` / `#hash` (with a recipe for removing one-time tokens), `.` / `..` path placeholders are escaped, a failing directive `init` is isolated, superseded navigations are dropped, loops re-render after in-place mutation, quoted filter args keep their whitespace, `const` / `let` handler locals, form fields are read before the `loading` template (PR #84)
 - `body`: JSON templates, object literals and object placeholders are sent as JSON; the `{ email }` shorthand limit; `body` is ignored on a `<form>` (PR #86)
+- Readable browser members (Core #425): `navigator` `language`, `languages`, `onLine`, `userAgent`, `platform`, `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints`; `navigator.clipboard` as a frozen `{ writeText }` (secure contexts only); `window` `innerWidth`, `innerHeight`, `scrollX`, `scrollY`, `pageXOffset`, `pageYOffset`, `devicePixelRatio`, `matchMedia()`; `document.defaultView` / `document.location`. These reads are not reactive (PR #89)
 
 ### Fixed
 
@@ -24,6 +25,8 @@ Synced with NoJS Core 1.22. Core's opt-in hardening flags all default to `false`
 - `NoJS.baseApiUrl` applies to later requests; active fetch directives are not re-run (PR #86)
 - Routing: prefetch skips `<template route>`, patterns and explicit routes; an SPA fallback `index.html` counts as a missing file-based template (PR #86)
 - Statement forms table and the partial-write semantics on handler errors match Core (PR #86)
+- File upload pattern: a plain `<form post>` sends fields as JSON, so a file input arrives as `{}`; the pattern uses an `upload-form` directive that posts `FormData`, and the `http` body docs note the limitation (PR #88)
+- Security proxies for `window`, `document` and `navigator` described as an allow-list instead of a deny-list in `core/expressions.md`, `core/security.md` and `SKILL.md`; other host getters and methods (`document.querySelector()`, `document.title`, ...) evaluate to `undefined` (PR #89)
 
 ### Chore
 

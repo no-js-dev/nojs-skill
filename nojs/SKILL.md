@@ -495,7 +495,7 @@ Property access (`user.name`, `items[0]`, `user?.address?.city`), arithmetic (`+
 
 `Array`, `Object`, `String`, `Number`, `Boolean`, `Math`, `Date`, `RegExp`, `Map`, `Set`, `JSON`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `Infinity`, `NaN`, `undefined`, `Error`, `Symbol`, `console`.
 
-Browser globals (`window`, `document`, `location`, `history`, `navigator`) available through security proxies that block sensitive sub-properties. **NOT available**: `fetch`, `XMLHttpRequest`, `localStorage`, `sessionStorage`, `WebSocket`, `indexedDB` -- use `get`/`post`/`query` directives and `persist` instead.
+Browser globals (`window`, `document`, `location`, `history`, `navigator`) available through security proxies. `window`, `document` and `navigator` expose only an allow-list of read-only members (`navigator.language`, `navigator.onLine`, `window.innerWidth`, `window.matchMedia()`, `navigator.clipboard.writeText()`, ...; see `references/core/expressions.md`); other host getters and methods such as `document.querySelector()` evaluate to `undefined`. These reads are not reactive. **NOT available**: `fetch`, `XMLHttpRequest`, `localStorage`, `sessionStorage`, `WebSocket`, `indexedDB` -- use `get`/`post`/`query` directives and `persist` instead.
 
 ### Key limitations
 

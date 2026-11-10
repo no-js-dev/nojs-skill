@@ -29,6 +29,7 @@ No.JS uses a custom sandboxed recursive-descent parser and tree-walking evaluato
   - [Browser Globals](#browser-globals)
   - [Timer Wrappers](#timer-wrappers)
 - [Security Proxies](#security-proxies)
+  - [Readable Members](#readable-members)
   - [Window Proxy](#window-proxy)
   - [Document Proxy](#document-proxy)
   - [Location Proxy](#location-proxy)
@@ -367,12 +368,12 @@ These are available via the `_BROWSER_GLOBALS` allow-list. `window`, `document`,
 
 | Global | Description |
 |--------|-------------|
-| `window` | Window object (proxied -- blocks sensitive sub-properties) |
-| `document` | Document object (proxied -- blocks `cookie`, `write`, etc.) |
+| `window` | Window object (proxied -- allow-listed host reads only, plain JavaScript values still work; see [Readable Members](#readable-members)) |
+| `document` | Document object (proxied -- only `defaultView` and `location` are readable; see [Readable Members](#readable-members)) |
 | `console` | Console API |
 | `location` | Location object (proxied -- read-only, blocks `assign`/`replace`/`reload`) |
 | `history` | History object (proxied -- blocks `pushState`/`replaceState`/`go`/`back`/`forward`) |
-| `navigator` | Navigator object (proxied -- blocks `sendBeacon`, `credentials`) |
+| `navigator` | Navigator object (proxied -- allow-listed reads only, blocks `sendBeacon`, `credentials`; see [Readable Members](#readable-members)) |
 | `screen` | Screen dimensions |
 | `performance` | Performance timing API |
 | `crypto` | Crypto API |
@@ -414,11 +415,46 @@ The constructors in this table cannot be instantiated in an expression (there is
 
 ## Security Proxies
 
-Browser globals that provide access to sensitive APIs are wrapped in `Proxy` objects that block dangerous sub-properties while allowing safe DOM and measurement operations.
+`window`, `document` and `navigator` are wrapped in `Proxy` objects that expose only an allow-list of read-only host members (see [Readable Members](#readable-members)); on top of that, each proxy blocks a fixed set of sensitive properties outright and swallows writes. `location` and `history` are replaced by frozen read-only wrappers. DOM access goes through `$el` / `$refs`, not `document`.
+
+### Readable Members
+
+Browsers reject host getters and methods called through a proxy, so `window`, `document` and `navigator` expose only an explicit allow-list of read-only members:
+
+| Owner | Readable members |
+|-------|------------------|
+| `navigator` | `language`, `languages`, `onLine`, `userAgent`, `platform`, `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` |
+| `navigator.clipboard` | A frozen `{ writeText(text) }` object (`readText`, `read` and `write` are not reachable). Secure contexts only (HTTPS or `localhost`); elsewhere `navigator.clipboard` evaluates to `undefined` |
+| `window` | `innerWidth`, `innerHeight`, `scrollX`, `scrollY`, `pageXOffset`, `pageYOffset`, `devicePixelRatio`, `matchMedia(query)` |
+| `document` | `defaultView` (the safe `window` proxy) and `location` (the safe `location` wrapper) |
+
+These values are **not reactive**. They are read when the binding evaluates, and nothing re-evaluates the binding when the browser value changes: `show="!navigator.onLine"` does not update when the network drops, and `class-compact="window.matchMedia(...).matches"` does not update on resize. Read them once (on init) or at the moment an event handler runs:
+
+```html
+<span bind="navigator.language"></span>
+
+<!-- read once, when the state initializes -->
+<div state="{ compact: window.matchMedia('(max-width: 600px)').matches }" class-compact="compact">...</div>
+
+<!-- read when the user clicks -->
+<div state="{ status: '' }">
+  <button on:click="status = navigator.onLine ? 'Online' : 'Offline'">Check connection</button>
+  <span bind="status"></span>
+</div>
+
+<div state="{ code: 'npm i @erickxavier/no-js', copied: false }">
+  <button on:click="navigator.clipboard.writeText(code); copied = true">Copy</button>
+  <span show="copied">Copied</span>
+</div>
+```
+
+For layout that follows the viewport, use CSS media or container queries.
+
+Other host getters and methods, such as `document.title`, `document.body`, `document.querySelector()`, `navigator.geolocation` and `window.getComputedStyle()`, do not work: reading the getter or calling the method evaluates to `undefined` and logs a warning. Plain JavaScript values on `window` (`window.Date.now()`, `window.JSON`) still work. For DOM access use `$el` / `$refs`; for anything else, register a helper with `NoJS.global()`.
 
 ### Window Proxy
 
-The `window` object blocks writes (all property assignments are silently swallowed) and blocks access to:
+Besides the [Readable Members](#readable-members) allow-list, the `window` object blocks writes (all property assignments are silently swallowed) and always returns `undefined` for:
 
 | Blocked Property | Reason |
 |------------------|--------|
@@ -438,7 +474,7 @@ Accessing `window.location`, `window.document`, `window.history`, and `window.na
 
 ### Document Proxy
 
-The `document` object blocks access to:
+Only `document.defaultView` and `document.location` are readable (see [Readable Members](#readable-members)). These properties are also blocked outright, and writes to them are swallowed:
 
 | Blocked Property | Reason |
 |------------------|--------|
