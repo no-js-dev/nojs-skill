@@ -36,10 +36,10 @@ Requires No.JS >= 1.13.0.
 
 ## Basic Usage
 
-Place the `stepper` attribute on a container element and add `step` children inside it. Use the `$stepper` context API to navigate between steps.
+Place the `stepper` attribute on a container element and add `step` children inside it. The stepper adds a progress indicator and Previous/Next buttons; with `stepper-nav="false"` you place your own buttons and navigate with the `$stepper` context API.
 
 ```html
-<div stepper>
+<div stepper stepper-nav="false">
   <div step>
     <p>Step 1 content</p>
     <button type="button" on:click="$stepper.next()">Next</button>
@@ -52,7 +52,7 @@ Place the `stepper` attribute on a container element and add `step` children ins
   <div step>
     <p>Step 3 content</p>
     <button type="button" on:click="$stepper.prev()">Back</button>
-    <button type="button">Finish</button>
+    <button type="button" on:click="$stepper.next()">Finish</button>
   </div>
 </div>
 ```
@@ -67,9 +67,11 @@ Only the active step is visible at a time. By default, navigation is linear (seq
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `stepper` | boolean attr | -- | Declares the stepper container |
+| `stepper` | number | `0` | Declares the stepper container; the value is the initial step index (0-based) |
 | `stepper-mode` | `"linear"` \| `"free"` | `"linear"` | Navigation mode |
-| `stepper-indicator` | boolean attr | -- | Shows a step indicator (step numbers/labels) |
+| `stepper-indicator` | `"true"` \| `"false"` | `"true"` | Shows or hides the progress indicator (step numbers/labels) |
+| `stepper-nav` | `"true"` \| `"false"` | `"true"` | Shows or hides the built-in Previous/Next buttons |
+| `aria-label` | string | `"Stepper"` | Accessible label of the stepper container |
 
 ### Step Panel
 
@@ -99,28 +101,31 @@ Available inside any element within the stepper container.
 
 | Method | Description |
 |--------|-------------|
-| `$stepper.next()` | Go to the next step (respects validation gates) |
-| `$stepper.prev()` | Go to the previous step |
-| `$stepper.goTo(index)` | Go to a specific step (respects validation in linear mode) |
-| `$stepper.reset()` | Reset to the first step |
+| `$stepper.next()` | Go to the next step (respects validation gates). On the last step it dispatches `nojs:stepper-complete` instead. Returns `false` when blocked or on the last step |
+| `$stepper.prev()` | Go to the previous step. Returns `false` on the first step |
+| `$stepper.goTo(index)` | Go to a specific step (validates each step in between in linear mode). Returns `false` when out of range or blocked |
 
 ---
 
 ## Events
 
+All three bubble. Listen with `on:` followed by the full event name.
+
 | Event | `$event.detail` | Description |
 |-------|-----------------|-------------|
-| `stepper:change` | `{ from, to, step }` | Fired when the active step changes |
-| `stepper:complete` | `{ steps }` | Fired when the user advances past the last step |
-| `stepper:validation-blocked` | `{ step, form }` | Fired when forward navigation is blocked by validation |
+| `nojs:stepper-change` | `{ current, total }` | Fired when the active step changes (`current` is the new 0-based index) |
+| `nojs:stepper-complete` | `{ current, total }` | Fired when `$stepper.next()` is called on the last step (the built-in Next button reads "Finish" there). In linear mode the last step must validate first |
+| `stepper:validation-blocked` | `{ step, form }` | Fired when a `stepper-validate` step's form is invalid and blocks forward navigation |
 
 ```html
-<div stepper
-     on:stepper:change="console.log('Changed:', $event.detail)"
-     on:stepper:complete="submitForm()">
+<div stepper state="{ done: false }"
+     on:nojs:stepper-change="console.log('Step', $event.detail.current + 1, 'of', $event.detail.total)"
+     on:nojs:stepper-complete="done = true">
   <!-- steps -->
 </div>
 ```
+
+The stepper also dispatches a non-bubbling `nojs:stepper-change` for the starting step while it sets up, before `on:` listeners on the stepper are attached, so `on:nojs:stepper-change` sees only the changes that follow. Before v1.15.0 the events were named `step-change` and `step-complete`; those names are no longer dispatched.
 
 ---
 
@@ -156,7 +161,7 @@ Steps must be visited sequentially. Forward navigation cannot skip ahead unless 
 Steps can be visited in any order. Step indicator items are clickable, allowing direct navigation to any step. Validation gates are not enforced.
 
 ```html
-<div stepper stepper-mode="free" stepper-indicator>
+<div stepper stepper-mode="free">
   <!-- Steps can be visited in any order -->
 </div>
 ```
@@ -168,11 +173,12 @@ Steps can be visited in any order. Step indicator items are clickable, allowing 
 | Class | When Applied |
 |-------|-------------|
 | `.nojs-stepper` | On the stepper container |
-| `.nojs-step` | On each step panel |
-| `.nojs-step-active` | On the currently visible step |
-| `.nojs-step-complete` | On steps that have been completed |
-| `.nojs-step-indicator` | On the step indicator bar |
-| `.nojs-step-invalid` | On a step when validation blocks navigation |
+| `.nojs-stepper-indicator` | On the progress indicator bar |
+| `.nojs-stepper-indicator-item` | On each step in the indicator; `[aria-selected="true"]` marks the active one, `[data-completed]` the completed ones, `[data-clickable]` the clickable ones in free mode |
+| `.nojs-stepper-separator` | On the line between indicator items |
+| `.nojs-step` | On each step panel; inactive panels have `[aria-hidden="true"]` |
+| `.nojs-step-invalid` | On a step's indicator item while its `stepper-validate` gate blocks navigation |
+| `.nojs-stepper-nav`, `.nojs-stepper-prev`, `.nojs-stepper-next` | On the built-in navigation container and its Previous/Next buttons |
 
 ---
 
@@ -180,16 +186,18 @@ Steps can be visited in any order. Step indicator items are clickable, allowing 
 
 NoJS automatically applies:
 
-- Step indicator uses `role="tablist"` with `role="tab"` items
-- Step panels use `role="tabpanel"`
-- `aria-current="step"` on the active indicator item
-- Inactive steps are hidden with `aria-hidden="true"`
+- `role="group"` and `aria-label` on the stepper container
+- Step indicator uses `role="tablist"` with `role="tab"` items and `aria-selected`
+- Step panels use `role="tabpanel"`, linked to their indicator items with `aria-controls` / `aria-labelledby`
+- `aria-current="step"` on the active step panel
+- Inactive steps are hidden with `aria-hidden="true"` and `inert`
 
 ### Keyboard Navigation
 
 | Key | Action |
 |-----|--------|
-| `ArrowRight` / `ArrowLeft` | Navigate between step indicators (free mode) |
+| `ArrowRight` / `ArrowLeft` | Move between step indicators (navigates in free mode) |
+| `Home` / `End` | Move to the first / last step indicator (navigates in free mode) |
 
 ---
 
@@ -200,14 +208,14 @@ NoJS automatically applies:
 Steps must be completed in order. The first step uses form validation, the second uses an expression gate.
 
 ```html
-<div stepper stepper-indicator>
+<div stepper stepper-nav="false">
   <div step step-label="Account" stepper-validate>
     <form validate>
       <input name="email" validate="required|email" placeholder="Email" />
       <button type="button" on:click="$stepper.next()">Next</button>
     </form>
   </div>
-  <div step step-label="Profile" step-validate="name !== ''">
+  <div step step-label="Profile" step-validate="name">
     <input model="name" placeholder="Name" />
     <button type="button" on:click="$stepper.prev()">Back</button>
     <button type="button" on:click="$stepper.next()">Next</button>
@@ -215,7 +223,6 @@ Steps must be completed in order. The first step uses form validation, the secon
   <div step step-label="Confirm">
     <p>Welcome, <span bind="name"></span>!</p>
     <button type="button" on:click="$stepper.prev()">Back</button>
-    <button type="button">Finish</button>
   </div>
 </div>
 ```
@@ -225,7 +232,7 @@ Steps must be completed in order. The first step uses form validation, the secon
 Steps can be visited in any order by clicking the step indicator.
 
 ```html
-<div stepper stepper-mode="free" stepper-indicator>
+<div stepper stepper-mode="free">
   <div step step-label="General">General settings</div>
   <div step step-label="Security">Security settings</div>
   <div step step-label="Notifications">Notification preferences</div>
@@ -237,9 +244,9 @@ Steps can be visited in any order by clicking the step indicator.
 Combines form validation, expression validation, and event handlers for a complete checkout flow.
 
 ```html
-<div stepper stepper-indicator
-     on:stepper:change="console.log('Step changed:', $event.detail)"
-     on:stepper:complete="submitForm()">
+<div state="{ paymentMethod: '', paid: false }" stepper stepper-nav="false"
+     on:nojs:stepper-change="console.log('Step changed:', $event.detail.current)"
+     on:nojs:stepper-complete="paid = true">
   <div step step-label="Payment" stepper-validate step-validate="paymentMethod !== ''">
     <form validate>
       <select name="method" model="paymentMethod" validate="required">
@@ -253,7 +260,8 @@ Combines form validation, expression validation, and event handlers for a comple
   <div step step-label="Review">
     <p>Payment: <span bind="paymentMethod"></span></p>
     <button type="button" on:click="$stepper.prev()">Back</button>
-    <button type="button" on:click="$stepper.next()">Submit</button>
+    <button type="button" on:click="$stepper.next()" bind-disabled="paid">Submit</button>
+    <p if="paid">Payment confirmed.</p>
   </div>
 </div>
 ```
@@ -265,9 +273,9 @@ Combines form validation, expression validation, and event handlers for a comple
 The stepper works with any NoJS directive inside its steps:
 
 ```html
-<div state="{ user: {}, loading: false }"
-     stepper stepper-indicator
-     on:stepper:complete="loading = true; post('/api/register', user)">
+<div state="{ user: {}, registered: false }"
+     stepper stepper-nav="false"
+     on:nojs:stepper-complete="registered = true">
   <div step step-label="Info" stepper-validate>
     <form validate>
       <input name="name" model="user.name" validate="required" placeholder="Name" />
@@ -279,13 +287,15 @@ The stepper works with any NoJS directive inside its steps:
     <p>Name: <span bind="user.name"></span></p>
     <p>Email: <span bind="user.email"></span></p>
     <button type="button" on:click="$stepper.prev()">Back</button>
-    <button type="button" on:click="$stepper.next()" bind-disabled="loading">
-      <span if="!loading">Submit</span>
-      <span if="loading">Submitting...</span>
+    <button type="button" on:click="$stepper.next()" bind-disabled="registered">
+      <span if="!registered">Submit</span>
+      <span if="registered">Registered</span>
     </button>
   </div>
 </div>
 ```
+
+Expressions cannot call `post()` or other request functions. To send the data, use the HTTP directives (`post="/api/register"` on a form or button) or a JavaScript listener on `nojs:stepper-complete`.
 
 - Use `stepper-validate` with `<form validate>` for built-in form validation gates
 - Use `step-validate` for custom expression-based validation
@@ -293,4 +303,4 @@ The stepper works with any NoJS directive inside its steps:
 - Use `bind` / `bind-html` for dynamic content within steps
 - Use `if` / `show` for conditional content per step
 - Use `state` on the stepper or a parent to share data across steps
-- Use `on:stepper:complete` to handle form submission
+- Use `on:nojs:stepper-complete` to react when the user finishes the last step
