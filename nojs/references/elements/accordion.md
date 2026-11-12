@@ -71,14 +71,16 @@ The `accordion` attribute is placed on the container element. Individual section
 
 | Event | `$event.detail` | Description |
 |-------|-----------------|-------------|
-| `accordion-change` | `{ element, open, index }` | Fired on the container when a section opens or closes |
+| `nojs:accordion-change` | `{ element, open, index }` | Fired on the container when a section opens or closes |
 
 - `element` -- the `<details>` element that changed
 - `open` -- `true` if the section was opened, `false` if closed
 - `index` -- zero-based index of the section within the accordion
 
+Before v1.15.0 this event was named `accordion-change`; that name is no longer dispatched.
+
 ```html
-<div accordion on:accordion-change="console.log($event.detail)">
+<div accordion on:nojs:accordion-change="console.log($event.detail)">
   <details>
     <summary>Section One</summary>
     <p>Content</p>
@@ -152,7 +154,7 @@ NoJS automatically applies:
 Because the accordion builds on native `<details>` / `<summary>`, the content is fully accessible and functional even without JavaScript:
 
 - **Without NoJS:** all sections toggle independently (browser default), no animation
-- **With NoJS:** single/multi mode enforcement, smooth animated transitions, keyboard navigation between summaries, `accordion-change` events
+- **With NoJS:** single/multi mode enforcement, smooth animated transitions, keyboard navigation between summaries, `nojs:accordion-change` events
 
 ---
 
@@ -267,7 +269,7 @@ The accordion works with any NoJS directive inside its sections:
 <div state="{ sections: [], loading: true }"
      get="/api/sections | sections"
      get-success="loading = false">
-  <div accordion on:accordion-change="console.log('Changed:', $event.detail.index)">
+  <div accordion on:nojs:accordion-change="console.log('Changed:', $event.detail.index)">
     <details each="section in sections" key="section.id">
       <summary bind="section.title"></summary>
       <div bind-html="section.content"></div>
@@ -279,5 +281,5 @@ The accordion works with any NoJS directive inside its sections:
 - Use `each` / `foreach` / `for` to render dynamic sections
 - Use `bind` / `bind-html` for dynamic content
 - Use `if` / `show` inside sections for conditional content
-- Use `on:accordion-change` to react to state changes
+- Use `on:nojs:accordion-change` to react to state changes
 - Use `state` on a parent to share data across sections
