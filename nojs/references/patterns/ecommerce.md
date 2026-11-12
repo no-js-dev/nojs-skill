@@ -242,7 +242,8 @@ Submit the cart to an API and clear it on success. Combines the cart store with 
     <input type="hidden" name="items"
            bind-value="JSON.stringify($store.cart.items)" />
 
-    <button type="submit" bind-disabled="!$form.valid || $form.submitting">
+    <!-- Disabled while the form is invalid or the order request is in flight -->
+    <button type="submit">
       <span hide="$form.submitting">Place Order</span>
       <span show="$form.submitting">Processing...</span>
     </button>

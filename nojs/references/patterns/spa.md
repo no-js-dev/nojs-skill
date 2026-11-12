@@ -111,7 +111,7 @@ Login + JWT interceptors + dashboard + validation -- all integrated.
              error-email="Please enter a valid email">
       <input name="password" type="password" required minlength="8"
              error-required="Password is required">
-      <button type="submit" bind-disabled="!$form.valid || $form.submitting">
+      <button type="submit">
         <span hide="$form.submitting">Sign in</span>
         <span show="$form.submitting">Signing in...</span>
       </button>
