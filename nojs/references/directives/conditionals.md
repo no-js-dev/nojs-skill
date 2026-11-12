@@ -280,6 +280,12 @@ Contains `case` and `default` children.
 </div>
 ```
 
+### Hidden Cases
+
+`switch` keeps every case element in the DOM and hides the ones that do not match with `display: none`. When a case is hidden, its content is disposed: bindings stop updating and a `get`, `sse` or other directive inside it stops reacting (it does not refetch or reconnect for the new value), until the case matches again and its content is processed anew.
+
+**Known limitation -- cases hidden on the first render.** A case that does not match when the `switch` first renders is hidden but not disposed: its inline content stays reactive (bindings keep updating, a `get` whose URL depends on changing state refetches) until the case has been shown and hidden once. Cases that use `then="templateId"` are not affected, because a hidden template case has no content. Use `then` templates for cases whose content must stay inert while hidden.
+
 ---
 
 ## `case`

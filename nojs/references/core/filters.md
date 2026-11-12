@@ -15,6 +15,7 @@ No.JS ships with **32 built-in filters** organized into five categories. Filters
   - [date](#date) -- [datetime](#datetime) -- [relative](#relative) -- [fromNow](#fromnow)
 - [Utility Filters (5)](#utility-filters)
   - [default](#default) -- [json](#json) -- [debug](#debug) -- [keys](#keys) -- [values](#values)
+- [Locale](#locale)
 - [Custom Filters](#custom-filters)
 - [Chaining Patterns](#chaining-patterns)
 
@@ -31,7 +32,9 @@ value | filter1 | filter2 | filter3
 
 The pipe operator has the lowest precedence -- everything to its left is evaluated first, then the result is passed as the first argument to the filter function. The first argument follows `:`; further arguments are separated by `,`.
 
-Arguments are literals, not expressions: quoted strings (`'EUR'`, `', '`) and numbers (`50`). An unquoted value that is not a number (`true`, `item.id`) is passed as a string. Whitespace inside quotes is kept (`join:', '` joins with comma + space); unquoted arguments are trimmed.
+Arguments are literals, not expressions: quoted strings (`'EUR'`, `', '`) and numbers (`50`). An unquoted value that is not a number (`true`, `item.id`) is passed as a string. Any argument that reads as a number becomes a number, quoted or not (`'06'` is passed as `6`); a quoted whitespace-only argument stays a string. Whitespace inside quotes is kept (`join:', '` joins with comma + space); unquoted arguments are trimmed.
+
+Outputs on this page are what an `en-US` browser shows; see [Locale](#locale).
 
 ```html
 <span bind="name | uppercase"></span>
@@ -189,11 +192,11 @@ Format a number with locale-aware grouping separators and decimal places.
 <span bind="price | number:2"></span>         <!-- 1234.5 -> "1,234.50" -->
 ```
 
-Uses `Intl.NumberFormat` with the browser's default locale.
+Calls `toLocaleString()` with the browser's default locale (not `$i18n.locale`). A value that is not a number is returned unchanged.
 
 ### currency
 
-Format a number as currency using `Intl.NumberFormat`.
+Format a number as currency with `toLocaleString(undefined, { style: 'currency', currency })`, in the browser's default locale. An invalid currency code falls back to `"<code> <value with 2 decimals>"`.
 
 | | |
 |---|---|
@@ -202,8 +205,8 @@ Format a number as currency using `Intl.NumberFormat`.
 
 ```html
 <span bind="price | currency"></span>            <!-- 29.99 -> "$29.99" -->
-<span bind="price | currency:'EUR'"></span>       <!-- 29.99 -> "EUR 29.99" -->
-<span bind="price | currency:'BRL'"></span>       <!-- 29.99 -> "R$ 29.99" -->
+<span bind="price | currency:'EUR'"></span>       <!-- 29.99 -> "€29.99" -->
+<span bind="price | currency:'BRL'"></span>       <!-- 29.99 -> "R$29.99" (a pt-BR browser shows "R$ 29,99") -->
 ```
 
 ### percent
@@ -220,7 +223,7 @@ Format a number as a percentage.
 <span bind="ratio | percent:1"></span>        <!-- 0.4256 -> "42.6%" -->
 ```
 
-Uses `Intl.NumberFormat` with `style: 'percent'`.
+Multiplies by 100 and uses `toFixed(decimals)`: no locale, no grouping separators.
 
 ### filesize
 
@@ -233,12 +236,13 @@ Format a number of bytes into a human-readable file size string.
 
 ```html
 <span bind="size | filesize"></span>
-<!-- 1536 -> "1.50 KB" -->
-<!-- 1572864 -> "1.50 MB" -->
-<!-- 1073741824 -> "1.00 GB" -->
+<!-- 500 -> "500 B" -->
+<!-- 1536 -> "1.5 KB" -->
+<!-- 1572864 -> "1.5 MB" -->
+<!-- 1073741824 -> "1.0 GB" -->
 ```
 
-Units: B, KB, MB, GB, TB. Uses 1024-based division.
+Units: B, KB, MB, GB, TB. Uses 1024-based division and one decimal place above bytes. No locale.
 
 ### ordinal
 
@@ -383,7 +387,7 @@ Sort an array of objects by a property. Prefix the property name with `-` for de
 </div>
 ```
 
-String comparison is locale-aware (uses `localeCompare`). Numeric values are compared numerically.
+Values are compared with `<` / `>`: numbers numerically, strings by code unit (so `"C"` sorts before `"a"`; not `localeCompare`). Items whose value is `null`, `undefined` or `NaN` always go last, in both directions.
 
 ### where
 
@@ -406,7 +410,7 @@ Filter an array to objects matching a property condition.
 </div>
 ```
 
-When `value` is omitted, filters to items where the property is truthy.
+When `value` is omitted, it is `undefined`: the filter keeps the items where the property is missing or `undefined` (not the truthy ones). A numeric literal is compared as a number (`where:'price',0`), so compare string fields with a quoted non-numeric value.
 
 ---
 
@@ -416,7 +420,7 @@ All date filters use an internal `_parseDate` helper that handles date-only ISO 
 
 ### date
 
-Format a date using `Intl.DateTimeFormat` with locale-aware formatting.
+Format a date with `toLocaleDateString()` and `dateStyle`, in the browser's default locale (not `$i18n.locale`).
 
 | | |
 |---|---|
@@ -433,7 +437,7 @@ Returns the original value unchanged if the input cannot be parsed as a valid da
 
 ### datetime
 
-Format a date and time using `toLocaleString()`.
+Format a date and time using `toLocaleString()`, in the browser's default locale. Returns the input unchanged if it is not a valid date.
 
 | | |
 |---|---|
@@ -447,7 +451,7 @@ Format a date and time using `toLocaleString()`.
 
 ### relative
 
-Format a past date as a human-readable relative time string (e.g., "2h ago"). For future dates, delegates to `fromNow`.
+Format a past date as a short English relative time string (e.g., "2h ago"). Not translated by i18n. For future dates, delegates to `fromNow`.
 
 | | |
 |---|---|
@@ -464,11 +468,11 @@ Format a past date as a human-readable relative time string (e.g., "2h ago"). Fo
 | < 1 hour | `"Xm ago"` |
 | < 1 day | `"Xh ago"` |
 | < 30 days | `"Xd ago"` |
-| >= 30 days | Locale-formatted date |
+| >= 30 days | `toLocaleDateString()` in the browser's default locale |
 
 ### fromNow
 
-Format a future date as a human-readable countdown string. For past dates, delegates to `relative`.
+Format a future date as a short English countdown string. Not translated by i18n. For past dates, delegates to `relative`.
 
 | | |
 |---|---|
@@ -481,11 +485,10 @@ Format a future date as a human-readable countdown string. For past dates, deleg
 
 | Time Remaining | Output |
 |---------------|--------|
-| < 60 seconds | `"just now"` |
+| < 60 seconds | `"in a moment"` |
 | < 1 hour | `"in Xm"` |
 | < 1 day | `"in Xh"` |
-| < 30 days | `"in Xd"` |
-| >= 30 days | Locale-formatted date |
+| >= 1 day | `"in Xd"` (no upper limit: 40 days is `"in 40d"`) |
 
 ---
 
@@ -567,9 +570,29 @@ Return an array of an object's own values.
 
 ---
 
+## Locale
+
+`number`, `currency`, `date` and `datetime` format with the **browser's default locale**: they call `toLocaleString()` / `toLocaleDateString()` without a locale. They do **not** follow `$i18n.locale` or `NoJS.locale`, so switching the app language with i18n does not change their output. The outputs on this page are what an `en-US` browser produces; a `pt-BR` browser shows `price | currency:'BRL'` as `R$ 1.234,56` and `date | date:'short'` as `25/02/2026`.
+
+`percent`, `filesize` and `ordinal` use no locale (`45%`, `1.5 MB`, `1st`), and `relative` / `fromNow` return short English strings (`just now`, `5m ago`, `in 2h`, `in a moment`); `relative` falls back to `toLocaleDateString()` in the browser locale for dates more than 30 days in the past.
+
+To format with the app locale, register a filter that reads `NoJS.locale`. Filter arguments are literals, so do not pass the locale as an argument; mention `$i18n.locale` in the binding instead, so it re-renders when the locale changes:
+
+```html
+<script>
+  NoJS.filter('localDate', (value) =>
+    new Date(value).toLocaleDateString(NoJS.locale, { dateStyle: 'long' }));
+</script>
+
+<!-- "February 25, 2026", then "25 de fevereiro de 2026" after $i18n.locale = 'pt-BR' -->
+<span bind="$i18n.locale && createdAt | localDate"></span>
+```
+
+---
+
 ## Custom Filters
 
-Register custom filters with `NoJS.filter(name, fn)`. Built-in filter names are protected and cannot be overridden.
+Register custom filters with `NoJS.filter(name, fn)`. Built-in filter names are protected: registering one logs `NoJS.filter(): "<name>" is a built-in filter and cannot be overridden.` and keeps the built-in.
 
 ```javascript
 // Single-argument filter

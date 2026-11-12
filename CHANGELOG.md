@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.22.0...HEAD)
 
+Synced with NoJS Core 1.23 and NoJS Elements 1.23. The new opt-in flags default to `false`, so v1.22.0 behavior is unchanged without them.
+
+### Added
+
+- `strictUnmounted` (Core [#427](https://github.com/no-js-dev/nojs/pull/427)) in `SKILL.md`, `core/config.md`, `core/api.md` and `directives/events.md`: opt-in, `on:unmounted` also fires once when `if`, `each` or a route change removes the element, and not for a keyed row that only moved
+- `router.strictOutlets` (Core [#428](https://github.com/no-js-dev/nojs/pull/428)) in `SKILL.md`, `core/config.md` and `directives/routing.md`: opt-in, a named outlet without `src` no longer looks routes up in `router.templates` and is cleared instead of rendering the wildcard or the built-in 404
+- `validate-empty="check" | "skip"` (Elements [#112](https://github.com/no-js-dev/nojs-elements/pull/112)) in `elements/validate.md`, `validation.md` and `SKILL.md`: opt-in `skip` lets an empty value pass `min`, `max` and `url`
+- Error templates inside `<form validate>` render once per field, after the `<template>`, with `$error`, `$rule` and `err.message` (Elements [#112](https://github.com/no-js-dev/nojs-elements/pull/112))
+- `switch` hidden cases and the first-render limitation (Core [#429](https://github.com/no-js-dev/nojs/pull/429)) in `directives/conditionals.md`
+- Filter locale section (Core [#430](https://github.com/no-js-dev/nojs/pull/430)) in `core/filters.md` and `SKILL.md`: `number`, `currency`, `date` and `datetime` use the browser locale, not `$i18n.locale`
+
+### Fixed
+
+- Filter examples match `src/filters.js`: `currency:'EUR'` shows `€1,234.56`, `datetime` `2/25/2026, 3:45:00 PM`, `relative` / `fromNow` the short forms (`2h ago`, `in 2h`, `in a moment`), `filesize` one decimal (`1.5 KB`), `percent` uses `toFixed` without a locale, `sortBy` compares with `<` / `>` and sinks empty values, `where` without a value keeps items whose property is `undefined`, `fromNow` has no date fallback, and numeric-looking arguments are passed as numbers
+- `elements/validate.md` matches the Elements API: `$form` has `valid`, `dirty`, `touched`, `submitting`, `pending`, `errors`, `values`, `firstError`, `errorCount`, `fields`, `reset()` and `endSubmit()` (no `invalid` / `pristine` / `untouched`); fields have `valid`, `dirty`, `touched`, `error`, `value` (no `errors` array); `validate-on` values are space-separated; templates are referenced with `error="#id"` (no `error-template`, no `$err`); `on:submit` forms call `$form.endSubmit()`; `custom:name` passes no rule arguments; validators are synchronous; there is no submit-button opt-out; `$form.reset()` does not reset `model` state; accessibility lists what the module really sets. Every example was run against the Elements build
+- `elements/validate.md` and `validation.md` document that `model` on a select, checkbox or radio inside a `<form validate>` without `validate-on` snaps back to its old value, and add `validate-on` to the examples that need it
+- `templates/scaffold-elements.html`: tabs use direct `[tab]` / `[panel]` children, the accordion uses plain `<details>`, the modal uses `modal-open` / `modal-close` instead of `document.querySelector()` (which threw `Illegal invocation`), and `$toast()` gets a message string instead of an object
+- `elements/scroll-spy.md`: links need the `spy` attribute (`<a href="#id" spy>`), the built-in `font-weight: 600` rule is documented, offset and threshold come from the first spy, all spies form one page-wide group, and the examples no longer use the invalid `get="/url | name"` form or undefined functions
+- `SKILL.md`: the Elements table lists `spy` for Scroll Spy and the tabs snippet pairs `[tab]` / `[panel]` by order
+- `directives/events.md`: `on:unmounted` does not fire for directive removals by default, and the chart example puts the hook inside the `if` element
+
 ## [1.22.0](https://github.com/no-js-dev/nojs-skill/compare/v1.21.1...v1.22.0) — 2026-11-10
 
 Synced with NoJS Core 1.22. Core's opt-in hardening flags all default to `false`, so v1.21.1 behavior is unchanged without them.

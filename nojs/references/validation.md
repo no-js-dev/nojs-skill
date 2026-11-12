@@ -399,13 +399,22 @@ Use this checklist when reviewing No.JS templates:
 
 ### Forms
 
+- [ ] NoJS Elements is loaded after core (core alone only has a `validate` stub)
 - [ ] `<form>` elements that need No.JS validation have the `validate` attribute
+- [ ] Every validated field has a `name`; rules are `|`-separated (`required|email`) and lengths use native `minlength` / `maxlength`
 - [ ] Custom error messages use `error-{rule}` pattern (e.g., `error-required`, `error-email`)
-- [ ] Submit buttons rely on auto-disable (automatic) or use `bind-disabled="!$form.valid"`
-- [ ] Use `$form.submitting` to show loading state during form submission
-- [ ] Use `$form.reset()` where form reset functionality is needed
+- [ ] Only real `$form` members are read: `valid`, `dirty`, `touched`, `submitting`, `pending`, `errors`, `values`, `firstError`, `errorCount`, `fields`, `reset()`, `endSubmit()`; per field `valid`, `dirty`, `touched`, `error`, `value` (no `invalid`, `pristine`, `untouched` or `errors` array)
+- [ ] Inline errors read `$form.errors.<name>` (visible errors only) or gate `$form.fields.<name>.error` with `touched`
+- [ ] Error templates are referenced as `error="#id"` / `error-{rule}="#id"` (there is no `error-template` attribute). Inside a form the template renders **once per field**, right after the `<template>`, with `$error`, `$rule` and `err.message`; a standalone field's template gets only `err.message`
+- [ ] A form handled by `on:submit` calls `$form.endSubmit()`, otherwise `$form.submitting` stays `true` and its submit buttons stay disabled; a form with `post` / `put` / `patch` / `delete` resets it when the request settles
+- [ ] Submit buttons rely on auto-disable; there is no opt-out attribute (`bind-disabled` is overwritten, a literal `disabled="expr"` disables for good), so buttons that must stay enabled use `type="button"`
+- [ ] `$form.reset()` callers also reset `model` state (`name = ''; $form.reset()`); nothing in the form is named or has the id `reset`
+- [ ] Optional fields with `min` / `max` / `url` use the opt-in `validate-empty="skip"` (default `check`: `min:1` fails an empty field, `url` fails `""`)
 - [ ] Conditional fields use `validate-if` to skip validation when hidden/irrelevant
-- [ ] Use `validate-on="blur"` for progressive validation (errors appear after user interaction)
+- [ ] A form with a `model` select, checkbox or radio sets `validate-on` (e.g. `validate-on="input focusout"`); without it those controls snap back to their old value
+- [ ] Use `validate-on="focusout"` for progressive validation (errors appear after the user leaves the field); values are space-separated
+
+See [elements/validate.md](elements/validate.md) for the full API.
 
 ### Performance
 

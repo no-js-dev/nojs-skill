@@ -42,6 +42,7 @@ NoJS.config({
 | `appId` | string | `""` | Application identifier. Exposed via the devtools panel for distinguishing between multiple NoJS instances or environments |
 | `debug` | boolean | `false` | Enable `[No.JS]` console logging for all framework operations |
 | `devtools` | boolean | `false` | Enable the browser devtools panel integration |
+| `strictUnmounted` | boolean | `false` | Opt-in. `on:unmounted` also fires, once, when a directive (`if`, `each`, a route change) removes the element. See [Opt-in Hardening Flags](#opt-in-hardening-flags) |
 
 ---
 
@@ -207,7 +208,8 @@ NoJS.config({
     ext: '.tpl',
     focusBehavior: 'none',
     suppressHashWarning: false,
-    viewTransition: true
+    viewTransition: true,
+    strictOutlets: false
   }
 });
 ```
@@ -222,6 +224,7 @@ NoJS.config({
 | `router.focusBehavior` | string | `"none"` | Focus management on route change |
 | `router.suppressHashWarning` | boolean | `false` | Suppress the warning about hash fragments conflicting with hash routing |
 | `router.viewTransition` | boolean | `true` | Enable View Transitions API for route changes (when supported by the browser) |
+| `router.strictOutlets` | boolean | `false` | Opt-in. Only the default outlet looks routes up in `router.templates`; a named outlet without its own `src` is filled only by `outlet="name"` routes. See [Opt-in Hardening Flags](#opt-in-hardening-flags) |
 
 ---
 
@@ -266,6 +269,7 @@ Stricter security behaviors are opt-in, so apps built on v1.21.1 keep working un
 - `strictDirectives` applies to the directive registrations made after it is set. The core registry is frozen as soon as No.JS loads, so set it before any `NoJS.directive()` or `NoJS.use()` call.
 - `i18n.strictLocale` applies only to the `NoJS.i18n()` call that restores the persisted locale.
 - `strictBindings` is read when each binding initializes, so set it before `NoJS.init()`. Once `true`, it cannot be turned off after `init()`.
+- `router.strictOutlets` takes effect on the next navigation.
 
 | Flag | Default | When `true` |
 |------|---------|-------------|
@@ -275,6 +279,8 @@ Stricter security behaviors are opt-in, so apps built on v1.21.1 keep working un
 | `strictDevtools` | `false` | `nojs:devtools` events and context ids are also limited to local hosts. Devtools snapshots, `globals`, plugin `options` and `ctx:updated` values redact sensitive names (matched by word) at every depth; the `config` getter redacts headers per key; devtools fetch events redact tokens in URLs |
 | `strictJsonld` | `false` | `page-jsonld` placeholders inside JSON strings are always escaped as JSON string content, so a value cannot end the string or add keys, and a value with `"`, `\` or a line break no longer makes the output invalid JSON. `<` in values becomes `\u003c`. Default: the v1.21.1 output byte-for-byte |
 | `strictBindings` | `false` | `bind-on*` event-handler attributes (any `bind-on*` name without a hyphen: `bind-onclick`, `bind-onerror`, ...) are rejected with a `[Security]` warning; `bind-onboarding-step` still binds. `bind-srcdoc` values go through the `bind-html` sanitizer (or your `sanitizeHtml`) |
+| `strictUnmounted` | `false` | `on:unmounted` also fires when a directive removes the element (`if` / `else-if`, `each` / `foreach`, a route change), on the next microtask and at most once per element, and no longer fires for a keyed `each` row that only moved. An element that is disposed but stays in the DOM (a hidden `switch` case, `NoJS.dispose()`) does not fire. Default: the hook only sees removals made by your own code (`el.remove()`), because directives dispose the element (and the hook's observer) before removing it. See [events.md](../directives/events.md#lifecycle-hooks) |
+| `router.strictOutlets` | `false` | Only the default outlet looks routes up in the `router.templates` folder. A named outlet (`route-view="name"`) without its own `src` is filled only by `outlet="name"` routes: on an explicitly matched route that does not fill it, it is cleared instead of requesting `pages/<route>.tpl` and rendering the `route="*"` wildcard or the built-in 404. Named outlets with `src`, and the wildcard fallback on pages no explicit route matches, are unchanged. See [routing.md](../directives/routing.md#named-outlets) |
 | `templates.pageRelative` | `false` | `<template src>` resolves against the page and ignores `base` and `baseApiUrl` |
 | `i18n.escapeParams` | `false` | `t-*` params in `t-html` translations are HTML-escaped before interpolation |
 | `i18n.strictLocale` | `false` | A persisted `nojs-locale` not listed in a non-empty `supportedLocales` is ignored and removed when `NoJS.i18n()` restores it |
