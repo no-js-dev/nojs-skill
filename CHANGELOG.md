@@ -27,6 +27,7 @@ Synced with NoJS Core 1.23 and NoJS Elements 1.23. The new opt-in flags default 
 - `elements/scroll-spy.md`: links need the `spy` attribute (`<a href="#id" spy>`), the built-in `font-weight: 600` rule is documented, offset and threshold come from the first spy, all spies form one page-wide group, and the examples no longer use the invalid `get="/url | name"` form or undefined functions
 - `SKILL.md`: the Elements table lists `spy` for Scroll Spy and the tabs snippet pairs `[tab]` / `[panel]` by order
 - `directives/events.md`: `on:unmounted` does not fire for directive removals by default, and the chart example puts the hook inside the `if` element
+- `patterns/forms.md`, `auth.md`, `spa.md`, `ecommerce.md`: submit buttons in a `<form validate>` no longer carry `bind-disabled="!$form.valid || ..."`. The module overwrites a submit button's `disabled` on every validation, so the extra condition was lost: the registration button enabled while the passwords differed. The automatic state already covers invalid and `$form.submitting`, so the buttons and their labels use `$form.submitting` instead of `loading` / `submitting` flags that nothing reset. Password matching is a `match:password` validation rule registered before the Elements script. Every changed example was run in headless Chromium against the Core and Elements builds
 
 ## [1.22.0](https://github.com/no-js-dev/nojs-skill/compare/v1.21.1...v1.22.0) — 2026-11-10
 

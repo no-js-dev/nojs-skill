@@ -368,8 +368,7 @@ A wizard-style form where each step validates independently before proceeding. U
   address: '',
   city: '',
   cardNumber: '',
-  expiry: '',
-  submitting: false
+  expiry: ''
 }">
   <h2>Checkout</h2>
 
@@ -418,8 +417,7 @@ A wizard-style form where each step validates independently before proceeding. U
   <form show="step === 3" validate validate-on="blur"
         post="/api/checkout"
         success="#checkoutSuccess"
-        error="#checkoutError"
-        on:submit.prevent="submitting = true">
+        error="#checkoutError">
     <input model="cardNumber" name="cardNumber" placeholder="Card Number"
            required pattern="[0-9]{13,19}"
            error-required="Card number is required"
@@ -430,9 +428,9 @@ A wizard-style form where each step validates independently before proceeding. U
            error-pattern="Use MM/YY format" />
     <div class="form-actions">
       <button type="button" on:click="step = 2">Back</button>
-      <button type="submit" bind-disabled="!$form.valid || submitting">
-        <span hide="submitting">Place Order</span>
-        <span show="submitting">Processing...</span>
+      <button type="submit">
+        <span hide="$form.submitting">Place Order</span>
+        <span show="$form.submitting">Processing...</span>
       </button>
     </div>
   </form>
@@ -449,6 +447,8 @@ A wizard-style form where each step validates independently before proceeding. U
   <p class="error" bind="err.message"></p>
 </template>
 ```
+
+The Next buttons are `type="button"`, which the `validate` form never disables, so their `bind-disabled="!$form.valid"` decides. The Place Order button is a submit button: the form disables it while it is invalid and while `$form.submitting` is `true`, which lasts until the `post` request settles. A `bind-disabled` on a submit button is overwritten on every validation, so the button carries none, and the labels read `$form.submitting` instead of a flag of their own.
 
 ---
 

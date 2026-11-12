@@ -31,13 +31,12 @@ Use authentication patterns when your application needs:
 A login form with built-in validation, loading states, and success/error templates.
 
 ```html
-<div state="{ email: '', password: '', loading: false }">
+<div state="{ email: '', password: '' }">
   <h2>Login</h2>
   <form post="/api/login" validate
         success="#loginSuccess"
         error="#loginError"
-        loading="#loginLoading"
-        on:submit.prevent="loading = true">
+        loading="#loginLoading">
     <div class="field">
       <label>Email</label>
       <input model="email" type="email" name="email"
@@ -52,10 +51,9 @@ A login form with built-in validation, loading states, and success/error templat
              error-required="Password is required">
     </div>
     <p if="$form.firstError" class="error" bind="$form.firstError"></p>
-    <button type="submit" bind-disabled="!$form.valid || loading">
-      <span hide="loading">Login</span>
-      <span show="loading">Signing in...</span>
-    </button>
+    <!-- Disabled while the form is invalid; the loading template
+         replaces the form while the request is in flight -->
+    <button type="submit">Login</button>
   </form>
 </div>
 
@@ -76,9 +74,16 @@ A login form with built-in validation, loading states, and success/error templat
 
 ## Registration Form
 
-Registration with confirm-password matching and strong validation.
+Registration with confirm-password matching and strong validation. The match is a validation rule, so it keeps the submit button disabled like any other error. Register the validator before the NoJS Elements script loads.
 
 ```html
+<script src="https://cdn.no-js.dev/"></script>
+<script>
+  NoJS.validator('match', (value, other, values) =>
+    value === (values || {})[other] || 'Passwords do not match');
+</script>
+<script src="https://cdn-elements.no-js.dev/"></script>
+
 <div state="{ name: '', email: '', password: '', confirmPassword: '' }">
   <h2>Register</h2>
   <form post="/api/register" validate
@@ -98,14 +103,12 @@ Registration with confirm-password matching and strong validation.
            error-pattern="Must contain uppercase, lowercase, and a number" />
     <input model="confirmPassword" name="confirmPassword" type="password"
            placeholder="Confirm Password" required
-           error-required="Please confirm your password" />
-    <p show="confirmPassword && password !== confirmPassword" class="error">
-      Passwords do not match
-    </p>
-    <button type="submit"
-            bind-disabled="!$form.valid || password !== confirmPassword">
-      Create Account
-    </button>
+           validate="match:password"
+           error-required="Please confirm your password"
+           error-match="Passwords do not match" />
+    <p show="$form.errors.confirmPassword" class="error"
+       bind="$form.errors.confirmPassword"></p>
+    <button type="submit">Create Account</button>
   </form>
 </div>
 
@@ -277,7 +280,7 @@ Use the `guard` attribute to protect routes. When the guard expression evaluates
            error-email="Please enter a valid email">
     <input name="password" type="password" required minlength="8"
            error-required="Password is required">
-    <button type="submit" bind-disabled="!$form.valid || $form.submitting">
+    <button type="submit">
       <span hide="$form.submitting">Sign in</span>
       <span show="$form.submitting">Signing in...</span>
     </button>
