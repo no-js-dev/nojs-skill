@@ -62,7 +62,7 @@ Clicking a branch toggles its nested subtree open or closed.
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `tree` | boolean attr | -- | Declares the tree container |
-| `tree-drag-mode` | `"reorder"` \| `"transfer"` \| `"both"` | -- | Enables drag-and-drop on the tree |
+| `tree-drag-mode` | `"reparent"` \| `"reorder"` \| `"both"` | -- | Enables drag-and-drop on the tree |
 
 ### Branch (Expandable Item)
 
@@ -176,39 +176,45 @@ Enable with `tree-drag-mode` on the tree container.
 
 ### Drag Modes
 
-| Mode | Description |
-|------|-------------|
-| `"reorder"` | Reorder items within the same tree |
-| `"transfer"` | Move items between trees |
-| `"both"` | Both reorder and transfer |
+| Mode | Drop zone | Behavior |
+|------|-----------|----------|
+| `"reparent"` | Entire node area | Dropped node becomes a child of the target node |
+| `"reorder"` | Top half / bottom half | Dropped node is inserted before or after the target node among its siblings |
+| `"both"` | Top 25% / middle 50% / bottom 25% | Top and bottom zones reorder; the middle zone reparents |
 
 ### Drag Attributes
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `tree-drag-mode` | `"reorder"` \| `"transfer"` \| `"both"` | Drag-and-drop mode on the tree container |
+| `tree-drag-mode` | `"reparent"` \| `"reorder"` \| `"both"` | Drag-and-drop mode on the tree container |
 | `tree-drag-disabled` | boolean attr | Disable drag on specific items |
 
 ### Drag Events
 
 | Event | `$event.detail` | Description |
 |-------|-----------------|-------------|
-| `tree:drag-start` | `{ item, source }` | Item drag started |
-| `tree:drag-over` | `{ item, target, position }` | Dragging over a potential drop target |
-| `tree:drop` | `{ item, target, position, source }` | Item dropped |
-| `tree:drag-end` | `{ item }` | Drag operation ended |
+| `tree:drag-start` | `{ node }` | Dispatched on the tree item when dragging begins |
+| `tree:drag-end` | `{ node }` | Dispatched on the tree item when dragging ends (dropped or not) |
+| `tree:reparent` | `{ node, newParent }` | Dispatched on the tree root when a node is dropped onto another node |
+| `tree:reorder` | `{ node, newIndex }` | Dispatched on the tree root when a node is moved before or after a sibling |
 
-`position` can be `"before"`, `"after"`, or `"inside"`.
+All four bubble. `node` and `newParent` are the tree item elements. Listen with `on:tree:reparent`, `on:tree:reorder`, and so on. The tree has no `tree:drop` or `tree:drag-over` event.
+
+```html
+<ul tree tree-drag-mode="both"
+    on:tree:reparent="console.log('Reparented', $event.detail.node, 'under', $event.detail.newParent)"
+    on:tree:reorder="console.log('Reordered to index', $event.detail.newIndex)">
+  ...
+</ul>
+```
 
 ### Visual Feedback
 
-Drop indicators show where the item will land (before, after, or nested inside a branch). The following CSS classes are applied to the target:
-
-| Class | Meaning |
-|-------|---------|
-| `.nojs-tree-drop-before` | Item will be inserted before the target |
-| `.nojs-tree-drop-after` | Item will be inserted after the target |
-| `.nojs-tree-drop-inside` | Item will be nested inside the target branch |
+| Visual | Description |
+|--------|-------------|
+| `.nojs-dragging` class | Applied to the tree item being dragged |
+| `.nojs-tree-drag-over` class | Applied to the target node when hovering in the reparent zone |
+| `.nojs-tree-drag-indicator` | A horizontal line shown between items when hovering in the reorder zone |
 
 ### Safety Checks
 
@@ -263,7 +269,8 @@ NoJS automatically applies:
 ```html
 <div state="{ folders: [] }" get="/api/folders | folders">
   <ul tree tree-drag-mode="both"
-      on:tree:drop="console.log('Dropped:', $event.detail)">
+      on:tree:reparent="console.log('Moved under:', $event.detail.newParent)"
+      on:tree:reorder="console.log('Moved to index:', $event.detail.newIndex)">
     <li branch each="folder in folders" key="folder.id">
       <span bind="folder.name"></span>
       <ul subtree if="folder.children.length > 0">
@@ -304,7 +311,7 @@ The tree directives work with any NoJS directive:
 ```html
 <div state="{ folders: [], selectedFile: null }"
      get="/api/folders | folders">
-  <ul tree on:tree:drop="console.log('Moved:', $event.detail)">
+  <ul tree tree-drag-mode="both" on:tree:reparent="console.log('Moved:', $event.detail.node)">
     <li branch each="folder in folders" key="folder.id" open>
       <span bind="folder.name"></span>
       <ul subtree if="folder.children.length > 0">
@@ -323,5 +330,5 @@ The tree directives work with any NoJS directive:
 - Use `each` / `foreach` / `for` to render tree items from data
 - Use `bind` / `bind-html` for dynamic item labels
 - Use `if` / `show` for conditional subtrees or items
-- Use `on:tree:drop` to react to drag-and-drop events
+- Use `on:tree:reparent` and `on:tree:reorder` to react to drag-and-drop moves
 - Use `state` on a parent to share selection state across the tree
