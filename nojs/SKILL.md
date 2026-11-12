@@ -189,7 +189,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 
 ```html
 <button on:click="count++">Increment</button>
-<form on:submit.prevent="post('/api/data', { name })">
+<form on:submit.prevent="sent = name">
   <input model="name" on:keydown.enter="$el.form.requestSubmit()">
 </form>
 <input on:input.debounce.300="search = $event.target.value">

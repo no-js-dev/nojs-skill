@@ -111,7 +111,7 @@ The `validate` attribute has five built-in rules plus `custom`. The five names a
 
 Native HTML attributes are also validated through the browser's `ValidityState` and reported under these rule names (usable in `error-{rule}`): `required`, `minlength`, `maxlength`, `pattern`, `min`, `max`, `step`, and the input `type` (`email`, `url`, `number`, `date`, ...). Their message is the browser's `validationMessage`. When a `validate` rule and a native attribute report the same rule name, the `validate` rule's message wins. When a field has several errors, `required` is shown first.
 
-There is no built-in `minlength:n`, `maxlength:n`, `pattern:regex`, `match`, `number`, `integer`, `alpha` or `alphanumeric` rule. These names are free: register your own with `NoJS.validator()` in a script that runs before NoJS Elements loads, because Elements reads the validator registry when it installs:
+There is no built-in `minlength:n`, `maxlength:n`, `pattern:regex`, `match`, `number`, `integer`, `alpha` or `alphanumeric` rule. These names are free: register your own with `NoJS.validator()`, before or after the NoJS Elements script (a field reads the registry each time it validates):
 
 ```html
 <script src="https://cdn.no-js.dev/"></script>
@@ -125,7 +125,7 @@ There is no built-in `minlength:n`, `maxlength:n`, `pattern:regex`, `match`, `nu
 
 <form validate>
   <input name="password" type="password" minlength="8" validate="required" />
-  <input name="confirm" type="password" validate="required|match:password" />
+  <input name="confirmPassword" type="password" validate="required|match:password" />
 </form>
 ```
 
@@ -197,8 +197,6 @@ To make these rules ignore an empty field, set the opt-in `validate-empty="skip"
 
 Without any `validate-on` in the form, a field shows its error once it has been changed or has lost focus (`input`, `change` and `focusout` are listened to on the form). Once the form or any of its fields has `validate-on`, each field uses its own value, then the form's, and a field with neither shows errors on `input` and `focusout`.
 
-> **Caveat: `model` on a select, checkbox or radio.** In a `<form validate>` with no `validate-on` on the form or any field, these controls do not update their `model` state: the form re-renders on the `input` event before `model` syncs on `change`, so the control snaps back to the old value. Text inputs are not affected. Add `validate-on` to the form (`validate-on="input focusout"` gives the same error display as the default) whenever it contains a `model` select, checkbox or radio.
-
 Regardless of the trigger, the form re-validates on every input, and `$form.valid` and `$form.fields.<name>.valid` / `.error` always reflect real-time validity (submit buttons stay disabled while the form is invalid). The trigger only controls visibility.
 
 ---
@@ -209,7 +207,7 @@ Skip validation when a field is irrelevant using `validate-if`:
 
 ```html
 <div state="{ contactMethod: 'email' }">
-  <form validate validate-on="input focusout">
+  <form validate>
     <select model="contactMethod" name="method">
       <option value="email">Email</option>
       <option value="phone">Phone</option>
@@ -224,9 +222,9 @@ Skip validation when a field is irrelevant using `validate-if`:
 </div>
 ```
 
-When `validate-if` is falsy, the field is treated as valid and left out of `$form.errors`. If the expression throws, the field is validated. An `aria-invalid` or `error-class` the field already had is not removed when it becomes excluded.
+When `validate-if` is falsy, the field is treated as valid and left out of `$form.errors`. If the expression throws, the field is validated. An excluded field drops the `aria-invalid`, `error-class` and error template it showed while it was validated, and its `as` variable and `$form.fields` entry read as valid (`valid: true`, `error: null`). They come back when the expression turns truthy again and the field is still invalid.
 
-The form has `validate-on` because of the `<select model>`: see the caveat in [Validation Triggers](#validation-triggers).
+Give the controlling value an initial value in `state` (`contactMethod: 'email'`): without it, `contactMethod` is `undefined` and both conditional fields stay excluded until the user picks an option.
 
 ---
 
@@ -370,7 +368,7 @@ The `as` attribute exposes a field's state object (same shape as `$form.fields.<
 
 ## Custom Validators
 
-Register custom validators with `NoJS.validator()` before NoJS Elements loads:
+Register custom validators with `NoJS.validator()`. A field reads the registry each time it validates, so a validator can be registered before or after the NoJS Elements script; registering a name again replaces the validator from the next validation on:
 
 ```html
 <script src="https://cdn.no-js.dev/"></script>
@@ -379,17 +377,23 @@ Register custom validators with `NoJS.validator()` before NoJS Elements loads:
     if (!value) return true; // let "required" handle empty
     return /^\+?[\d\s\-()]{7,}$/.test(value) || 'Invalid phone number';
   });
+</script>
+<script src="https://cdn-elements.no-js.dev/"></script>
+<script>
+  // After the Elements script works too
   NoJS.validator('match', (value, other, values) =>
     value === (values || {})[other] || 'Values do not match');
 </script>
-<script src="https://cdn-elements.no-js.dev/"></script>
 
 <form validate>
   <input name="phone" validate="required|phone" />
   <input name="password" type="password" />
-  <input name="confirm" type="password" validate="required|match:password" />
+  <input name="confirmPassword" type="password" validate="required|match:password" />
+  <span if="$form.errors.confirmPassword" bind="$form.errors.confirmPassword"></span>
 </form>
 ```
+
+Do not name a field `confirm`, `alert` or `prompt`: core expressions cannot read those properties, so `$form.errors.confirm` is always `undefined`.
 
 ### Validator Function Signature
 
@@ -420,7 +424,28 @@ Submit buttons inside a `<form validate>` (`<button>` without `type="button"`, a
 </form>
 ```
 
-There is no attribute that opts a submit button out. `bind-disabled` does not: the module overwrites the button's `disabled` property on every validation. A plain `disabled="<expression>"` attribute is not evaluated by core and keeps the button disabled for good. Use `type="button"` for buttons that must stay enabled (they do not submit).
+The automatic state is written on every validation pass, so it replaces a `bind-disabled` on the same button. A plain `disabled="<expression>"` attribute is not evaluated by core and keeps the button disabled for good.
+
+### Opting Out (`auto-disable="off"`)
+
+Give a submit button `auto-disable="off"` to manage its disabled state yourself. The form leaves that button alone; other submit buttons keep the automatic state. The form still blocks an invalid submit, marks every field as touched and shows the errors. `off` is the only value; without the attribute the button keeps the automatic state.
+
+```html
+<form validate post="/api/profile">
+  <input name="name" model="name" validate="required" />
+
+  <!-- Disabled until the form is valid and changed -->
+  <button type="submit" auto-disable="off"
+          bind-disabled="!$form.valid || !$form.dirty || $form.submitting">Save</button>
+</form>
+
+<form validate post="/api/signup">
+  <input name="email" model="email" validate="required|email" />
+
+  <!-- Always clickable: a click on an invalid form shows every error -->
+  <button type="submit" auto-disable="off">Sign up</button>
+</form>
+```
 
 ---
 
@@ -504,7 +529,7 @@ The validation module does not inject CSS or add classes on its own. Styling is 
 
 ### Registration Form
 
-Multiple rules, custom messages, error classes and submit handling. `alphanumeric` and `match` are not built-in rules: they are registered before NoJS Elements loads.
+Multiple rules, custom messages, error classes and submit handling. `alphanumeric` and `match` are not built-in rules: they are registered with `NoJS.validator()` (here before NoJS Elements loads; after works too).
 
 ```html
 <script src="https://cdn.no-js.dev/"></script>
@@ -592,7 +617,7 @@ Show and validate fields based on user selection.
 
 ```html
 <div state="{ accountType: 'personal', saved: false }">
-  <form validate validate-on="input focusout" on:submit.prevent="saved = true; $form.endSubmit()">
+  <form validate on:submit.prevent="saved = true; $form.endSubmit()">
     <select name="accountType" model="accountType">
       <option value="personal">Personal</option>
       <option value="business">Business</option>
@@ -650,7 +675,7 @@ Use this checklist when reviewing NoJS templates that use validation:
 - [ ] Custom error messages use `error-{rule}` (`error-required`, `error-email`, `error-minlength`)
 - [ ] Error templates are referenced with `error="#id"` / `error-{rule}="#id"` and read `$error` / `$rule` (form) or `err.message` (standalone)
 - [ ] An `on:submit` form calls `$form.endSubmit()`, or its submit buttons stay disabled after the first submit
-- [ ] Submit buttons rely on auto-disable; buttons that must stay enabled use `type="button"`
+- [ ] Submit buttons rely on auto-disable; a button that manages its own `bind-disabled`, or must stay clickable on an invalid form, has `auto-disable="off"`
 - [ ] Optional `min` / `max` / `url` fields use `validate-empty="skip"` (opt-in, default `check`)
 - [ ] Conditional fields use `validate-if` to skip validation when hidden/irrelevant
 - [ ] Use `validate-on="focusout"` for progressive validation (errors appear after the user leaves the field)

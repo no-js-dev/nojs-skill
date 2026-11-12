@@ -407,11 +407,11 @@ Use this checklist when reviewing No.JS templates:
 - [ ] Inline errors read `$form.errors.<name>` (visible errors only) or gate `$form.fields.<name>.error` with `touched`
 - [ ] Error templates are referenced as `error="#id"` / `error-{rule}="#id"` (there is no `error-template` attribute). Inside a form the template renders **once per field**, right after the `<template>`, with `$error`, `$rule` and `err.message`; a standalone field's template gets only `err.message`
 - [ ] A form handled by `on:submit` calls `$form.endSubmit()`, otherwise `$form.submitting` stays `true` and its submit buttons stay disabled; a form with `post` / `put` / `patch` / `delete` resets it when the request settles
-- [ ] Submit buttons rely on auto-disable; there is no opt-out attribute (`bind-disabled` is overwritten, a literal `disabled="expr"` disables for good), so buttons that must stay enabled use `type="button"`
+- [ ] Submit buttons rely on auto-disable, which overwrites a `bind-disabled` on the same button (a literal `disabled="expr"` disables for good); a button that manages its own `bind-disabled`, or must stay clickable on an invalid form, has `auto-disable="off"`
 - [ ] `$form.reset()` callers also reset `model` state (`name = ''; $form.reset()`); nothing in the form is named or has the id `reset`
 - [ ] Optional fields with `min` / `max` / `url` use the opt-in `validate-empty="skip"` (default `check`: `min:1` fails an empty field, `url` fails `""`)
 - [ ] Conditional fields use `validate-if` to skip validation when hidden/irrelevant
-- [ ] A form with a `model` select, checkbox or radio sets `validate-on` (e.g. `validate-on="input focusout"`); without it those controls snap back to their old value
+- [ ] A value read by `validate-if` (or by `step-validate`) has an initial value in `state`, so the condition is defined before the user picks an option
 - [ ] Use `validate-on="focusout"` for progressive validation (errors appear after the user leaves the field); values are space-separated
 
 See [elements/validate.md](elements/validate.md) for the full API.
