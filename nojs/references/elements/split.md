@@ -75,10 +75,13 @@ By default the split is horizontal (side by side). Panes without a size value fi
 
 | Event | `$event.detail` | Description |
 |-------|-----------------|-------------|
-| `split:resize` | `{ sizes: number[] }` | Fired on the container when panes are resized |
+| `split-resize` | `{ prevPane, nextPane }` | Fired on the container (bubbles) when a gutter drag ends. `prevPane` and `nextPane` are the panes on each side of the gutter |
+| `split-collapse` | `{ pane, collapsed }` | Fired on the container (bubbles) when a double-click on a gutter collapses or expands a `pane-collapsible` pane |
+
+These two names have no `nojs:` prefix: listen with `on:split-resize` and `on:split-collapse`.
 
 ```html
-<div split on:split:resize="console.log($event.detail.sizes)">
+<div split on:split-resize="console.log($event.detail.prevPane.style.flexBasis)">
   <div pane="50%">Left</div>
   <div pane>Right</div>
 </div>
@@ -201,7 +204,7 @@ The split element works with any NoJS directive inside its panes:
 <div state="{ files: [], activeFile: null }"
      get="/api/files | files">
   <div split split-persist="editor-layout"
-       on:split:resize="console.log('Resized:', $event.detail.sizes)">
+       on:split-resize="console.log('Resized:', $event.detail.prevPane, $event.detail.nextPane)">
     <div pane="200px" pane-min="150" pane-max="350">
       <ul>
         <li each="file in files" key="file.id"
@@ -220,5 +223,5 @@ The split element works with any NoJS directive inside its panes:
 - Use `each` / `foreach` / `for` to render dynamic content inside panes
 - Use `bind` / `bind-html` for reactive pane content
 - Use `if` / `show` for conditional pane content
-- Use `on:split:resize` to react to layout changes
+- Use `on:split-resize` and `on:split-collapse` to react to layout changes
 - Use `state` on a parent to share data across panes

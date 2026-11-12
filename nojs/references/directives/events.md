@@ -236,7 +236,7 @@ Lifecycle hooks are special `on:*` events that fire at key moments in an element
 | `on:init` | Directive first processed |
 | `on:mounted` | Element inserted into visible DOM |
 | `on:updated` | Any DOM mutation in subtree -- fires on **all** MutationObserver events (childList, attributes, characterData) within the element, not just data-driven updates |
-| `on:unmounted` | Element removed from DOM |
+| `on:unmounted` | Element removed from DOM by your code; with `strictUnmounted: true`, also by a directive (see below) |
 | `on:error` | Any error in this element's subtree |
 
 ```html
@@ -251,20 +251,24 @@ Lifecycle hooks are special `on:*` events that fire at key moments in an element
 
 - `on:mounted` fires after the element is fully inserted into the visible DOM and all child directives have been processed.
 - `on:updated` fires frequently -- it observes all MutationObserver categories, not just data changes. Use with caution on elements with many child mutations.
-- `on:unmounted` fires when the element is removed from the DOM (e.g., by an `if` directive turning false).
+- `on:unmounted` and directive removals: by default (v1.21.1 behavior) the hook fires when your own code removes the element (`el.remove()`). When a directive removes it -- `if` / `else-if` turning false, a row leaving an `each` / `foreach` list, a route change replacing the outlet content -- No.JS disposes the element before removing it, and the hook does **not** run. A keyed `each` that moves a row also fires that row's hook, although the row stays on the page. Set the opt-in `NoJS.config({ strictUnmounted: true })` (default `false`) to fix both: the hook then runs once, on the next microtask, when a directive removes the element, and never for a row that only moved. It takes effect immediately.
+- `if` keeps its host element and removes its content, so put `on:unmounted` on an element **inside** the `if`, not on the `if` element itself. A hidden `switch` case stays in the DOM (`display: none`), so its hook does not run in either mode.
 - `$el` is available in lifecycle hooks. `$event` is not available (there is no DOM event).
 
 ### Complete Example -- Chart Initialization
 
 ```html
+<script>NoJS.config({ strictUnmounted: true });</script>
+
 <div state="{ showChart: false }">
   <button on:click="showChart = !showChart">Toggle Chart</button>
 
-  <div if="showChart"
-       on:mounted="console.log('Chart mounted', $el)"
-       on:unmounted="console.log('Chart unmounted')">
-    <canvas ref="myChart" width="400" height="200"></canvas>
-    <p>Chart is visible.</p>
+  <div if="showChart">
+    <div on:mounted="console.log('Chart mounted', $el)"
+         on:unmounted="console.log('Chart unmounted')">
+      <canvas ref="myChart" width="400" height="200"></canvas>
+      <p>Chart is visible.</p>
+    </div>
   </div>
 </div>
 ```

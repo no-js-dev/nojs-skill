@@ -94,12 +94,14 @@ The `drag` and `drop` directives dispatch CustomEvents on their host elements at
 
 | Event | Dispatched on | `$event.detail` | Description |
 |-------|---------------|-----------------|-------------|
-| `on:drag-start` | `[drag]` element | `{ data, type, effect }` | Drag operation started |
-| `on:drag-end` | `[drag]` element | `{ data, type, dropped }` | Drag operation ended (`dropped` is true if successfully dropped) |
-| `on:drag-enter` | `[drop]` element | `{ data, type }` | Valid drag entered the drop zone |
-| `on:drag-leave` | `[drop]` element | `{ data, type }` | Drag left the drop zone |
-| `on:drag-over` | `[drop]` element | `{ data, type }` | Drag is hovering over the drop zone |
-| `on:drop` | `[drop]` element | `{ data, type, effect }` | Item was dropped |
+| `nojs:dnd-start` | `[drag]` element (bubbles) | `{ item, index, el }` | Drag operation started |
+| `nojs:dnd-end` | `[drag]` element (bubbles) | `{ item, index, dropped }` | Drag operation ended (`dropped` is true if successfully dropped) |
+| `nojs:dnd-enter` | `[drop]` element | `{ item, type }` | Valid drag entered the drop zone |
+| `nojs:dnd-leave` | `[drop]` element | `{ item }` | Drag left the drop zone |
+| `nojs:dnd-over` | `[drop]` element | `{ item, index }` | Drag is hovering over a sortable drop zone (`index` is the insertion position) |
+| `nojs:dnd-drop` | `[drop]` element | `{ item, index, source, target, effect }` | Item was dropped, after the `drop` expression ran |
+
+Listen with `on:nojs:dnd-start`, `on:nojs:dnd-drop`, and so on. Before v1.15.0 these events were named `drag-start`, `drag-end`, `drag-enter`, `drag-leave`, `drag-over` and `drop`, and the drag-list events `reorder`, `receive` and `remove`; those names are no longer dispatched. A listener on `on:drop` still runs, because the browser fires its native `drop` event, but that event has no `$event.detail`.
 
 ---
 
@@ -138,9 +140,11 @@ A high-level directive that combines drag, drop, and list management into a sing
 
 | Event | `$event.detail` | Description |
 |-------|-----------------|-------------|
-| `on:reorder` | `{ list, item, from, to }` | Item reordered within same list |
-| `on:receive` | `{ list, item, from, fromList }` | Item received from another list |
-| `on:remove` | `{ list, item, index }` | Item removed (dragged out) |
+| `nojs:dnd-reorder` | `{ list, item, from, to }` | Item reordered within same list |
+| `nojs:dnd-receive` | `{ list, item, from, fromList }` | Item received from another list |
+| `nojs:dnd-remove` | `{ list, item, index }` | Item removed (dragged out), dispatched on the source list |
+
+A drag-list dispatches `nojs:dnd-start` on the list when one of its items is grabbed. It does not dispatch `nojs:dnd-end`; listen to the native `dragend` event, which bubbles from the item to the list.
 
 ---
 
@@ -241,7 +245,7 @@ Reorder tasks within a single list.
 ] }">
   <ul drag-list="tasks" drag-list-key="id"
       drop-placeholder="auto"
-      on:reorder="console.log('Reordered:', $event.detail)">
+      on:nojs:dnd-reorder="console.log('Reordered:', $event.detail)">
     <li>
       <span bind="item.title"></span>
     </li>
@@ -265,8 +269,8 @@ Transfer items between lists with constraints.
       <ul drag-list="todo" drag-list-key="id"
           drop-accept="task" drag-type="task"
           drag-list-remove
-          on:reorder="console.log('reorder', $event.detail)"
-          on:remove="console.log('removed', $event.detail)">
+          on:nojs:dnd-reorder="console.log('reorder', $event.detail)"
+          on:nojs:dnd-remove="console.log('removed', $event.detail)">
         <li bind="item.title"></li>
       </ul>
     </div>
@@ -276,7 +280,7 @@ Transfer items between lists with constraints.
       <ul drag-list="doing" drag-list-key="id"
           drop-accept="task" drag-type="task"
           drag-list-remove drop-max="3"
-          on:receive="console.log('received', $event.detail)">
+          on:nojs:dnd-receive="console.log('received', $event.detail)">
         <li bind="item.title"></li>
       </ul>
     </div>
@@ -303,7 +307,7 @@ Drag and drop integrates with the full NoJS directive system:
 - **`each` / `foreach` / `for`** -- render draggable items from arrays
 - **`if` / `show`** -- conditionally display drop zones or drag handles
 - **`bind`** -- display drag data dynamically
-- **`on:*` events** -- react to drag-start, drag-end, drop, reorder, receive, remove
+- **`on:*` events** -- react to `nojs:dnd-start`, `nojs:dnd-end`, `nojs:dnd-drop`, `nojs:dnd-reorder`, `nojs:dnd-receive`, `nojs:dnd-remove`
 - **`class-*`** -- apply conditional styles based on drag state
 - **`drag-disabled` / `drop-disabled`** -- use reactive expressions to enable/disable at runtime
 
@@ -311,8 +315,8 @@ Drag and drop integrates with the full NoJS directive system:
 <div state="{ items: [], canDrop: true, dragActive: false }">
   <ul drag-list="items" drag-list-key="id"
       drop-disabled="!canDrop"
-      on:drag-start="dragActive = true"
-      on:drag-end="dragActive = false">
+      on:nojs:dnd-start="dragActive = true"
+      on:dragend="dragActive = false">
     <li class-highlight="dragActive">
       <span bind="item.name"></span>
     </li>

@@ -121,12 +121,13 @@ When both `sortable` and `table-reorder` are active on the same table, manual ro
 
 | Event | `$event.detail` | Description |
 |-------|-----------------|-------------|
-| `on:reorder` | `{ list, item, from, to }` | Fired when a row is dropped into a new position |
+| `table:reorder` | `{ from, to, item }` | Fired on the `<table>` (bubbles) when a row is dropped into a new position |
 
-- `list` -- the reordered array
-- `item` -- the item that was moved
 - `from` -- original index
 - `to` -- new index
+- `item` -- the item that was moved (`null` for a static table without a bound array)
+
+Listen with `on:table:reorder`. The bound array is already updated when the event fires.
 
 ---
 
@@ -244,7 +245,7 @@ Use `table-reorder-handle` to restrict the drag interaction to a specific elemen
 ```html
 <div state="{ tasks: [{id:1,name:'Task A'},{id:2,name:'Task B'},{id:3,name:'Task C'}] }">
   <table table-reorder="tasks" table-reorder-key="id" table-reorder-handle=".drag-handle"
-         on:reorder="console.log('Reordered:', $event.detail)">
+         on:table:reorder="console.log('Reordered:', $event.detail)">
     <thead><tr><th></th><th>Task</th></tr></thead>
     <tbody>
       <tr each="task in tasks" key="task.id">
@@ -289,5 +290,5 @@ The table directives work with any NoJS directive:
 - Use `each` / `foreach` / `for` to render rows from data
 - Use `bind` / `bind-html` for dynamic cell content
 - Use `if` / `show` for conditional rows or columns
-- Use `on:reorder` to react to row reorder events
+- Use `on:table:reorder` to react to row reorder events
 - Use `state` on a parent to share data across the table

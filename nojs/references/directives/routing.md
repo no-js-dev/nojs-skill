@@ -291,7 +291,9 @@ Nesting depth is unlimited -- outlets rendered by a layout can themselves contai
 </template>
 ```
 
-Outlets with no matching template for the active route are cleared on navigation.
+Outlets with no matching template for the active route are cleared on navigation, as long as the outlet does not look routes up in files. **By default (v1.21.1 behavior), every outlet without its own `src` -- named outlets included -- also looks the route up in the `router.templates` folder (`pages` unless configured).** In the example above, on a route without an `outlet="sidebar"` template (say `/about`), `sidebar` requests `pages/about.tpl` and, when it is missing, renders the `route="*"` wildcard or the built-in 404 instead of being cleared.
+
+Set the opt-in `NoJS.config({ router: { strictOutlets: true } })` (default `false`) to keep the `router.templates` lookup for the default outlet only: a named outlet without `src` is then filled only by `outlet="name"` routes and cleared when the active route has none. A named outlet with its own `src` resolves files from it in both modes, and on a page that no explicit route matches, a named outlet keeps the [wildcard fallback](#named-outlet-wildcards) in both modes. It takes effect on the next navigation.
 
 ### `outlet` Attribute
 

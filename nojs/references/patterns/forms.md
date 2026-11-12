@@ -65,10 +65,13 @@ When `validate-if` evaluates to `false`, the field is treated as valid and exclu
 
 ## Custom Validators
 
-Register custom validation functions with `NoJS.validator()`:
+Register custom validation functions with `NoJS.validator()`. A field reads the registered validators each time it validates, so the script can run before or after the NoJS Elements script:
 
 ```html
+<script src="https://cdn.no-js.dev/"></script>
+<script src="https://cdn-elements.no-js.dev/"></script>
 <script>
+  // Before the Elements script works too
   NoJS.validator('strongPassword', (value) => {
     if (value.length < 8) return 'At least 8 characters required';
     if (!/[A-Z]/.test(value)) return 'Must contain an uppercase letter';
@@ -77,7 +80,10 @@ Register custom validation functions with `NoJS.validator()`:
   });
 </script>
 
-<input type="password" name="password" validate="strongPassword" />
+<form validate>
+  <input type="password" name="password" validate="strongPassword" />
+  <span if="$form.errors.password" bind="$form.errors.password"></span>
+</form>
 ```
 
 ---
@@ -102,7 +108,7 @@ Access individual field validation state through `$form.fields`:
 Validate fields only when related conditions are true:
 
 ```html
-<form validate>
+<form validate state="{ contactMethod: 'email' }">
   <select model="contactMethod" name="contactMethod">
     <option value="email">Email</option>
     <option value="phone">Phone</option>
@@ -120,9 +126,11 @@ Validate fields only when related conditions are true:
          error-required="Phone number is required"
          error-pattern="Enter at least 10 digits" />
 
-  <button type="submit" bind-disabled="!$form.valid">Send</button>
+  <button type="submit">Send</button>
 </form>
 ```
+
+`contactMethod` starts as `'email'`: without an initial value it is `undefined`, both fields stay excluded and the form is valid before the user picks an option. The submit button is disabled while the form is invalid without a `bind-disabled` (see [Auto-Disable Submit Buttons](../elements/validate.md#auto-disable-submit-buttons)).
 
 ---
 
@@ -368,8 +376,7 @@ A wizard-style form where each step validates independently before proceeding. U
   address: '',
   city: '',
   cardNumber: '',
-  expiry: '',
-  submitting: false
+  expiry: ''
 }">
   <h2>Checkout</h2>
 
@@ -418,8 +425,7 @@ A wizard-style form where each step validates independently before proceeding. U
   <form show="step === 3" validate validate-on="blur"
         post="/api/checkout"
         success="#checkoutSuccess"
-        error="#checkoutError"
-        on:submit.prevent="submitting = true">
+        error="#checkoutError">
     <input model="cardNumber" name="cardNumber" placeholder="Card Number"
            required pattern="[0-9]{13,19}"
            error-required="Card number is required"
@@ -430,9 +436,9 @@ A wizard-style form where each step validates independently before proceeding. U
            error-pattern="Use MM/YY format" />
     <div class="form-actions">
       <button type="button" on:click="step = 2">Back</button>
-      <button type="submit" bind-disabled="!$form.valid || submitting">
-        <span hide="submitting">Place Order</span>
-        <span show="submitting">Processing...</span>
+      <button type="submit">
+        <span hide="$form.submitting">Place Order</span>
+        <span show="$form.submitting">Processing...</span>
       </button>
     </div>
   </form>
@@ -449,6 +455,8 @@ A wizard-style form where each step validates independently before proceeding. U
   <p class="error" bind="err.message"></p>
 </template>
 ```
+
+The Next buttons are `type="button"`, which the `validate` form never disables, so their `bind-disabled="!$form.valid"` decides. The Place Order button is a submit button: the form disables it while it is invalid and while `$form.submitting` is `true`, which lasts until the `post` request settles. A `bind-disabled` on a submit button is overwritten on every validation, so the button carries none, and the labels read `$form.submitting` instead of a flag of their own.
 
 ---
 

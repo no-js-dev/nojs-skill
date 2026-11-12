@@ -1,7 +1,7 @@
 ---
 name: nojs
 metadata:
-  version: 1.22.0
+  version: 1.23.0
 description: Provides expert-level knowledge of the No.JS HTML-first reactive framework for building dynamic web applications using only HTML attributes. Activates when the user explicitly mentions No.JS, NoJS, no-js.dev, cdn.no-js.dev, @no-js-dev/nojs, or the NoJS LSP. Also activates when HTML files use NoJS-specific directive combinations on plain HTML elements — bind (text binding attribute), foreach/each/for (loop attributes on elements), on:click/on:submit (colon-syntax event attributes), model (two-way binding attribute), state (reactive state attribute), store (global store attribute), computed/watch (reactive derivation attributes), show/hide (visibility toggle attributes), bind-html, bind-*, class-*, style-* (attribute-binding patterns), route/route-view (client-side routing attributes), validate (form validation attribute), or use/include (template composition attributes). Does NOT activate for generic HTML/CSS questions, React/Vue/Angular/Svelte/Alpine.js/HTMX development, or JavaScript framework questions unrelated to No.JS.
 ---
 
@@ -181,7 +181,7 @@ Loop context variables: `$index`, `$count`, `$first`, `$last`, `$even`, `$odd`.
 
 `on:click="expr"`, `on:submit.prevent="expr"`, `on:input="expr"`, `on:keydown.enter="expr"`.
 
-Lifecycle hooks: `on:init` (first processed), `on:mounted` (added to DOM), `on:updated` (DOM mutation), `on:unmounted` (removed), `on:error` (error in subtree).
+Lifecycle hooks: `on:init` (first processed), `on:mounted` (added to DOM), `on:updated` (DOM mutation), `on:unmounted` (removed), `on:error` (error in subtree). By default `on:unmounted` only sees removals made by your own code (`el.remove()`): `if`, `each` and route changes dispose the element before removing it. Opt-in `strictUnmounted: true` (default `false`) also fires it, once, when a directive removes the element.
 
 Modifiers: `.prevent`, `.stop`, `.once`, `.self`, `.debounce.300`, `.throttle.100`. Key mods: `.enter`, `.escape`, `.ctrl`, `.shift`, `.alt`, `.meta`. Combinable: `on:submit.prevent.once`.
 
@@ -189,7 +189,7 @@ Special variables: `$event` (native Event), `$el` (current element).
 
 ```html
 <button on:click="count++">Increment</button>
-<form on:submit.prevent="post('/api/data', { name })">
+<form on:submit.prevent="sent = name">
   <input model="name" on:keydown.enter="$el.form.requestSubmit()">
 </form>
 <input on:input.debounce.300="search = $event.target.value">
@@ -412,7 +412,7 @@ Custom filters: `NoJS.filter('myFilter', (value, ...args) => result)`.
 | `encodeUri` | -- | `url \| encodeUri` | `encodeURIComponent()` |
 | **Numbers** | | | |
 | `number` | `decimals` (0) | `val \| number:2` | `1,234.56` |
-| `currency` | `code` (USD) | `price \| currency:'EUR'` | `EUR 1,234.56` |
+| `currency` | `code` (USD) | `price \| currency:'EUR'` | `€1,234.56` |
 | `percent` | `decimals` (0) | `ratio \| percent` | `45%` |
 | `filesize` | -- | `bytes \| filesize` | `1.5 MB` |
 | `ordinal` | -- | `rank \| ordinal` | `1st`, `2nd`, `3rd` |
@@ -428,15 +428,17 @@ Custom filters: `NoJS.filter('myFilter', (value, ...args) => result)`.
 | `where` | `key`, `value` | `users \| where:'role','admin'` | Filtered array |
 | **Date** | | | |
 | `date` | `format` (short/long/full) | `d \| date:'long'` | `February 25, 2026` |
-| `datetime` | -- | `d \| datetime` | `02/25/2026 3:45 PM` |
-| `relative` | -- | `d \| relative` | `2 hours ago` |
-| `fromNow` | -- | `d \| fromNow` | `in 2 hours` |
+| `datetime` | -- | `d \| datetime` | `2/25/2026, 3:45:00 PM` |
+| `relative` | -- | `d \| relative` | `2h ago` (`just now`, `5m ago`, `3d ago`) |
+| `fromNow` | -- | `d \| fromNow` | `in 2h` (`in a moment`, `in 5m`, `in 3d`) |
 | **Utility** | | | |
 | `default` | `fallback` ("") | `name \| default:'N/A'` | Fallback for null/empty |
 | `json` | `indent` (2) | `obj \| json` | JSON.stringify |
 | `debug` | -- | `val \| debug` | console.log + passthrough |
 | `keys` | -- | `obj \| keys` | `Object.keys()` |
 | `values` | -- | `obj \| values` | `Object.values()` |
+
+Outputs are what an `en-US` browser shows. `number`, `currency`, `date` and `datetime` use the **browser's default locale**, not `$i18n.locale` / `NoJS.locale` (a `pt-BR` browser shows `price | currency:'BRL'` as `R$ 1.234,56`); `percent`, `filesize` and `ordinal` use no locale, and `relative` / `fromNow` return short English strings (dates more than 30 days in the past fall back to the browser-locale date). For app-locale formatting, register a custom filter that reads `NoJS.locale` (see [core/filters.md](references/core/filters.md#locale)).
 
 ## 5. NoJS Elements
 
@@ -449,7 +451,7 @@ NoJS Elements is a UI plugin library with 17 declarative, accessible components.
 | Element | Key Directives | Description |
 |---------|---------------|-------------|
 | **Drag & Drop** | `drag`, `drop`, `drag-list`, `drag-multiple` | Sortable lists, multi-select, drag groups |
-| **Validation** | `validate`, `validate-on`, `validate-if`, `$form` | Declarative form validation with per-rule errors |
+| **Validation** | `validate`, `validate-on`, `validate-if`, `validate-empty`, `$form` | Declarative form validation with per-rule errors; error templates render once per field |
 | **Tooltip** | `tooltip` | Positioned tooltips with configurable delay/placement |
 | **Popover** | `popover`, `popover-trigger`, `popover-dismiss` | Rich content popovers with trigger controls |
 | **Modal** | `modal`, `modal-open`, `modal-close` | Accessible dialogs with focus trap and backdrop |
@@ -463,7 +465,7 @@ NoJS Elements is a UI plugin library with 17 declarative, accessible components.
 | **Table** | `sortable`, `sort`, `fixed-header`, `table-reorder` | Column sorting, fixed headers, row reorder |
 | **Accordion** | `accordion` | Collapsible sections (`single` or `multi` mode) |
 | **Breadcrumb** | `breadcrumb` | Auto-generated breadcrumb from route hierarchy |
-| **Scroll Spy** | `scroll-spy` | Highlight nav items based on scroll position |
+| **Scroll Spy** | `spy`, `spy-offset`, `spy-threshold` | Highlight nav items based on scroll position (`<a href="#id" spy>`) |
 | **Virtual List** | `virtual-list` | Virtualized rendering for large lists |
 
 ```html
@@ -472,9 +474,10 @@ NoJS Elements is a UI plugin library with 17 declarative, accessible components.
 <div modal="myModal"><h2>Title</h2><p>Content</p><button modal-close>Close</button></div>
 
 <!-- Tabs -->
+<!-- [tab] and [panel] are direct children of [tabs], paired by order -->
 <div tabs>
-  <button tab="one">Tab 1</button><button tab="two">Tab 2</button>
-  <div panel="one">Panel 1</div><div panel="two">Panel 2</div>
+  <button tab>Tab 1</button><button tab>Tab 2</button>
+  <div panel>Panel 1</div><div panel>Panel 2</div>
 </div>
 
 <!-- Sortable drag list -->
@@ -539,6 +542,7 @@ Certain directive combinations on the same element produce unexpected behavior. 
 | `router.scrollBehavior` | `"top"` | `"top"` / `"preserve"` / `"smooth"` |
 | `router.templates` / `router.ext` | `"pages"` / `".tpl"` | File-based routing base path and extension |
 | `router.viewTransition` | `true` | Enable View Transition API |
+| `router.strictOutlets` | `false` | Opt-in: only the default outlet looks routes up in `router.templates`; a named outlet without `src` is filled only by `outlet="name"` routes and cleared otherwise (default: it requests `pages/<route>.tpl` and can render the wildcard or 404) |
 | `i18n.defaultLocale` / `fallbackLocale` | `"en"` / `"en"` | Default and fallback locale |
 | `i18n.loadPath` | `null` | External locale files: `"/locales/{locale}.json"` |
 | `i18n.ns` | `[]` | Namespaces to preload |
@@ -558,8 +562,9 @@ Certain directive combinations on the same element produce unexpected behavior. 
 | `strictDevtools` | `false` | Opt-in: devtools events local-host only; snapshots, config and fetch URLs redacted |
 | `strictJsonld` | `false` | Opt-in: always JSON-escape `page-jsonld` placeholders inside strings |
 | `strictBindings` | `false` | Opt-in: reject `bind-on*` handler attributes, sanitize `bind-srcdoc` like `bind-html`. Set before `init()`; cannot be turned off after |
+| `strictUnmounted` | `false` | Opt-in: `on:unmounted` also fires (once, on the next microtask) when a directive removes the element (`if` / `else-if`, `each`, route change); a keyed `each` row that only moved no longer fires it |
 
-All opt-in flags default to `false` (v1.21.1 behavior). Most take effect immediately, before or after `init()`; `strictDirectives` applies to registrations made after it is set (the core registry freezes at load), `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale, and `strictBindings` is read when each binding initializes. See [core/config.md](references/core/config.md#opt-in-hardening-flags).
+All opt-in flags default to `false` (v1.21.1 behavior). Most take effect immediately, before or after `init()`; `strictDirectives` applies to registrations made after it is set (the core registry freezes at load), `i18n.strictLocale` only to the `NoJS.i18n()` call that restores the persisted locale, `strictBindings` is read when each binding initializes, and `router.strictOutlets` applies from the next navigation. See [core/config.md](references/core/config.md#opt-in-hardening-flags).
 
 ```javascript
 NoJS.config({
@@ -713,7 +718,7 @@ All paths relative to `nojs/references/`:
 
 | Property | Value |
 |----------|-------|
-| **Version** | 1.22.0 |
+| **Version** | 1.23.0 |
 | **Website** | <https://no-js.dev/> |
 | **CDN (core)** | `https://cdn.no-js.dev/` |
 | **CDN (elements)** | `https://cdn-elements.no-js.dev/` |
