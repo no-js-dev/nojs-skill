@@ -68,8 +68,9 @@ NoJS.config({
   strictDirectives: false,
   strictDevtools: false,
   strictJsonld: false,
-  strictBindings: false
-  // plus templates.pageRelative, i18n.escapeParams, i18n.strictLocale
+  strictBindings: false,
+  strictUnmounted: false
+  // plus router.strictOutlets, templates.pageRelative, i18n.escapeParams, i18n.strictLocale
 });
 ```
 

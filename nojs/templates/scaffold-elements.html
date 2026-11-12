@@ -7,58 +7,57 @@
     <script src="https://cdn.no-js.dev/"></script>
     <script src="https://cdn-elements.no-js.dev/"></script>
 </head>
-<body state="{ activeTab: 'home' }">
+<body state="{ saved: 0 }">
 
     <main style="max-width: 800px; margin: 2rem auto; font-family: system-ui, sans-serif;">
 
         <h1>My NoJS Elements App</h1>
 
-        <!-- Tabs -->
-        <div tabs bind-active="activeTab">
-            <div role="tablist">
-                <button tab="home">Home</button>
-                <button tab="features">Features</button>
-                <button tab="about">About</button>
-            </div>
-            <div tab-panel="home">
+        <!-- Tabs: [tab] and [panel] are direct children of [tabs], paired by order -->
+        <div tabs>
+            <button tab>Home</button>
+            <button tab>Features</button>
+            <button tab>About</button>
+
+            <div panel>
                 <h2>Welcome</h2>
                 <p>This starter uses NoJS Core + Elements for rich UI components.</p>
             </div>
-            <div tab-panel="features">
+            <div panel>
                 <h2>Features</h2>
-                <!-- Accordion -->
+                <!-- Accordion: native <details>/<summary>, one open at a time -->
                 <div accordion>
-                    <details accordion-item>
+                    <details>
                         <summary>Reactive State</summary>
                         <p>Proxy-backed objects that update the DOM automatically.</p>
                     </details>
-                    <details accordion-item>
+                    <details>
                         <summary>UI Elements</summary>
                         <p>Pre-built components: tabs, accordion, modal, toast, tooltip, and more.</p>
                     </details>
-                    <details accordion-item>
+                    <details>
                         <summary>Zero Dependencies</summary>
                         <p>No build step, no bundler. Just HTML.</p>
                     </details>
                 </div>
             </div>
-            <div tab-panel="about">
+            <div panel>
                 <h2>About</h2>
                 <p>Built with <a href="https://no-js.dev">No.JS</a>.</p>
             </div>
         </div>
 
-        <!-- Modal -->
-        <button on:click="document.querySelector('[modal]').showModal()">Open Modal</button>
-        <dialog modal>
+        <!-- Modal: modal-open="id" opens the [modal="id"] element, modal-close closes it -->
+        <button modal-open="hello">Open Modal</button>
+        <div modal="hello">
             <h2>Hello from NoJS Elements</h2>
             <p>This modal uses the Elements <code>modal</code> directive.</p>
-            <button on:click="document.querySelector('[modal]').close()">Close</button>
-        </dialog>
+            <button modal-close>Close</button>
+        </div>
 
-        <!-- Toast -->
-        <div toast-container position="top-right"></div>
-        <button on:click="$toast({ message: 'Hello!', type: 'success', duration: 3000 })">
+        <!-- Toast: $toast(message, type?, duration?) -->
+        <div toast-container="top-right"></div>
+        <button on:click="saved++; $toast('Saved ' + saved + ' time(s)', 'success', 3000)">
             Show Toast
         </button>
 
