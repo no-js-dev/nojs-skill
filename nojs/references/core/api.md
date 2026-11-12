@@ -221,7 +221,7 @@ Register a custom form validator.
 
 Only the names of the built-in rules of the NoJS Elements `validate` directive are reserved: `required`, `email`, `url`, `min` and `max`. Registering one of them logs `"<name>" is a built-in validator and cannot be overridden` and does nothing. Every other name can be registered, including `minlength`, `maxlength`, `pattern`, `match`, `number`, `integer`, `alpha` and `alphanumeric` -- the `validate` directive has no rule with those names, so register your own if you want to use them.
 
-Validators are run by NoJS Elements, which reads the registry when it installs: register them before the Elements script loads.
+Validators are run by NoJS Elements, which reads the registry each time a field validates: register them before or after the Elements script. Registering a name again replaces the validator from the next validation on.
 
 ```javascript
 NoJS.validator('username', (value) => {
