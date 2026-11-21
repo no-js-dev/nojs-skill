@@ -19,6 +19,7 @@ Navigation breadcrumb trail with two modes: manual (child elements define crumbs
   - [Auto-Track with Router](#auto-track-with-router)
   - [Custom Separator](#custom-separator)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -272,3 +273,7 @@ The breadcrumb works with any NoJS directive for dynamic content:
 - Use `if` / `show` for conditional crumbs (e.g., show user name only when logged in)
 - Use `route` alongside auto-track mode for automatic breadcrumb generation
 - Use `state` on a parent to share navigation data across components
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Manual mode is the same. Auto-track mode (no children) builds the trail from the page path and updates after each host navigation.

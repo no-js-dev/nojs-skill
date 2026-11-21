@@ -51,6 +51,11 @@ Plugins extend NoJS with custom directives, filters, validators, interceptors, a
   - [Feature Flags Plugin](#feature-flags-plugin)
   - [Custom Directive Plugin](#custom-directive-plugin)
 - [Best Practices](#best-practices)
+- [Server-Rendered Hosts (plugin host API)](#server-rendered-hosts-plugin-host-api)
+  - [Two Backends, One Plugin](#two-backends-one-plugin)
+  - [The Host API](#the-host-api)
+  - [The Attribute Contract](#the-attribute-contract)
+  - [Morph Lifecycle](#morph-lifecycle)
 
 ---
 
@@ -679,3 +684,68 @@ const LazyLoadPlugin = {
 5. **Use `NoJS.use(plugin, { trusted: true })` sparingly** -- Only for plugins that genuinely need access to credentials
 6. **Prefer `NoJS.global()` over direct store mutation** -- Globals have built-in security checks
 7. **Document your plugin's globals** -- Users need to know which `$variables` your plugin exposes
+
+---
+
+## Server-Rendered Hosts (plugin host API)
+
+A host that implements the NoJS plugin host API, such as a site compiled by NoJS-Server, evaluates every expression on the server and sends rendered HTML. The browser runs a thin integrator instead of core: there is no expression evaluator and no client state. Plugins still register directives, but each directive only does DOM mechanics. NoJS Elements ships every element this way; with the CDN core nothing changes for a plugin.
+
+### Two Backends, One Plugin
+
+The integrator marks its registrar and its `window.NoJS` compat object with `hostApi` (the host API version, `>= 1`); core never defines it. A plugin checks it in `install`:
+
+```javascript
+export default {
+  name: 'my-plugin',
+  install(NoJS) {
+    if (typeof NoJS.hostApi === 'number' && NoJS.hostApi >= 1) {
+      // host backend: init(el, host)
+      NoJS.directive('my-dir', { priority: 20, init(el, host) { /* DOM mechanics */ } });
+    } else {
+      // core backend: init(el, name, value)
+      NoJS.directive('my-dir', { priority: 20, init(el, name, value) { /* ... */ } });
+    }
+  },
+  contract: { directives: { 'my-dir': { attrs: { 'my-dir': 'expression' } } } },
+};
+```
+
+On the host, `init` receives `(el, host)`. The directive value is `el.getAttribute(name)`, already compiled by the server.
+
+### The Host API
+
+| Member | Purpose |
+|--------|---------|
+| `host.value(el, attr)` | The server-evaluated value of an `expression` attribute (parsed JSON) |
+| `host.watch(el, attr, cb)` | Called with `(value, previous)` when a server re-render changes that attribute; returns an unwatch function |
+| `host.exec(key, payload)` | Runs a compiled `statement` attribute on the server (`key` is the attribute's value); `payload` carries the implicit variables |
+| `host.onDispose(el, fn)` | Cleanup when the element leaves the page or is re-initialized |
+| `host.disposeTree(el)` | Runs the disposers of an element's subtree |
+| `host.validators` | Client-side validator map (compiled `validate` runs on the server) |
+| `host.warn(msg)` | Warning in the host's console channel |
+
+After a host navigation the integrator dispatches `nojs:navigate` on `document` (`detail.path`), so mechanics that follow the route (a breadcrumb in auto mode) work without a client router.
+
+### The Attribute Contract
+
+The plugin object's `contract.directives` types every attribute, so the host's compiler knows what to compile and what to leave for the client:
+
+| Declared type | What the browser receives | Mechanics use |
+|---------------|---------------------------|---------------|
+| `literal` (default) | The author's text | Read it |
+| `path` | The author's text (resolved on the server only) | Selector text |
+| `expression` | The evaluated value as JSON (`deliver: "value"`), or an opaque sealed reference (`deliver: "sealed"`) | `host.value`, or echo the reference back in a payload |
+| `statement` | A binding key | `host.exec(key, payload)` |
+
+- **`literalOn`**: an object declaration may name elements on which the attribute is a literal. NoJS Elements declares `toast` as `{ type: "expression", literalOn: ["button", "a", "[on:click]"] }`: message text on a button, a link or an `on:click` element, a watched expression elsewhere.
+- **`implicit`**: the variables a statement may use (`$drag`, `$dropIndex`, ...) become schema-validated payload members. DOM-only variables are build errors. A `sealed` member takes one reference. A member declared `sealed: { multiple: true, maxItems }` (default cap 100) also takes a list of distinct references, each unsealed on its own; Elements' `drop` declares `$drag` this way for `drag-multiple` selections.
+- **`list`**: a directive that renders an array from state through a row template declares `{ path, template, item, itemDefault, wrapper }` (Elements' `drag-list`). The host renders the rows, delivers each row's item sealed, and compiles move, insert and remove by index to actions. The mechanics only report indices.
+
+### Morph Lifecycle
+
+Server responses update the page by morphing it:
+
+- **`subtree: true`** on a directive definition marks a directive that restructures or annotates its descendants (tab lists, stepper indicators, `drag-list` rows). While the server markup is unchanged, the morph keeps the built subtree and applies only the server's attribute changes. When the markup changes, the directive is disposed, the server markup is applied and the directive is re-initialized on it. Keep user state (selected tab, current step) on the element to carry it across that re-init.
+- Attributes a directive's `init` sets, on any element, and attributes the client adds between morphs are never removed by a morph. Server-rendered attributes still update.
+- Directives initialize in document order, then by priority. All of an element's directives are matched before any runs, so an attribute a directive adds to its own element never starts another directive there (core's behavior).

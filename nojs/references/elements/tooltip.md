@@ -15,6 +15,7 @@ Lightweight tooltip shown on hover/focus. Positioned relative to the trigger ele
   - [Tooltip Positions](#tooltip-positions)
   - [Conditionally Disabled Tooltip](#conditionally-disabled-tooltip)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -171,3 +172,7 @@ Tooltips work with any NoJS directive on the same element or its ancestors:
 - Use `tooltip-disabled` with reactive expressions to toggle tooltips
 - Use `if` / `show` on the trigger element for conditional rendering
 - Use `state` on a parent to share data across tooltipped elements
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same; `tooltip-disabled` is evaluated on the server, and a change hides a visible tooltip.

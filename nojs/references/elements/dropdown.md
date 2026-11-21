@@ -14,6 +14,7 @@ Accessible dropdown menu with keyboard navigation. Four directives: `dropdown` (
   - [Dropdown with Links](#dropdown-with-links)
   - [Dropdown with Disabled Items](#dropdown-with-disabled-items)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -210,3 +211,9 @@ The dropdown works with any NoJS directive inside its menu:
 - Use `if` / `show` inside items for conditional content
 - Use `on:click` on items to handle selection
 - Use `state` on a parent to share data across the menu
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same. `NoJS.dropdown` is available to page scripts.
+
+A menu without an `id` gets `nojs-dd-menu-<n>`, the lowest number no element of the page uses yet, so the same markup gets the same ids on both hosts. The menu carries the native `popover` attribute, but the popover directive never initializes on it: the dropdown owns it.

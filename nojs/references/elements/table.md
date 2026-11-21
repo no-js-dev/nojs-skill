@@ -18,6 +18,7 @@ Sortable table with fixed headers, sticky columns, and drag-and-drop row reorder
   - [Fixed Header and Fixed Column](#fixed-header-and-fixed-column)
   - [Row Reorder with Drag Handle](#row-reorder-with-drag-handle)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -70,6 +71,8 @@ Add the `sortable` attribute to a `<table>` and `sort` attributes to each `<th>`
 | `sort` | string | *required* | Column key used for sorting (matches data property name) |
 | `sort-type` | `"string"` \| `"number"` \| `"date"` | `"string"` | Sort comparison type |
 | `sort-default` | `"asc"` \| `"desc"` | -- | Default sort direction on load |
+
+`sort` marks a column only on a `<th>` inside a `<table>`. Elsewhere `sort` is core's loop companion (`<li each="t in tasks" sort="t.title">`), and the table element leaves it alone: loop rows get no `data-sortable`, `aria-sort` or `tabindex`.
 
 ### Fixed Header
 
@@ -292,3 +295,7 @@ The table directives work with any NoJS directive:
 - Use `if` / `show` for conditional rows or columns
 - Use `on:table:reorder` to react to row reorder events
 - Use `state` on a parent to share data across the table
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. `sortable`, `sort`, `fixed-header`, `fixed-col` and `table-reorder` work on the rendered rows: sorting and reordering move the rows in the page, as they do here for a table without an `each` loop. A table rendered from an `each` loop is not re-sorted in its data, so other bindings that read the array keep its order. After a server re-render of the rows the current sort is applied again. Sorted rows stay where the rows were, so a loop's end marker stays after them.

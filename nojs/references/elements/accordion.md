@@ -18,6 +18,7 @@ Collapsible content sections built on native `<details>` / `<summary>` elements.
   - [Nested Accordions](#nested-accordions)
   - [Dynamically Added Sections](#dynamically-added-sections)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -283,3 +284,7 @@ The accordion works with any NoJS directive inside its sections:
 - Use `if` / `show` inside sections for conditional content
 - Use `on:nojs:accordion-change` to react to state changes
 - Use `state` on a parent to share data across sections
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same. A server re-render of the accordion's content re-initializes it on the new markup; the items keep the `open` state the server renders and the user's toggles while the content is unchanged.

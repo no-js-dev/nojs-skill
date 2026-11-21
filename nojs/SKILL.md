@@ -442,7 +442,7 @@ Outputs are what an `en-US` browser shows. `number`, `currency`, `date` and `dat
 
 ## 5. NoJS Elements
 
-NoJS Elements is a UI plugin library with 17 declarative, accessible components. Requires No.JS >= 1.13.0.
+NoJS Elements is a UI plugin library with 17 declarative, accessible components. Requires No.JS >= 1.13.0. Every element also runs on server-rendered hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`, e.g. sites compiled by NoJS-Server), where expressions run on the server: see each element reference's "Server-Rendered Hosts" section and [core/plugins.md](references/core/plugins.md#server-rendered-hosts-plugin-host-api).
 
 **CDN** (auto-installs): `<script src="https://cdn-elements.no-js.dev/"></script>` (after core script).
 
@@ -466,7 +466,7 @@ NoJS Elements is a UI plugin library with 17 declarative, accessible components.
 | **Accordion** | `accordion` | Collapsible sections (`single` or `multi` mode) |
 | **Breadcrumb** | `breadcrumb` | Auto-generated breadcrumb from route hierarchy |
 | **Scroll Spy** | `spy`, `spy-offset`, `spy-threshold` | Highlight nav items based on scroll position (`<a href="#id" spy>`) |
-| **Virtual List** | `virtual-list` | Virtualized rendering for large lists |
+| **Virtual List** | `virtual`, `virtual-height`, `virtual-buffer` | Virtualized rendering of an `each` loop (`virtual` is required) |
 
 ```html
 <!-- Modal -->

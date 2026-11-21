@@ -17,6 +17,7 @@ Highlights navigation elements based on which section is currently visible in th
   - [Mixed Link and Button Spies](#mixed-link-and-button-spies)
   - [Tab-Style Navigation](#tab-style-navigation)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -302,3 +303,7 @@ Scroll spy works with any NoJS directive for dynamic navigation:
 - Use `if` / `show` to conditionally display navigation items
 - Use `on:click` for custom behavior or analytics tracking
 - Use `class-*` for additional conditional styling beyond `.active`
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same.

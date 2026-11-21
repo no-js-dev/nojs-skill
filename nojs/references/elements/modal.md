@@ -15,6 +15,7 @@ Overlay dialog using the native Popover API (`popover="manual"`). Features focus
   - [Edit Form Modal](#edit-form-modal)
   - [Nested (Stacked) Modals](#nested-stacked-modals)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -305,3 +306,7 @@ Modals work with any NoJS directive inside their content:
 - Use `on:click` on `modal-close` buttons for side effects (save, delete, etc.)
 - Use `state` on a parent to share data between the page and modal content
 - Use `modal-class` to add custom CSS classes for styling variants
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same. `NoJS.modal` is available to page scripts.

@@ -20,6 +20,7 @@ Multi-step wizard/process flow. Two directives: `stepper` (container) and `step`
   - [Free-Mode Stepper](#free-mode-stepper)
   - [Stepper with Form Validation and Custom Events](#stepper-with-form-validation-and-custom-events)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -304,3 +305,7 @@ Expressions cannot call `post()` or other request functions. To send the data, u
 - Use `if` / `show` for conditional content per step
 - Use `state` on the stepper or a parent to share data across steps
 - Use `on:nojs:stepper-complete` to react when the user finishes the last step
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. The indicator, navigation, `step-validate` and the `stepper-validate` gate work the same; `step-validate` is evaluated on the server and read when Next is pressed. A server re-render of the steps keeps the current step. Each indicator tab is linked to its panel (`aria-controls` / `aria-labelledby`) from the first render, on both hosts. `$stepper` is not available to expressions, because expressions run on the server: use the built-in Previous/Next buttons or the indicator.
