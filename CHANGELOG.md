@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/no-js-dev/nojs-skill/compare/v1.23.0...HEAD)
 
+Synced with NoJS Elements [#126](https://github.com/no-js-dev/nojs-elements/pull/126), [#127](https://github.com/no-js-dev/nojs-elements/pull/127), [#128](https://github.com/no-js-dev/nojs-elements/pull/128) and NoJS-Server [#61](https://github.com/no-js-dev/nojs-server/pull/61), [#73](https://github.com/no-js-dev/nojs-server/pull/73).
+
+### Added
+
+- "Server-Rendered Hosts" section in every `elements/*.md`: how each element behaves on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`, e.g. NoJS-Server compiled sites), including `drag-list` (server-rendered rows; reorder, move and copy run on the server) and `drag-multiple` (at most 100 items per selection drag)
+- `core/plugins.md` "Server-Rendered Hosts (plugin host API)": the two backends (`init(el, host)`), the host API (`value`, `watch`, `exec`, `onDispose`, `disposeTree`, `validators`, `warn`), the `nojs:navigate` event, the attribute contract (`literal` / `path` / `expression` / `statement`, `literalOn`, `implicit`, `sealed: { multiple }`, `list`) and the morph lifecycle (`subtree: true`, client-owned attributes, core-order initialization)
+- `SKILL.md` points Elements users at the server-rendered host notes
+
+### Fixed
+
+- `elements/virtual-list.md` documented an attribute set the element does not have (`virtual-list`, `virtual-list-item-size`, `virtual-list-height`). It now documents `virtual` (required), `virtual-height` and `virtual-buffer` on a container with an `each` loop, as NoJS Elements implements them; `SKILL.md`'s element table follows
+- `elements/table.md`: `sort` marks a column only on a `<th>` inside a `<table>`; elsewhere it is core's loop companion and the table element leaves it alone (Elements #126)
+- `elements/stepper.md`, `dropdown.md`, `dnd.md`: the Elements #128 changes (tab/panel ARIA links from the first render, `nojs-dd-menu-<n>` ids and no popover directive on a dropdown menu, the live-region label from the visible text)
+
 ## [1.23.0](https://github.com/no-js-dev/nojs-skill/compare/v1.22.0...v1.23.0) — 2026-11-12
 
 Synced with NoJS Core 1.23 and NoJS Elements 1.23. The new opt-in flags default to `false`, so v1.22.0 behavior is unchanged without them.

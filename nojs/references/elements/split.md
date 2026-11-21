@@ -18,6 +18,7 @@ Resizable split pane layout. A container with `split` holds two or more `pane` c
   - [Persisted Vertical Split with Collapsible Pane](#persisted-vertical-split-with-collapsible-pane)
   - [Nested Splits (IDE Layout)](#nested-splits-ide-layout)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -225,3 +226,7 @@ The split element works with any NoJS directive inside its panes:
 - Use `if` / `show` for conditional pane content
 - Use `on:split-resize` and `on:split-collapse` to react to layout changes
 - Use `state` on a parent to share data across panes
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same. A server re-render of the panes' content re-initializes the split, so pane sizes reset unless `split-persist` stores them.

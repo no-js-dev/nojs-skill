@@ -16,6 +16,7 @@ Loading placeholder with shimmer animation. Shows a skeleton overlay while a rea
   - [Circle Avatar Skeleton](#circle-avatar-skeleton)
   - [Card Skeleton](#card-skeleton)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -173,3 +174,7 @@ The skeleton works with any NoJS directive inside its content:
 - Use `bind` / `bind-html` for dynamic content revealed after loading
 - Use `each` / `foreach` / `for` inside skeleton containers for list content
 - Use `state` on a parent to control the loading flag across multiple skeletons
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. The `skeleton` expression is evaluated on the server. When its value changes, the server re-renders the attribute and the element switches state (without the fade transition core runs on a reactive change).

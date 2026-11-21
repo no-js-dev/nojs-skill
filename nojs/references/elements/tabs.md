@@ -17,6 +17,7 @@ Tabbed content panels with roving tabindex keyboard navigation. Three directives
   - [Vertical Tabs with Disabled Tab](#vertical-tabs-with-disabled-tab)
   - [Dynamic Tabs from Data Array](#dynamic-tabs-from-data-array)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -290,3 +291,7 @@ The tabs element works with any NoJS directive inside its panels:
 - Use `if` / `show` for conditional content within panels
 - Use `get` / `post` to load panel content on demand
 - Use `state` on a parent to share data across panels
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same; `tab-disabled` is evaluated on the server. A server re-render of the tabs keeps the selected tab and the generated ids.

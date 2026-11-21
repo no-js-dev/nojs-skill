@@ -22,6 +22,7 @@ Declarative drag-and-drop system covering four directives: `drag` (make elements
   - [Sortable Task List](#sortable-task-list)
   - [Kanban Board with Multiple Lists](#kanban-board-with-multiple-lists)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -206,6 +207,7 @@ NoJS adds ARIA attributes for assistive technology:
 - `role="listbox"` on `drag-list` containers
 - `role="option"` on `drag-list` items
 - Keyboard support: `Space` to grab/release, arrow keys to move within a `drag-list`
+- A live region announces each grab, move and drop. A grabbed item is named by its `aria-label`, else by its visible text (hidden content left out, whitespace collapsed), cut at 50 characters
 
 ---
 
@@ -323,3 +325,12 @@ Drag and drop integrates with the full NoJS directive system:
   </ul>
 </div>
 ```
+
+## Server-Rendered Hosts
+
+These directives also run on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes.
+
+- `drag`: the dragged value is delivered as an opaque reference; `drag-disabled` is a server-evaluated value.
+- `drop`: the statement runs on the server with the implicit variables the mechanics report (`$drag`, `$dropIndex`, `$source.index`, `$target.index`, `$dragType`, `$dragEffect`). `$el`, `$source.el` and `$target.el` are not available.
+- `drag-list`: the server renders the rows from the array (one `display: contents` wrapper per item, the template rendered with the item and `$index` / `$count` / `$first` / `$last` / `$even` / `$odd`) and runs the edits: reorder, move to another list (insert there, then remove here) and copy. Markup, keyboard support and classes are the same. The `nojs:dnd-reorder` / `-receive` / `-remove` events fire with `list` and `fromList` set to `null`, because the array lives on the server.
+- `drag-multiple`: selection works the same; dragging a selection sends the selected items (at most 100: a larger selection is refused by the server).

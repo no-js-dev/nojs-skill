@@ -17,6 +17,7 @@ Non-blocking notification messages with auto-dismiss and type-based styling. Two
   - [Declarative Toast on Form Submit](#declarative-toast-on-form-submit)
   - [Multiple Containers at Different Positions](#multiple-containers-at-different-positions)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -244,3 +245,7 @@ The toast system works with any NoJS directive:
 - Use declarative `toast` with reactive expressions for condition-based notifications
 - Use `state` on a parent to drive toast visibility from shared data
 - Combine with `get` / `post` to show toasts on API success or failure
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. `toast` on a button, a link or an element with `on:click` shows its text on click, as here. On any other element `toast` is an expression evaluated on the server: a new truthy value shows a toast. `toast-container` works the same. `$toast(...)` is not available to expressions, because expressions run on the server; `NoJS.toast(...)` works from page scripts.

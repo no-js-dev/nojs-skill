@@ -15,6 +15,7 @@ Rich content popover anchored to a trigger element. Uses three directives: `popo
   - [Navigation Menu Popover](#navigation-menu-popover)
   - [Right-positioned Popover](#right-positioned-popover)
 - [Composition with NoJS Directives](#composition-with-nojs-directives)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ---
 
@@ -213,3 +214,7 @@ Popovers work with any NoJS directive inside their content:
 - Use `get` / `post` to fetch data when the popover opens
 - Use `on:click` on elements inside the popover for actions
 - Use `state` on a parent to share data between the trigger and popover content
+
+## Server-Rendered Hosts
+
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. Markup and behavior are the same. `NoJS.popover` is available to page scripts.

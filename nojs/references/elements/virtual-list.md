@@ -1,52 +1,41 @@
 # Virtual List
 
-Renders only the visible portion of large lists and tables for performance. Supports fixed-height and auto-height modes. Works with `<ul>`, `<ol>`, `<table>`, `<dl>`, and any block container. Uses standard HTML elements with NoJS directive attributes -- no custom element registration required.
+Renders large datasets efficiently by virtualizing the DOM. Only the items visible within the scroll viewport (plus a configurable overscan buffer) are rendered at any time, while off-screen items are replaced by lightweight spacer elements. Works with any container/child HTML pattern: `<ul>/<li>`, `<table>/<tbody>/<tr>`, `<div>/<div>`, `<dl>`, and more.
 
 ## Contents
 
-- [Installation](#installation)
 - [Basic Usage](#basic-usage)
 - [Attributes](#attributes)
 - [Fixed Height Mode](#fixed-height-mode)
 - [Auto Height Mode](#auto-height-mode)
 - [Table Virtualization](#table-virtualization)
+- [List Virtualization](#list-virtualization)
+- [Buffer (Overscan)](#buffer-overscan)
 - [Loop Context Variables](#loop-context-variables)
-- [Events](#events)
 - [CSS Classes](#css-classes)
+  - [Built-in Styles](#built-in-styles)
 - [CSS Custom Properties](#css-custom-properties)
 - [Accessibility](#accessibility)
-- [Examples](#examples)
-  - [Large List with Fixed Item Height](#large-list-with-fixed-item-height)
-  - [Table Virtualization with Dynamic Data](#table-virtualization-with-dynamic-data)
-  - [Definition List with Auto Height](#definition-list-with-auto-height)
-- [Composition with NoJS Directives](#composition-with-nojs-directives)
-
----
-
-## Installation
-
-```html
-<!-- CDN (auto-installs, no registration needed) -->
-<script src="https://cdn-elements.no-js.dev/nojs-elements.iife.js"></script>
-```
-
-Requires No.JS >= 1.13.0.
-
----
+- [Advanced Examples](#advanced-examples)
+  - [Virtualized Definition List](#virtualized-definition-list)
+  - [Dynamic Data Updates](#dynamic-data-updates)
+  - [Each Binding](#each-binding)
+- [API Reference](#api-reference)
+- [Server-Rendered Hosts](#server-rendered-hosts)
 
 ## Basic Usage
 
-Add the `virtual-list` attribute to a container, pointing to the array in state. Provide a single child element as the item template -- it will be repeated for each visible item.
+Add `virtual` (with `virtual-height`) to a container that has an `each` (or `foreach` / `for`) binding. The element intercepts the loop, manages scroll virtualization, and renders only the visible slice.
 
 ```html
-<div state="{ items: [] }" get="/api/items | items">
-  <ul virtual-list="items" virtual-list-item-size="48" virtual-list-height="300px">
-    <li bind="item.label"></li>
+<div state="{ items: Array.from({ length: 10000 }, (_, i) => ({ name: 'Item ' + i })) }">
+  <ul virtual virtual-height="40" style="height: 400px;">
+    <li each="item in items" bind="item.name"></li>
   </ul>
 </div>
 ```
 
-The virtual list renders only the items visible in the scrollable area plus a configurable buffer above and below, keeping DOM node count low regardless of list size.
+The container must have a fixed height (via CSS `height`, `max-height`, or flex/grid constraints) so the virtual scroller knows the viewport size.
 
 ---
 
@@ -54,22 +43,19 @@ The virtual list renders only the items visible in the scrollable area plus a co
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `virtual-list` | path | *required* | Path to array in state (same syntax as `each` / `foreach`) |
-| `virtual-list-height` | CSS value | `"auto"` | Container height. Use explicit height (`"400px"`) for fixed mode or `"auto"` for viewport-based |
-| `virtual-list-item-size` | number | -- | Fixed item height in pixels. Required for fixed-height mode. Omit for auto-height mode |
-| `virtual-list-buffer` | number | `5` | Number of extra items rendered above and below the visible area (overscan) |
-
-The `virtual-list` attribute is placed on the container element (`<ul>`, `<ol>`, `<table>`, `<dl>`, or `<div>`). The first child element serves as the item template.
+| `virtual` | boolean attr | -- | Enables virtualization on the container. Required: `virtual-height` and `virtual-buffer` alone do nothing |
+| `virtual-height` | number \| `"auto"` | `50` | Row height in pixels. Use a fixed number for uniform rows, or `"auto"` to measure each row dynamically. |
+| `virtual-buffer` | number | `5` | Number of extra items rendered above and below the visible range (overscan). Higher values reduce flicker during fast scrolling. |
 
 ---
 
 ## Fixed Height Mode
 
-Set `virtual-list-item-size` to a pixel value. All items are assumed to be the same height. This is the most performant mode because scroll positions can be calculated without measuring DOM elements.
+When every row has the same height, set `virtual-height` to the pixel value. This is the most performant mode because scroll offsets are calculated arithmetically without measuring DOM nodes.
 
 ```html
-<ul virtual-list="items" virtual-list-item-size="48" virtual-list-height="400px">
-  <li bind="item.name"></li>
+<ul virtual virtual-height="50" virtual-buffer="3" style="height: 500px;">
+  <li each="row in rows" bind="row.label"></li>
 </ul>
 ```
 
@@ -77,11 +63,11 @@ Set `virtual-list-item-size` to a pixel value. All items are assumed to be the s
 
 ## Auto Height Mode
 
-Omit `virtual-list-item-size`. Items are measured after first render via ResizeObserver. Supports variable-height items but has slightly more overhead than fixed-height mode.
+When rows have variable heights, set `virtual-height="auto"`. Each rendered row is measured with a `ResizeObserver` and the measured height is stored for future offset calculations. An initial estimate of 50px is used for items not yet measured.
 
 ```html
-<ul virtual-list="items" virtual-list-height="400px">
-  <li>
+<ul virtual virtual-height="auto" style="height: 600px;">
+  <li each="item in items">
     <h3 bind="item.title"></h3>
     <p bind="item.description"></p>
   </li>
@@ -92,56 +78,66 @@ Omit `virtual-list-item-size`. Items are measured after first render via ResizeO
 
 ## Table Virtualization
 
-Works with `<table>`. The spacer elements become `<tr>` with `<td>` cells. Place the item template row inside `<tbody>`.
+Virtual List supports `<table>` containers natively. Spacer elements are rendered as `<tr>` with a `<td>` whose `colspan` matches the number of columns in the first visible row.
 
 ```html
-<div state="{ rows: [] }" get="/api/large-dataset | rows">
-  <table virtual-list="rows" virtual-list-item-size="40" virtual-list-height="500px">
-    <thead><tr><th>Name</th><th>Email</th></tr></thead>
-    <tbody>
-      <tr>
-        <td bind="item.name"></td>
-        <td bind="item.email"></td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+<table virtual virtual-height="36" style="height: 500px; display: block; overflow-y: auto;">
+  <tbody>
+    <tr each="user in users">
+      <td bind="user.name"></td>
+      <td bind="user.email"></td>
+      <td bind="user.role"></td>
+    </tr>
+  </tbody>
+</table>
+```
+
+---
+
+## List Virtualization
+
+Standard `<ul>` and `<ol>` containers work out of the box. Spacer elements are rendered as `<li>`.
+
+```html
+<ol virtual virtual-height="32" style="height: 300px;">
+  <li each="entry in entries" bind="entry.text"></li>
+</ol>
+```
+
+---
+
+## Buffer (Overscan)
+
+The `virtual-buffer` attribute controls how many extra items are rendered beyond the visible viewport in each direction. This prevents blank flashes during fast scrolling.
+
+```html
+<!-- Render 10 extra items above and below the viewport -->
+<ul virtual virtual-height="40" virtual-buffer="10" style="height: 400px;">
+  <li each="item in items" bind="item.name"></li>
+</ul>
 ```
 
 ---
 
 ## Loop Context Variables
 
-The virtual list provides the same context variables as standard NoJS loops:
+Each rendered item receives the same loop context variables as a standard NoJS `each` binding:
 
-| Variable | Description |
-|----------|-------------|
-| `$index` | Current index (0-based) |
-| `$count` | Total number of items |
-| `$first` | `true` if first item |
-| `$last` | `true` if last item |
-| `$even` | `true` if index is even |
-| `$odd` | `true` if index is odd |
+| Variable | Type | Description |
+|----------|------|-------------|
+| `$index` | number | Zero-based index of the item in the full array |
+| `$count` | number | Total number of items in the array |
+| `$first` | boolean | `true` for the first item |
+| `$last` | boolean | `true` for the last item |
+| `$even` | boolean | `true` for even-indexed items (0, 2, 4...) |
+| `$odd` | boolean | `true` for odd-indexed items (1, 3, 5...) |
 
 ```html
-<ul virtual-list="items" virtual-list-item-size="48" virtual-list-height="300px">
-  <li class-even="$even" class-odd="$odd">
+<ul virtual virtual-height="40" style="height: 400px;">
+  <li each="item in items">
     <span bind="$index + 1"></span>. <span bind="item.name"></span>
-    <span if="$first">(First)</span>
-    <span if="$last">(Last)</span>
+    <span show="$first"> (first)</span>
   </li>
-</ul>
-```
-
----
-
-## Events
-
-No custom events are emitted. Use standard NoJS `on:click` and other event directives on the item template.
-
-```html
-<ul virtual-list="items" virtual-list-item-size="48" virtual-list-height="300px">
-  <li on:click="selectItem(item)" bind="item.name"></li>
 </ul>
 ```
 
@@ -149,18 +145,18 @@ No custom events are emitted. Use standard NoJS `on:click` and other event direc
 
 ## CSS Classes
 
-| Class / Selector | Applied to | Description |
-|------------------|-----------|-------------|
-| `[data-nojs-virtual]` | Container | Data attribute on the virtualized container |
-| `.nojs-virtual-spacer` | Spacer elements | Invisible spacer elements above and below visible items |
+| Class / Attribute | Applied to | Description |
+|-------------------|-----------|-------------|
+| `data-nojs-virtual` | Container element | Marks the container as a virtual list |
+| `nojs-virtual-spacer` | Generated spacer elements | Top and bottom spacers that maintain scroll height |
 
 ### Built-in Styles
 
 | Selector | Style |
 |----------|-------|
 | `[data-nojs-virtual]` | `overflow-y: auto; position: relative` |
-| `.nojs-virtual-spacer` | `display: block; width: 100%; pointer-events: none; visibility: hidden` |
-| `table .nojs-virtual-spacer` | `display: table-row` |
+| `.nojs-virtual-spacer` | `display: block; visibility: hidden; pointer-events: none; margin/padding/border: 0` |
+| `table .nojs-virtual-spacer`, `tr.nojs-virtual-spacer` | `display: table-row` (spacer rendered as `<tr>` with `<td>`) |
 | `dl .nojs-virtual-spacer` | `display: list-item; list-style: none` |
 
 ---
@@ -169,126 +165,70 @@ No custom events are emitted. Use standard NoJS `on:click` and other event direc
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `--nojs-virtual-list-height` | `auto` | Runtime container height (set programmatically) |
-
-```css
-/* Override container height via CSS */
-.my-virtual-list {
-  --nojs-virtual-list-height: 600px;
-}
-```
+| `--nojs-virtual-list-height` | `auto` | Container height (can be set via CSS instead of inline styles) |
 
 ---
 
 ## Accessibility
 
-NoJS preserves standard list and table semantics:
-
-- `<ul>` / `<ol>` containers maintain list role
-- `<table>` containers maintain table role with `<thead>` / `<tbody>` structure
-- Screen readers see only the rendered items (not the full list)
-- Keyboard scrolling works natively via the scrollable container (`overflow-y: auto`)
-- Tab order follows the natural DOM order of visible items
-
-### Progressive Enhancement
-
-Because the virtual list builds on standard HTML containers, content is accessible without JavaScript:
-
-- **Without NoJS:** all items render in the DOM (no virtualization), standard list/table behavior
-- **With NoJS:** only visible items rendered, spacer elements maintain scroll height, smooth scrolling
+- Spacer elements receive `aria-hidden="true"` so screen readers skip them.
+- The container uses native scroll semantics; no ARIA roles are injected on the container itself.
+- All rendered items retain their original semantics and ARIA attributes from the template.
 
 ---
 
-## Examples
+## Advanced Examples
 
-### Large List with Fixed Item Height
-
-A performant list of 10,000 items using fixed 48px row height.
+### Virtualized Definition List
 
 ```html
-<div state="{ users: [] }" get="/api/users | users">
-  <ul virtual-list="users" virtual-list-item-size="48" virtual-list-height="400px">
-    <li style="display: flex; align-items: center; padding: 0 1rem; height: 48px; border-bottom: 1px solid #E2E8F0;">
-      <span bind="item.name" style="flex: 1;"></span>
-      <span bind="item.email" style="color: #64748B;"></span>
-    </li>
+<dl virtual virtual-height="60" style="height: 400px;">
+  <div each="entry in glossary">
+    <dt bind="entry.term"></dt>
+    <dd bind="entry.definition"></dd>
+  </div>
+</dl>
+```
+
+### Dynamic Data Updates
+
+The virtual list polls the reactive context for array changes. When items are added, removed, or replaced, the visible range re-renders automatically.
+
+```html
+<div state="{ logs: [] }">
+  <button on:click="logs = logs.concat({ msg: 'Entry ' + logs.length })">
+    Add Log
+  </button>
+
+  <ul virtual virtual-height="30" virtual-buffer="5" style="height: 300px;">
+    <li each="log in logs" bind="log.msg"></li>
   </ul>
 </div>
 ```
 
-### Table Virtualization with Dynamic Data
+### Each Binding
 
-A large dataset rendered as a virtualized table with sortable headers.
-
-```html
-<div state="{ rows: [], sortBy: 'name' }"
-     get="/api/employees?sort={sortBy} | rows">
-  <table virtual-list="rows" virtual-list-item-size="40" virtual-list-height="500px" virtual-list-buffer="10">
-    <thead>
-      <tr>
-        <th on:click="sortBy = 'name'" style="cursor: pointer;">Name</th>
-        <th on:click="sortBy = 'department'" style="cursor: pointer;">Department</th>
-        <th on:click="sortBy = 'salary'" style="cursor: pointer;">Salary</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td bind="item.name"></td>
-        <td bind="item.department"></td>
-        <td bind="'$' + item.salary.toLocaleString()"></td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-```
-
-### Definition List with Auto Height
-
-A glossary with variable-height items using auto-height mode.
+The `each` binding is placed on the child element that serves as the repeating template. This follows the self-repeating loop pattern where the element with `each` IS the template that gets cloned for each item.
 
 ```html
-<div state="{ terms: [] }" get="/api/glossary | terms">
-  <dl virtual-list="terms" virtual-list-height="500px" virtual-list-buffer="3">
-    <div>
-      <dt bind="item.term" style="font-weight: 600;"></dt>
-      <dd bind="item.definition" style="margin: 0 0 1rem 0; color: #475569;"></dd>
-    </div>
-  </dl>
-</div>
+<ul virtual virtual-height="40" style="height: 400px;">
+  <li each="item in items" bind="item.name"></li>
+</ul>
 ```
 
 ---
 
-## Composition with NoJS Directives
+## API Reference
 
-The virtual list works with any NoJS directive for dynamic, interactive content:
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `virtual` | boolean attr | -- | Enables virtualization on the container. Required: `virtual-height` and `virtual-buffer` alone do nothing |
+| `virtual-height` | number \| `"auto"` | `50` | Item height in pixels, or `"auto"` for variable-height rows |
+| `virtual-buffer` | number | `5` | Number of overscan items above and below the visible range |
+| `each` / `foreach` / `for` | expression | *required* | Loop binding expression (e.g., `item in items`) |
 
-```html
-<div state="{ products: [], filter: '', loading: true }"
-     get="/api/products | products"
-     get-success="loading = false">
+---
 
-  <input model="filter" placeholder="Search products..." />
-  <p if="loading">Loading products...</p>
+## Server-Rendered Hosts
 
-  <ul virtual-list="products | filterBy('name', filter)"
-      virtual-list-item-size="64"
-      virtual-list-height="400px"
-      show="!loading">
-    <li on:click="selectedProduct = item"
-        class-selected="item.id === selectedProduct?.id">
-      <strong bind="item.name"></strong>
-      <span bind="'$' + item.price" style="color: #64748B;"></span>
-      <span if="item.onSale" style="color: #EF4444;">Sale</span>
-    </li>
-  </ul>
-</div>
-```
-
-- Use `state` and `get` to load large datasets
-- Use `bind` for dynamic content in each item
-- Use `on:click` for item selection and interaction
-- Use `class-*` for conditional styling (selected, highlighted, etc.)
-- Use `if` / `show` for conditional content within items
-- Use `model` with filters to search/filter the virtualized list
-- The `each` binding syntax also works: `<li each="item in largeArray">`
+This element also runs on hosts that implement the NoJS plugin host API (`NoJS.hostApi >= 1`), where expressions are evaluated on the server and the browser receives rendered HTML. With the CDN core nothing on this page changes. The server renders every row of the loop; the browser keeps only the visible window in the page (with the same spacers and ARIA). The page markup is the same, but the HTML sent to the browser holds the whole list.
