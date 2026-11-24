@@ -12,4 +12,5 @@ Thumbs.db
 *.log
 
 # Claude Code local settings
-.claude/
+.claude/*
+!.claude/skills/
