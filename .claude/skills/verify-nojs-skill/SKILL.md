@@ -21,13 +21,16 @@ The feature map in [`features/README.md`](features/README.md) lists what is chec
 There is no server. Launch means: prerequisites present, once per shell.
 
 ```bash
-cd <your NoJS-Skill worktree>
-export NOJS_CORE_PATH=<built core checkout at the skill's version>     # e.g. /Users/erick/_projects/_personal/NoJS/NoJS-v123
-export NOJS_ELEMENTS_PATH=<built NoJS-Elements checkout>                # e.g. /Users/erick/_projects/_personal/NoJS/NoJS-Elements-main
-export PLAYWRIGHT_DIR=<a directory whose node_modules has @playwright/test>   # e.g. a NoJS-Server worktree after npm ci
+cd <your NoJS-Skill worktree>                          # a direct child of the NoJS workspace folder
+NOJS_WORKSPACE="$(cd .. && pwd)"                       # the folder that holds the NoJS repos
+export NOJS_CORE_PATH="$NOJS_WORKSPACE/NoJS"            # core built at the skill's version (default ../NoJS; a release worktree works too)
+export NOJS_ELEMENTS_PATH="$NOJS_WORKSPACE/NoJS-Elements"   # NoJS-Elements, built (default ../NoJS-Elements)
+export PLAYWRIGHT_DIR="$NOJS_WORKSPACE/NoJS-Server--<name>"   # optional: a directory whose node_modules has @playwright/test (a NoJS-Server worktree after npm ci)
 export VSK_EVIDENCE=<where proof should live>                           # default $TMPDIR/verifys-evidence/nojs-skill
 K=.claude/skills/verify-nojs-skill/scripts/vsk.mjs
 ```
+
+When the shared `$NOJS_WORKSPACE/NoJS` (or `NoJS-Elements`) checkout is behind the release, the version check fails; point the variable at a built worktree of that repo at the release tag (for example `$NOJS_WORKSPACE/NoJS-v<x.y.z>`).
 
 This repo has no `package.json`; Playwright is borrowed from `PLAYWRIGHT_DIR`, else `NOJS_SERVER_PATH`, else the core checkout. Its Chromium must be installed (`npx playwright install chromium` in that directory).
 
