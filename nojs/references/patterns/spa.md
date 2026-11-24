@@ -89,9 +89,9 @@ Login + JWT interceptors + dashboard + validation -- all integrated.
   <div store="auth" value="{ user: null, token: null }"></div>
 
   <nav>
-    <a route="/" route-active="active">Home</a>
-    <a route="/dashboard" route-active="active" show="$store.auth.token">Dashboard</a>
-    <a route="/login" show="!$store.auth.token">Login</a>
+    <a href="/" route="/" route-active="active">Home</a>
+    <a href="/dashboard" route="/dashboard" route-active="active" show="$store.auth.token">Dashboard</a>
+    <a href="/login" route="/login" show="!$store.auth.token">Login</a>
     <button on:click="$store.auth.user = null; $store.auth.token = null"
             show="$store.auth.token">
       Sign out
@@ -157,9 +157,9 @@ Login + JWT interceptors + dashboard + validation -- all integrated.
 <script src="https://cdn.no-js.dev/"></script>
 
 <nav>
-  <a route="/" route-active="active">Home</a>
-  <a route="/about" route-active="active">About</a>
-  <a route="/contact" route-active="active">Contact</a>
+  <a href="/" route="/" route-active="active">Home</a>
+  <a href="/about" route="/about" route-active="active">About</a>
+  <a href="/contact" route="/contact" route-active="active">Contact</a>
 </nav>
 
 <main route-view transition="slide"></main>
@@ -311,9 +311,9 @@ Use named `route-view` outlets to render different content areas from the same r
 <!-- Layout shell -->
 <div class="app-layout">
   <aside show="$store.ui.sidebarOpen">
-    <a route="/dashboard" route-active="active">Overview</a>
-    <a route="/dashboard/analytics" route-active="active">Analytics</a>
-    <a route="/dashboard/settings" route-active="active">Settings</a>
+    <a href="/dashboard" route="/dashboard" route-active="active">Overview</a>
+    <a href="/dashboard/analytics" route="/dashboard/analytics" route-active="active">Analytics</a>
+    <a href="/dashboard/settings" route="/dashboard/settings" route-active="active">Settings</a>
   </aside>
 
   <main route-view transition="slide"></main>
@@ -413,7 +413,7 @@ Use a wildcard route to handle unmatched URLs. If you do not define a `route="*"
   <div class="not-found">
     <h1>404</h1>
     <p>Page not found.</p>
-    <a route="/">Go Home</a>
+    <a href="/" route="/">Go Home</a>
   </div>
 </template>
 ```
@@ -425,7 +425,7 @@ You can also use `$route.path` to show what was requested:
   <div class="not-found">
     <h1>404 -- Not Found</h1>
     <p>The page <code bind="$route.path"></code> does not exist.</p>
-    <a route="/">Return to Home</a>
+    <a href="/" route="/">Return to Home</a>
   </div>
 </template>
 ```

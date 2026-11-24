@@ -15,6 +15,10 @@ Synced with NoJS Elements [#126](https://github.com/no-js-dev/nojs-elements/pull
 - `core/plugins.md` "Server-Rendered Hosts (plugin host API)": the two backends (`init(el, host)`), the host API (`value`, `watch`, `exec`, `onDispose`, `disposeTree`, `validators`, `warn`), the `nojs:navigate` event, the attribute contract (`literal` / `path` / `expression` / `statement`, `literalOn`, `implicit`, `sealed: { multiple }`, `list`) and the morph lifecycle (`subtree: true`, client-owned attributes, core-order initialization)
 - `SKILL.md` points Elements users at the server-rendered host notes
 
+### Changed
+
+- Route links carry `href` next to `route` in `SKILL.md`, every reference and `templates/scaffold-spa.html`, and `references/directives/routing.md` explains why: without `href` the anchor cannot be reached with Tab, is not announced as a link, is not crawled and does not open in a new tab, while the router handles the click either way (`href="#/path"` in hash mode, `bind-href` next to `bind-route`). The routing reference and the SPA scaffold no longer link to a literal `/users/:id` or `/users/{{ user.id }}`; they bind the destination (follows NoJS core [#447](https://github.com/no-js-dev/nojs/pull/447); automatic `href` is tracked in [#446](https://github.com/no-js-dev/nojs/issues/446))
+
 ### Fixed
 
 - `elements/virtual-list.md` documented an attribute set the element does not have (`virtual-list`, `virtual-list-item-size`, `virtual-list-height`). It now documents `virtual` (required), `virtual-height` and `virtual-buffer` on a container with an `each` loop, as NoJS Elements implements them; `SKILL.md`'s element table follows

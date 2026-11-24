@@ -63,15 +63,15 @@ Client-side SPA routing with params, guards, nested routes, file-based routing, 
 
 Define a route or create a navigation link.
 
-**Syntax:** `<a route="/path">` (navigation link) or `<template route="/path">` (route definition)
+**Syntax:** `<a href="/path" route="/path">` (navigation link) or `<template route="/path">` (route definition)
 
 Route patterns support `:param` placeholders and `*` wildcard for catch-all/404.
 
 ```html
 <!-- Navigation links -->
-<a route="/">Home</a>
-<a route="/about">About</a>
-<a route="/users/:id">User Detail</a>
+<a href="/" route="/">Home</a>
+<a href="/about" route="/about">About</a>
+<a bind-href="'/users/' + user.id" bind-route="'/users/' + user.id">User Detail</a>
 
 <!-- Route templates -->
 <template route="/">
@@ -90,6 +90,8 @@ Route patterns support `:param` placeholders and `*` wildcard for catch-all/404.
   <p>Path <code bind="$route.path"></code> does not exist.</p>
 </template>
 ```
+
+On a link, write `href` with the same destination next to `route`. The router handles the click either way, but without `href` the anchor is not a link to the browser: it cannot be reached with Tab, screen readers do not announce it, crawlers do not follow it and a middle click opens nothing. Use `href="#/path"` in hash mode, and put `router.base` in `href` while `route` stays relative to it. In history mode a direct visit to the URL needs the server's SPA fallback.
 
 ### `route-view`
 
@@ -150,7 +152,7 @@ Explicit `<template route="...">` declarations always take priority, so you can 
 
 CSS class added to active route links.
 
-**Syntax:** `<a route="/path" route-active="active-class">` or `<a route="/path" route-active-exact="active-class">`
+**Syntax:** `<a href="/path" route="/path" route-active="active-class">` or `<a href="/path" route="/path" route-active-exact="active-class">`
 
 **`route-active`** uses **prefix matching**: the class is applied when the current path starts with the link's route path. Exception: `/` only matches exactly `/` to avoid matching every route.
 
@@ -158,13 +160,13 @@ CSS class added to active route links.
 
 ```html
 <!-- Prefix match: active on /about, /about/team, /about/team/john -->
-<a route="/about" route-active="active">About</a>
+<a href="/about" route="/about" route-active="active">About</a>
 
 <!-- Exact match only: active on /users but NOT /users/123 -->
-<a route="/users" route-active-exact="active">Users</a>
+<a href="/users" route="/users" route-active-exact="active">Users</a>
 
 <!-- Root route always uses exact match internally -->
-<a route="/" route-active="active">Home</a>
+<a href="/" route="/" route-active="active">Home</a>
 ```
 
 ### `guard`
@@ -204,10 +206,10 @@ Control when route templates are fetched.
 
 ```html
 <!-- Prefetch with high priority after init -->
-<a route="/dashboard" lazy="priority">Dashboard</a>
+<a href="/dashboard" route="/dashboard" lazy="priority">Dashboard</a>
 
 <!-- Only fetch when user navigates -->
-<a route="/reports" lazy="ondemand">Reports</a>
+<a href="/reports" route="/reports" lazy="ondemand">Reports</a>
 ```
 
 The router collects the `<a route>`-style links (not `<template route>` definitions), determines the most aggressive `lazy` level per path, and prefetches accordingly. `priority` routes load first; remaining routes load in the background; `ondemand` routes are skipped until navigated. Paths that file-based routing would not render are never fetched from the folder: patterns (`:param`, `*`) and paths that already have an explicit `<template route>` for that outlet. An app that only uses inline `<template route>` definitions therefore makes no `pages/*.tpl` requests at startup.
@@ -260,8 +262,8 @@ Nesting depth is unlimited -- outlets rendered by a layout can themselves contai
 ```html
 <template route="/settings">
   <nav>
-    <a route="/settings/profile">Profile</a>
-    <a route="/settings/security">Security</a>
+    <a href="/settings/profile" route="/settings/profile">Profile</a>
+    <a href="/settings/security" route="/settings/security">Security</a>
   </nav>
   <div route-view></div>  <!-- Nested route content -->
 </template>
@@ -354,7 +356,7 @@ If no `route="*"` wildcard is defined, No.JS automatically shows a minimal 404 m
 ```html
 <template route="*">
   <h1>Page not found</h1>
-  <a route="/">Go home</a>
+  <a href="/" route="/">Go home</a>
 </template>
 ```
 
@@ -660,8 +662,8 @@ Class-based transitions on `route-view` are deprecated in favor of the View Tran
 <script src="https://cdn.no-js.dev/"></script>
 
 <nav>
-  <a route="/">Home</a>
-  <a route="/about">About</a>
+  <a href="/" route="/">Home</a>
+  <a href="/about" route="/about">About</a>
 </nav>
 
 <!-- Just add transition="slide" to the outlet -->
