@@ -24,7 +24,7 @@ Client-side SPA routing with params, guards, nested routes, file-based routing, 
 - [Named Outlet Wildcards](#named-outlet-wildcards) -- per-outlet wildcard fallback
 - [$route.matched](#routematched) -- explicit vs wildcard match detection
 - [Route Head Attributes](#route-head-attributes) -- page-title, page-description, page-canonical, page-jsonld on routes
-- [Accessibility -- focusBehavior](#accessibility--focusbehavior) -- automatic focus management
+- [Accessibility -- focusBehavior](#accessibility----focusbehavior) -- automatic focus management
 - [Scroll Behavior](#scroll-behavior) -- scroll position after navigation
 - [Hash Mode Warning](#hash-mode-warning) -- SEO impact of hash URLs
 - [SPA Deployment Fallback](#spa-deployment-fallback) -- server configuration for history mode

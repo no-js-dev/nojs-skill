@@ -20,6 +20,10 @@ Synced with NoJS Elements [#126](https://github.com/no-js-dev/nojs-elements/pull
 - `elements/virtual-list.md` documented an attribute set the element does not have (`virtual-list`, `virtual-list-item-size`, `virtual-list-height`). It now documents `virtual` (required), `virtual-height` and `virtual-buffer` on a container with an `each` loop, as NoJS Elements implements them; `SKILL.md`'s element table follows
 - `elements/table.md`: `sort` marks a column only on a `<th>` inside a `<table>`; elsewhere it is core's loop companion and the table element leaves it alone (Elements #126)
 - `elements/stepper.md`, `dropdown.md`, `dnd.md`: the Elements #128 changes (tab/panel ARIA links from the first render, `nojs-dd-menu-<n>` ids and no popover directive on a dropdown menu, the live-region label from the visible text)
+- `SKILL.md` `description` was 1039 characters, above the 1024-character Agent Skills limit; it is 1015 now, with every trigger term kept
+- Contents links pointed at headings that do not exist: `directives/binding.md` (`#bind-1`), `i18n.md` (`#t-1`), `styling.md` (`#class-1`, `#style-1`) and `routing.md` (`#accessibility--focusbehavior`)
+- `directives/events.md`: the lifecycle-hook example called functions it never defined (`initChart`, `cleanup`, `fetchInitialData`); it now registers them with `NoJS.global` and calls them as `$initChart($el)`, `$cleanup()` and `$fetchInitialData()`
+- `validation.md`: the CSRF example read a `csrf-token` meta tag it did not include; the tag is now part of the example
 
 ## [1.23.0](https://github.com/no-js-dev/nojs-skill/compare/v1.22.0...v1.23.0) — 2026-11-12
 

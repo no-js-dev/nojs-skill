@@ -4,10 +4,10 @@ Dynamic CSS classes and inline styles. Priority 20.
 
 ## Contents
 
-- [class-*](#class-1) -- toggle CSS class by condition
+- [class-*](#class-) -- toggle CSS class by condition
 - [class-map](#class-map) -- apply multiple classes from object
 - [class-list](#class-list) -- apply classes from array
-- [style-*](#style-1) -- set inline style dynamically
+- [style-*](#style-) -- set inline style dynamically
 - [style-map](#style-map) -- apply multiple inline styles from object
 
 ---
