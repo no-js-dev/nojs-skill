@@ -343,7 +343,7 @@ The response is stored under the `as` key (`data` when `as` is omitted): `$store
 <template id="detailError" var="err">
   <div class="error">
     <p bind="err.message"></p>
-    <a route="/items">Back to list</a>
+    <a href="/items" route="/items">Back to list</a>
   </div>
 </template>
 ```
@@ -474,10 +474,10 @@ Isolate failures so they do not propagate to the entire page:
 
   <!-- Sidebar -->
   <aside show="$store.ui.sidebarOpen">
-    <a route="/dashboard" route-active="active">Overview</a>
-    <a route="/dashboard/analytics" route-active="active">Analytics</a>
-    <a route="/dashboard/users" route-active="active">Users</a>
-    <a route="/dashboard/settings" route-active="active">Settings</a>
+    <a href="/dashboard" route="/dashboard" route-active="active">Overview</a>
+    <a href="/dashboard/analytics" route="/dashboard/analytics" route-active="active">Analytics</a>
+    <a href="/dashboard/users" route="/dashboard/users" route-active="active">Users</a>
+    <a href="/dashboard/settings" route="/dashboard/settings" route-active="active">Settings</a>
   </aside>
 
   <!-- Main area -->

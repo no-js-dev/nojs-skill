@@ -425,16 +425,16 @@ A navigation bar that reacts to authentication state, showing login/logout and t
 
 ```html
 <nav class="navbar">
-  <a route="/" class="logo">MyApp</a>
+  <a href="/" route="/" class="logo">MyApp</a>
   <div class="nav-links">
-    <a route="/" route-active="active">Home</a>
-    <a route="/features" route-active="active">Features</a>
-    <a route="/about" route-active="active">About</a>
-    <a route="/contact" route-active="active">Contact</a>
+    <a href="/" route="/" route-active="active">Home</a>
+    <a href="/features" route="/features" route-active="active">Features</a>
+    <a href="/about" route="/about" route-active="active">About</a>
+    <a href="/contact" route="/contact" route-active="active">Contact</a>
   </div>
   <div class="nav-auth">
     <span show="$store.auth.user" bind="$store.auth.user.name"></span>
-    <a show="!$store.auth.user" route="/login" route-active="active">Login</a>
+    <a href="/login" show="!$store.auth.user" route="/login" route-active="active">Login</a>
     <button show="$store.auth.user"
             call="/api/logout" method="post"
             then="$store.auth.user = null; $store.auth.token = null"

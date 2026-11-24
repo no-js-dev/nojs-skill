@@ -278,6 +278,8 @@ URLs support interpolation: `get="/users/{userId}"`. Reactive expressions in URL
 
 `route="/path"` (define route or navigate link), `route="*"` (404 catch-all), `route-view` (outlet), `route-view="name"` (named outlet), `route-view src="pages/"` (file-based routing).
 
+On links, write `href` with the same destination next to `route` (`href="/path" route="/path"`; `href="#/path"` in hash mode; `bind-href` next to `bind-route`). The router still handles the click, and `href` makes the link focusable, announced as a link, crawlable and openable in a new tab.
+
 Companions: `route-active="cls"` (active link class), `guard="expr"` (blocks if falsy), `redirect="/login"` (guard failure redirect), `lazy="ondemand"` (deferred load), `transition="slide"` (View Transition: `slide`/`fade`/`scale`/`none`), `outlet="name"` (target named outlet). Head: `page-title`, `page-description`, `page-canonical`, `page-jsonld`.
 
 Route context: `$route.path`, `$route.params`, `$route.query`, `$route.hash`, `$route.matched`.
@@ -286,8 +288,8 @@ Programmatic: `NoJS.router.push('/path')`, `NoJS.router.replace('/path')`, `NoJS
 
 ```html
 <nav>
-  <a route="/" route-active="active">Home</a>
-  <a route="/users" route-active="active">Users</a>
+  <a href="/" route="/" route-active="active">Home</a>
+  <a href="/users" route="/users" route-active="active">Users</a>
 </nav>
 
 <main route-view transition="slide"></main>
@@ -645,9 +647,9 @@ NoJS.REPLACE                   // Interceptor sentinel: return { [NoJS.REPLACE]:
 </script>
 
 <nav>
-  <a route="/" route-active="active">Home</a>
-  <a route="/dashboard" route-active="active">Dashboard</a>
-  <a show="!$store.auth.token" route="/login">Login</a>
+  <a href="/" route="/" route-active="active">Home</a>
+  <a href="/dashboard" route="/dashboard" route-active="active">Dashboard</a>
+  <a href="/login" show="!$store.auth.token" route="/login">Login</a>
 </nav>
 <main route-view transition="slide"></main>
 

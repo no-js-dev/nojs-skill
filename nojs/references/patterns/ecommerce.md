@@ -168,7 +168,7 @@ An enhanced cart that supports incrementing and decrementing quantities per item
   <h2>Shopping Cart</h2>
 
   <div if="$store.cart.items.length === 0">
-    <p>Your cart is empty. <a route="/products">Browse products</a></p>
+    <p>Your cart is empty. <a href="/products" route="/products">Browse products</a></p>
   </div>
 
   <table show="$store.cart.items.length > 0">

@@ -17,10 +17,10 @@
 <body store="app" state="{ user: null }">
 
     <nav>
-        <a route="/">Home</a>
-        <a route="/about">About</a>
-        <a route="/users">Users</a>
-        <a route="/contact">Contact</a>
+        <a href="/" route="/">Home</a>
+        <a href="/about" route="/about">About</a>
+        <a href="/users" route="/users">Users</a>
+        <a href="/contact" route="/contact">Contact</a>
     </nav>
 
     <main route-view>
@@ -42,7 +42,7 @@
             <h1>Users</h1>
             <ul>
                 <li each="user in users">
-                    <a route="/users/{{ user.id }}"><strong bind="user.name"></strong></a>
+                    <a bind-href="'/users/' + user.id" bind-route="'/users/' + user.id"><strong bind="user.name"></strong></a>
                     — <span bind="user.email | lowercase"></span>
                 </li>
             </ul>
@@ -54,7 +54,7 @@
             <h1 bind="profile.name"></h1>
             <p>Email: <span bind="profile.email"></span></p>
             <p>Phone: <span bind="profile.phone"></span></p>
-            <a route="/users">← Back to users</a>
+            <a href="/users" route="/users">← Back to users</a>
         </section>
 
         <!-- Contact form -->
@@ -75,7 +75,7 @@
         <!-- 404 fallback -->
         <section route="*">
             <h1>404</h1>
-            <p>Page not found. <a route="/">Go home</a></p>
+            <p>Page not found. <a href="/" route="/">Go home</a></p>
         </section>
 
     </main>

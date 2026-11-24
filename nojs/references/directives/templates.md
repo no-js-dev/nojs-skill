@@ -171,8 +171,8 @@ Templates can accept projected content via named `<slot>` elements:
 
 <div use="page-layout">
   <nav slot="header">
-    <a route="/">Home</a>
-    <a route="/about">About</a>
+    <a href="/" route="/">Home</a>
+    <a href="/about" route="/about">About</a>
   </nav>
 
   <h1>Welcome to My App</h1>
