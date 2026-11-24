@@ -239,12 +239,20 @@ Lifecycle hooks are special `on:*` events that fire at key moments in an element
 | `on:unmounted` | Element removed from DOM by your code; with `strictUnmounted: true`, also by a directive (see below) |
 | `on:error` | Any error in this element's subtree |
 
+A hook calls your own JavaScript through a global: register each function with [`NoJS.global`](../core/api.md#nojsglobalname-value) and call it as `$name(...)`.
+
 ```html
-<div on:mounted="initChart($el)">
+<script>
+  NoJS.global('initChart', (el) => { /* draw on el.querySelector('canvas') */ });
+  NoJS.global('cleanup', () => { /* release what initChart created */ });
+  NoJS.global('fetchInitialData', () => { /* start loading */ });
+</script>
+
+<div on:mounted="$initChart($el)">
   <canvas ref="chart"></canvas>
 </div>
-<div on:unmounted="cleanup()"></div>
-<div on:init="fetchInitialData()"></div>
+<div on:unmounted="$cleanup()"></div>
+<div on:init="$fetchInitialData()"></div>
 ```
 
 ### Edge Cases

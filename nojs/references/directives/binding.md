@@ -6,7 +6,7 @@ One-way and two-way data binding for text, HTML, attributes, and form inputs. Pr
 
 - [bind](#bind) -- one-way text binding
 - [bind-html](#bind-html) -- sanitized HTML binding
-- [bind-*](#bind-1) -- bind any HTML attribute
+- [bind-*](#bind-) -- bind any HTML attribute
 - [model](#model) -- two-way input binding
 
 ---

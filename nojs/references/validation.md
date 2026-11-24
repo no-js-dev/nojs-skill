@@ -340,6 +340,9 @@ There is no `eval()` or `Function()` constructor usage, making No.JS fully CSP-c
 For mutating requests, configure CSRF tokens globally:
 
 ```html
+<!-- in <head>: the token your server renders for this session -->
+<meta name="csrf-token" content="{{ csrf_token }}">
+
 <script>
   NoJS.config({
     csrf: {
